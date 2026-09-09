@@ -16,5 +16,10 @@
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
+    <dependencies>
+        <dependency>
+            <groupId>com</groupId>
+            <artifactId>ddd-application</artifactId>
+        </dependency>
+    </dependencies>
 </project>
