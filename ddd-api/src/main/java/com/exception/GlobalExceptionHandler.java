@@ -1,13 +1,12 @@
 package com.exception;
 
 
-import com.dto.auth.ErrorResponse;
-import jakarta.servlet.http.HttpServletRequest;
+import com.common.BaseResponse;
+import com.common.enums.ErrorCodeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-//import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -16,13 +15,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-///**
+//import org.springframework.security.access.AccessDeniedException;
+
+/// **
 // * Centralized exception handler for all REST controllers.
 // *
 // * <p>HTTP status mapping:
@@ -41,26 +41,34 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 400 Bad Request
-    // ─────────────────────────────────────────────────────────────────────────
+    private ResponseEntity<Object> wrapWithResponse(String code, String message, HttpStatus status) {
+        return ResponseEntity.status(status).body(BaseResponse.error(code, message));
+    }
 
-    /** Bean-validation failures on @RequestBody (e.g. @NotNull, @Size). */
+    // 400 Bad Request
+
+    /**
+     * Bean-validation failures on @RequestBody (e.g. @NotNull, @Size).
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleMethodArgumentException(
+    public ResponseEntity<Object> handleMethodArgumentException(
             MethodArgumentNotValidException exception) {
         Map<String, String> errors = new HashMap<>();
         List<FieldError> fieldErrorList = exception.getBindingResult().getFieldErrors();
         fieldErrorList.forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
-        return ResponseEntity.badRequest().body(errors);
+        log.warn("Method Argument Not Valid occurred: {}", errors, exception);
+        return wrapWithResponse(ErrorCodeEnum.VALIDATION_ERROR.getCode(), errors.toString(), ErrorCodeEnum.VALIDATION_ERROR.getStatus());
     }
 
-    /** Constraint-validation failures on @PathVariable / @RequestParam. */
+    /**
+     * Constraint-validation failures on @PathVariable / @RequestParam.
+     */
     @ExceptionHandler(HandlerMethodValidationException.class)
-    public ResponseEntity<Map<String, String>> handleMethodException(
+    public ResponseEntity<Object> handleMethodException(
             HandlerMethodValidationException exception) {
         Map<String, String> errors = new HashMap<>();
         List<ParameterValidationResult> results = exception.getParameterValidationResults();
+
         results.forEach(result -> {
             String paramName = result.getMethodParameter().getParameterName();
             String combinedMsg = result.getResolvableErrors()
@@ -69,27 +77,31 @@ public class GlobalExceptionHandler {
                     .collect(Collectors.joining(", "));
             errors.put(paramName, combinedMsg);
         });
-        return ResponseEntity.badRequest().body(errors);
+        log.warn("Method Validation occurred: {}", errors, exception);
+        return wrapWithResponse(ErrorCodeEnum.VALIDATION_ERROR.getCode(),
+                errors.toString(), ErrorCodeEnum.VALIDATION_ERROR.getStatus());
     }
 
-    /** General bad-input from service layer. */
+    /**
+     * General bad-input from service layer.
+     */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleBadRequest(
+    public ResponseEntity<Object> handleBadRequest(
             IllegalArgumentException exception, WebRequest webRequest) {
         log.warn("Bad request [{}]: {}", webRequest.getDescription(false), exception.getMessage());
-        return buildError(HttpStatus.BAD_REQUEST, exception.getMessage(), webRequest.getDescription(false));
+        return wrapWithResponse(ErrorCodeEnum.VALIDATION_ERROR.getCode(),
+                exception.getMessage(), ErrorCodeEnum.VALIDATION_ERROR.getStatus());
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 401 Unauthorized
-    // ─────────────────────────────────────────────────────────────────────────
-
-//    @ExceptionHandler(UnauthorizedException.class)
-//    public ResponseEntity<ErrorResponseDto> handleUnauthorized(
-//            UnauthorizedException exception, WebRequest webRequest) {
-//        log.warn("Unauthorized [{}]: {}", webRequest.getDescription(false), exception.getMessage());
-//        return buildError(HttpStatus.UNAUTHORIZED, exception.getMessage(), webRequest.getDescription(false));
-//    }
+    //     401 Unauthorized
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Object> handleUnauthorized(
+            UnauthorizedException exception, WebRequest webRequest) {
+        log.warn("Unauthorized [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(ErrorCodeEnum.UNAUTHORIZED_ERROR.getCode(),
+                ErrorCodeEnum.UNAUTHORIZED_ERROR.getDefaultMessage(),
+                ErrorCodeEnum.UNAUTHORIZED_ERROR.getStatus());
+    }
 //
 //    // ─────────────────────────────────────────────────────────────────────────
 //    // 403 Forbidden
@@ -160,27 +172,16 @@ public class GlobalExceptionHandler {
 //        return buildError(HttpStatus.BAD_GATEWAY, exception.getMessage(), webRequest.getDescription(false));
 //    }
 //
-//    // ─────────────────────────────────────────────────────────────────────────
-//    // 500 Internal Server Error — catch-all
-//    // ─────────────────────────────────────────────────────────────────────────
-//
-//    @ExceptionHandler(Exception.class)
-//    public ResponseEntity<ErrorResponseDto> handleException(
-//            Exception exception, WebRequest webRequest) {
-//        // Log the full stack trace so developers can diagnose unexpected failures.
-//        log.error("Unexpected error [{}]", webRequest.getDescription(false), exception);
-//        return buildError(
-//                HttpStatus.INTERNAL_SERVER_ERROR,
-//                "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.",
-//                webRequest.getDescription(false));
-//    }
-//
-//    // ─────────────────────────────────────────────────────────────────────────
-//    // Helper
-//    // ─────────────────────────────────────────────────────────────────────────
-//
-    private ResponseEntity<ErrorResponse> buildError(HttpStatus status, String message, String path) {
-        ErrorResponse body = new ErrorResponse(path, status, message, LocalDateTime.now());
-        return ResponseEntity.status(status).body(body);
+
+    // 500 Internal Server Error — catch-all
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Object> handleException(
+            Exception exception, WebRequest webRequest) {
+        // Log the full stack trace so developers can diagnose unexpected failures.
+        log.error("Unexpected error [{}]", webRequest.getDescription(false), exception);
+        return wrapWithResponse(ErrorCodeEnum.INTERNAL_SERVER_ERROR.getCode(),
+                ErrorCodeEnum.INTERNAL_SERVER_ERROR.getDefaultMessage(),
+                ErrorCodeEnum.INTERNAL_SERVER_ERROR.getStatus());
     }
+
 }
