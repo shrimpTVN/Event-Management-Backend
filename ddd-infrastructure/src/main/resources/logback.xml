@@ -37,6 +37,7 @@
         <!-- Modern rolling policy (size + time based) -->
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>
+<!--                file name format when archiving-->
                 ${LOGS}/archived/ddd-%d{yyyy-MM-dd}.%i.log
             </fileNamePattern>
             <maxFileSize>1MB</maxFileSize>
@@ -45,40 +46,7 @@
         </rollingPolicy>
     </appender>
 
-    <springProfile name="prod">
-        <!-- ===================== -->
-        <!-- Root Logger -->
-        <!-- ===================== -->
-        <root level="ERROR">
-            <appender-ref ref="RollingFile"/>
-        </root>
-        <!-- ===================== -->
-        <!-- Application-specific ERROR logs -->
-        <!-- ===================== -->
-        <logger name="com.ddd"
-                level="ERROR"
-                additivity="false">
-            <appender-ref ref="RollingFile"/>
-        </logger>
-    </springProfile>
-
-    <springProfile name="qa">
-        <!-- ===================== -->
-        <!-- Root Logger -->
-        <!-- ===================== -->
-        <root level="INFO">
-            <appender-ref ref="RollingFile"/>
-        </root>
-        <!-- ===================== -->
-        <!-- Application-specific INFO logs -->
-        <!-- ===================== -->
-        <logger name="com.ddd"
-                level="INFO"
-                additivity="false">
-            <appender-ref ref="RollingFile"/>
-        </logger>
-    </springProfile>
-
+    <!--Local development environment-->
     <springProfile name="default">
         <!-- ===================== -->
         <!-- Root Logger -->
@@ -98,5 +66,42 @@
         </logger>
     </springProfile>
 
+<!--    Production environment-->
+    <springProfile name="prod">
+        <!-- ===================== -->
+        <!-- Root Logger -->
+        <!-- ===================== -->
+        <root level="ERROR">
+<!--            only recording ERROR log-->
+            <appender-ref ref="RollingFile"/>
+<!--            don't render logback on production environment-->
+        </root>
+        <!-- ===================== -->
+        <!-- Application-specific ERROR logs -->
+        <!-- ===================== -->
+        <logger name="com.ddd"
+                level="ERROR"
+                additivity="false">
+            <appender-ref ref="RollingFile"/>
+        </logger>
+    </springProfile>
+
+<!--    Testing environment-->
+    <springProfile name="qa">
+        <!-- ===================== -->
+        <!-- Root Logger -->
+        <!-- ===================== -->
+        <root level="INFO">
+            <appender-ref ref="RollingFile"/>
+        </root>
+        <!-- ===================== -->
+        <!-- Application-specific INFO logs -->
+        <!-- ===================== -->
+        <logger name="com.ddd"
+                level="INFO"
+                additivity="false">
+            <appender-ref ref="RollingFile"/>
+        </logger>
+    </springProfile>
 
 </configuration>

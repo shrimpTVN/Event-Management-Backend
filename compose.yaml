@@ -1,0 +1,13 @@
+services:
+  dbservice:
+    image: postgres:latest
+    container_name: postgres_con
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: mydb
+    volumes:
+      # Sửa lại thành Bind Mount trỏ đúng vào thư mục /data bên trong container
+      - /home/shrimp/code/portgres-db:/var/lib/postgresql
