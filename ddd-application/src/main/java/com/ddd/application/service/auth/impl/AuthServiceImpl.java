@@ -41,7 +41,9 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        userRepository.save(userDtoMapper.toUser(userRegisterRequest));
+        User user = userDtoMapper.toUser(userRegisterRequest);
+        user.setRole("USER");
+        userRepository.save(user);
 
     }
 }

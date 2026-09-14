@@ -11,17 +11,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
     private final AuthMapper authMapper;
-
-    @GetMapping
-    public BaseResponse<String> greeting(){
-        return BaseResponse.of("This is from AuthController");
-    }
 
     @PostMapping("/login")
     public BaseResponse<LoginResponseDto> login(@RequestBody LoginRequestDto loginRequestDto){

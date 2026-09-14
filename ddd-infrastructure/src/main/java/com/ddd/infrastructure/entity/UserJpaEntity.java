@@ -38,4 +38,8 @@ public class UserJpaEntity extends BaseEntityJpa {
     @NotBlank
     @Size(min=6)
     private String password;
+
+    @Column(nullable = false)
+    @NotBlank
+    private String role="USER";
 }
