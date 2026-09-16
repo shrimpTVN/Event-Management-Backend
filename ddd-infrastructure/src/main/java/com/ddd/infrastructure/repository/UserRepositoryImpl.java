@@ -9,6 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
+
 @Component
 @RequiredArgsConstructor
 public class UserRepositoryImpl implements UserRepository {
@@ -20,6 +24,11 @@ public class UserRepositoryImpl implements UserRepository {
         UserJpaEntity userJpaEntity = userJpaRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceAccessException("User not found with username: " + username));
         return userMapper.toDomain(userJpaEntity);
+    }
+
+    @Override
+    public List<User> findAll(){
+        return userJpaRepository.findAll().stream().map(userMapper::toDomain).toList();
     }
 
     @Override
@@ -36,5 +45,10 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public void save(User user) {
         userJpaRepository.save(userMapper.toEntity(user));
+    }
+
+    @Override
+    public void save(List<User> users) {
+        userJpaRepository.saveAll(users.stream().map(userMapper::toEntity).toList());
     }
 }

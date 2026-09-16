@@ -1,0 +1,27 @@
+{"timestamp":"2026-09-14 09:56:42", "level":"INFO", "logger":"org.hibernate.validator.internal.util.Version", "message":"HV000001: Hibernate Validator 9.1.3.Final"}
+{"timestamp":"2026-09-14 09:56:42", "level":"INFO", "logger":"com.ddd.start.StartApplication", "message":"Starting StartApplication using Java 21.0.12 with PID 18793 (/home/shrimp/code/ddd/ddd-start/target/classes started by shrimp in /home/shrimp/code/ddd/ddd-start)"}
+{"timestamp":"2026-09-14 09:56:42", "level":"INFO", "logger":"com.ddd.start.StartApplication", "message":"No active profile set, falling back to 1 default profile: "default""}
+{"timestamp":"2026-09-14 09:56:42", "level":"ERROR", "logger":"org.springframework.boot.SpringApplication", "message":"Application run failed"}
+java.lang.IllegalArgumentException: 'files' content [compose.yaml] must exist
+	at org.springframework.util.Assert.isTrue(Assert.java:136)
+	at org.springframework.boot.docker.compose.core.DockerComposeFile.of(DockerComposeFile.java:150)
+	at org.springframework.boot.docker.compose.lifecycle.DockerComposeLifecycleManager.getComposeFile(DockerComposeLifecycleManager.java:181)
+	at org.springframework.boot.docker.compose.lifecycle.DockerComposeLifecycleManager.start(DockerComposeLifecycleManager.java:112)
+	at org.springframework.boot.docker.compose.lifecycle.DockerComposeListener.onApplicationEvent(DockerComposeListener.java:53)
+	at org.springframework.boot.docker.compose.lifecycle.DockerComposeListener.onApplicationEvent(DockerComposeListener.java:35)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:180)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:173)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:151)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:133)
+	at org.springframework.boot.context.event.EventPublishingRunListener.multicastInitialEvent(EventPublishingRunListener.java:137)
+	at org.springframework.boot.context.event.EventPublishingRunListener.contextLoaded(EventPublishingRunListener.java:99)
+	at org.springframework.boot.SpringApplicationRunListeners.lambda$contextLoaded$0(SpringApplicationRunListeners.java:74)
+	at java.base/java.lang.Iterable.forEach(Iterable.java:75)
+	at org.springframework.boot.SpringApplicationRunListeners.doWithListeners(SpringApplicationRunListeners.java:123)
+	at org.springframework.boot.SpringApplicationRunListeners.doWithListeners(SpringApplicationRunListeners.java:117)
+	at org.springframework.boot.SpringApplicationRunListeners.contextLoaded(SpringApplicationRunListeners.java:74)
+	at org.springframework.boot.SpringApplication.prepareContext(SpringApplication.java:418)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:320)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1365)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1354)
+	at com.ddd.start.StartApplication.main(StartApplication.java:15)

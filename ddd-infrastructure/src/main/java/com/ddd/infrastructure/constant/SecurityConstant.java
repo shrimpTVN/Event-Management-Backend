@@ -7,8 +7,10 @@ public class SecurityConstant {
 
     public static final String[] PUBLIC_ENDPOINTS = {
             "/",
-            "swagger-ui/*",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
             "/api/auth/**",
+            "/error"
     };
 
     public static final String[] SECURE_ENDPOINTS = {

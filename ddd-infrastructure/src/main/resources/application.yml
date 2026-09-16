@@ -1,0 +1,35 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: ddd
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:mydb}
+    username: ${DATABASE_USERNAME:admin}
+    password: ${DATABASE_PASSWORD:admin}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: ${SHOW_SQL:true}
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        format_sql: ${HIBERNATE_FORMAT_SQL:true}
+        default_batch_fetch_size: ${DEFAULT_BATCH_FETCH_SIZE:50}
+  docker:
+    compose:
+      enabled: ${DOCKER_COMPOSE_ENABLED:true}
+      file: ${DOCKER_COMPOSE_FILE:compose.yaml}
+      lifecycle-management: ${DOCKER_COMPOSE_LIFECYCLE:start-only}
+
+logging:
+  pattern:
+    console: "${CONSOLE_LOG_PATTERN:%green(%d{HH:mm:ss.SSS}) %blue(%-5level) %red([%thread]) %yellow(%logger{15})- %cyan(%msg%n)}"
+
+jwt:
+  secret: ${JWT_SECRET:jxgEQeXHuPq8VdbyYFNkANdudQ53YUn4}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  cookie-name: ${JWT_COOKIE_NAME:ddd_jwt}
+  header: ${JWT_HEADER:Authorization}

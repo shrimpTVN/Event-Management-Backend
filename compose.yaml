@@ -3,11 +3,11 @@ services:
     image: postgres:latest
     container_name: postgres_con
     ports:
-      - "5432:5432"
+      - "${DATABASE_PORT:-5432}:5432"
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: mydb
+      POSTGRES_USER: ${DATABASE_USERNAME:-admin}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-admin}
+      POSTGRES_DB: ${DATABASE_NAME:-mydb}
     volumes:
       # Sửa lại thành Bind Mount trỏ đúng vào thư mục /data bên trong container
-      - /home/shrimp/code/portgres-db:/var/lib/postgresql
+      - ${POSTGRES_DATA_PATH:-/home/shrimp/code/portgres-db}:/var/lib/postgresql

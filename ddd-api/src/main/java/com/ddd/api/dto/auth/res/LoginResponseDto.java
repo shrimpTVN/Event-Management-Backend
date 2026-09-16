@@ -1,6 +1,9 @@
 package com.ddd.api.dto.auth.res;
 
-import jakarta.validation.constraints.NotNull;
-
-public record LoginResponseDto(@NotNull Long userId, @NotNull String accessToken, @NotNull String role) {
+public record LoginResponseDto(Long userId,
+                               String name,
+                               String username,
+                               String email,
+                               String role,
+                               String jwtToken) {
 }

@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -18,6 +20,7 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -94,6 +97,16 @@ public class GlobalExceptionHandler {
                 exception.getMessage(), ErrorCodeEnum.VALIDATION_ERROR.getStatus());
     }
 
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<Object> handleBadCredentialsException(
+            BadCredentialsException exception, WebRequest webRequest){
+        log.warn("Bad credentials [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.AUTH_INVALID_CREDENTIALS.getCode(),
+                ErrorCodeEnum.AUTH_INVALID_CREDENTIALS.getDefaultMessage(),
+                ErrorCodeEnum.AUTH_INVALID_CREDENTIALS.getStatus());
+    }
+
     //     401 Unauthorized
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<Object> handleUnauthorized(
@@ -103,20 +116,18 @@ public class GlobalExceptionHandler {
                 ErrorCodeEnum.UNAUTHORIZED_ERROR.getDefaultMessage(),
                 ErrorCodeEnum.UNAUTHORIZED_ERROR.getStatus());
     }
-//
-//    // ─────────────────────────────────────────────────────────────────────────
-//    // 403 Forbidden
-//    // ─────────────────────────────────────────────────────────────────────────
-//
-//    @ExceptionHandler(AccessDeniedException.class)
-//    public ResponseEntity<ErrorResponseDto> handleAccessDeniedException(
-//            AccessDeniedException exception, WebRequest webRequest) {
-//        log.warn("Access denied [{}]: {}", webRequest.getDescription(false), exception.getMessage());
-//        return buildError(
-//                HttpStatus.FORBIDDEN,
-//                "Bạn không có quyền thực hiện hành động này.",
-//                webRequest.getDescription(false));
-//    }
+
+    // 403 Forbidden
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Object> handleAccessDeniedException(
+            AccessDeniedException exception, WebRequest webRequest) {
+        log.warn("Access denied [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.ACCESS_DENIED_ERROR.getCode(),
+                ErrorCodeEnum.ACCESS_DENIED_ERROR.getDefaultMessage(),
+                ErrorCodeEnum.ACCESS_DENIED_ERROR.getStatus()
+                );
+    }
 //
 //    // ─────────────────────────────────────────────────────────────────────────
 //    // 404 Not Found
