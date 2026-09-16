@@ -1,7 +1,5 @@
 package com.ddd.infrastructure.constant;
 
-import java.util.Locale;
-
 public class SecurityConstant {
     private SecurityConstant(){}
 
@@ -9,8 +7,9 @@ public class SecurityConstant {
             "/",
             "/swagger-ui/**",
             "/v3/api-docs/**",
-            "/api/auth/**",
-            "/error"
+            "/api/auth/register",
+            "/api/auth/login"
+//            "/error"
     };
 
     public static final String[] SECURE_ENDPOINTS = {

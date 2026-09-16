@@ -1,7 +1,7 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
-import com.ddd.application.dto.auth.LoginDto;
+import com.ddd.application.dto.auth.LoginResult;
 import com.ddd.api.dto.auth.req.LoginRequestDto;
 import com.ddd.api.dto.auth.req.UserRegisterRequestDto;
 import com.ddd.api.dto.auth.res.LoginResponseDto;
@@ -24,11 +24,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<BaseResponse<LoginResponseDto>> login(@RequestBody LoginRequestDto loginRequestDto){
-        LoginDto loginDto = authService.login(loginRequestDto.username(), loginRequestDto.password());
+        LoginResult loginResult = authService.login(loginRequestDto.username(), loginRequestDto.password());
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .header(HttpHeaders.SET_COOKIE, authService.getUserCookie(loginDto.jwtToken()).toString())
-                .body(BaseResponse.of(authMapper.toLoginResponse(loginDto)));
+                .header(HttpHeaders.SET_COOKIE, authService.getUserCookie(loginResult.jwtToken()).toString())
+                .body(BaseResponse.of(authMapper.toLoginResponse(loginResult.loginDto())));
     }
 
     @PostMapping("/register")
@@ -37,7 +37,15 @@ public class AuthController {
         return BaseResponse.ok();
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/logout")
+    public ResponseEntity<BaseResponse<Void>> logout(){
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .header(HttpHeaders.SET_COOKIE, authService.getLogoutCookie().toString())
+                .body(BaseResponse.ok());
+    }
+
+
     @PostMapping("/change-password")
     public BaseResponse<Void >changePassword(){
         System.out.println("change password");

@@ -4,6 +4,4 @@ public record LoginResponseDto(Long userId,
                                String name,
                                String username,
                                String email,
-                               String role,
-                               String jwtToken) {
-}
+                               String role){}

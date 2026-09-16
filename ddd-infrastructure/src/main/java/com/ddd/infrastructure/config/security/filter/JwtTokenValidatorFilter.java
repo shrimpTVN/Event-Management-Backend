@@ -2,7 +2,7 @@ package com.ddd.infrastructure.config.security.filter;
 
 import com.ddd.infrastructure.config.security.custom.UserDetailsCustom;
 import com.ddd.infrastructure.constant.SecurityConstant;
-import com.ddd.infrastructure.util.JwtUtil;
+import com.ddd.infrastructure.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -24,9 +25,7 @@ import java.util.Arrays;
 
 @RequiredArgsConstructor
 public class JwtTokenValidatorFilter extends OncePerRequestFilter {
-
     private final JwtUtil jwtUtil;
-    private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -41,7 +40,9 @@ public class JwtTokenValidatorFilter extends OncePerRequestFilter {
                 Claims claims=jwtUtil.parseClaims(jwt);
 
                 String username = claims.get("username").toString();
-                Long userId = (Long) claims.get("userId");
+                // Safe cast: JWT library may parse small numbers as Integer
+                Number userIdNum = (Number) claims.get("userId");
+                Long userId = userIdNum != null ? userIdNum.longValue() : null;
                 String authoritiesClaim = claims.get("roles").toString();
 
                 UserDetailsCustom statelessPrincipal = new UserDetailsCustom(userId, username, "",
@@ -52,22 +53,15 @@ public class JwtTokenValidatorFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (ExpiredJwtException e) {
+                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("Token Expired");
+                response.getWriter().write(
+                        "{\"exceptionCode\":\"AUTH.004\",\"message\":\"Token expired\"}");
                 return;
             } catch( Exception e ){
                 throw new BadCredentialsException("Invalid Token Received");
             }
         }
         filterChain.doFilter(request, response);
-    }
-
-    @Override
-    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        String path = request.getServletPath();
-
-        // Duyệt qua mảng PUBLIC_ENDPOINTS, nếu path hiện tại khớp với bất kỳ pattern nào thì bỏ qua filter
-        return Arrays.stream(SecurityConstant.PUBLIC_ENDPOINTS)
-                .anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 }

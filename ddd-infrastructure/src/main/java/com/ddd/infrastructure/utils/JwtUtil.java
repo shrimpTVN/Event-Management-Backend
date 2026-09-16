@@ -1,7 +1,7 @@
-package com.ddd.infrastructure.util;
+package com.ddd.infrastructure.utils;
 
+import com.ddd.infrastructure.config.properties.JwtProperties;
 import com.ddd.infrastructure.config.security.custom.UserDetailsCustom;
-import com.ddd.infrastructure.constant.ApplicationConstants;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -9,7 +9,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
@@ -23,37 +22,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class JwtUtil {
-    private final Environment env;
+    private final JwtProperties jwtProperties;
 
     private SecretKey getSecretKey() {
-        String secret = ApplicationConstants.JWT_SECRET;
-        if (secret == null || secret.isBlank()) {
-            secret = env.getProperty(ApplicationConstants.JWT_SECRET_KEY,
-                    env.getProperty(ApplicationConstants.JWT_SECRET_ENV_KEY));
-        }
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        return Keys.hmacShaKeyFor(jwtProperties.secret().getBytes(StandardCharsets.UTF_8));
     }
 
     public long getExpirationMs() {
-        if (ApplicationConstants.JWT_EXPIRATION_MS > 0) {
-            return ApplicationConstants.JWT_EXPIRATION_MS;
-        }
-        String exp = env.getProperty(ApplicationConstants.JWT_EXPIRATION_KEY,
-                env.getProperty(ApplicationConstants.JWT_EXPIRATION_ENV_KEY));
-        try {
-            return exp != null ? Long.parseLong(exp) : 86400000L;
-        } catch (NumberFormatException e) {
-            return 86400000L;
-        }
+        return jwtProperties.expirationMs();
     }
 
     public String getCookieName() {
-        String name = ApplicationConstants.JWT_COOKIE_NAME;
-        if (name == null || name.isBlank()) {
-            name = env.getProperty(ApplicationConstants.JWT_COOKIE_NAME_KEY,
-                    env.getProperty(ApplicationConstants.JWT_COOKIE_NAME_ENV_KEY));
-        }
-        return name;
+        return jwtProperties.cookieName();
     }
 
     public String extractToken(HttpServletRequest request) {
@@ -90,7 +70,7 @@ public class JwtUtil {
     }
 
     public Long getUserIdFromToken(String token) {
-        return parseClaims(token).get("UserId", Long.class);
+        return parseClaims(token).get("userId", Long.class);
     }
 
     public String generateJwtToken(Authentication authentication) {

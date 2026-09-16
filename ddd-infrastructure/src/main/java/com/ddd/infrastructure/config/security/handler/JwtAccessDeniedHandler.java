@@ -1,0 +1,27 @@
+package com.ddd.infrastructure.config.security.handler;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+
+/**
+ * Returns a 403 JSON response when an authenticated user
+ * tries to access a resource they don't have permission for.
+ */
+@Component
+public class JwtAccessDeniedHandler implements AccessDeniedHandler {
+
+    @Override
+    public void handle(HttpServletRequest request, HttpServletResponse response,
+                       AccessDeniedException accessDeniedException) throws IOException {
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.getWriter().write(
+                "{\"exceptionCode\":\"002\",\"message\":\"You do not have permission to perform this action\"}");
+    }
+}

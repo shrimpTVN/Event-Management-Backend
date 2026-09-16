@@ -29,7 +29,7 @@ logging:
     console: "${CONSOLE_LOG_PATTERN:%green(%d{HH:mm:ss.SSS}) %blue(%-5level) %red([%thread]) %yellow(%logger{15})- %cyan(%msg%n)}"
 
 jwt:
-  secret: ${JWT_SECRET:jxgEQeXHuPq8VdbyYFNkANdudQ53YUn4}
+  secret: ${JWT_SECRET:bItuCsIDL5c+BspirFjkgEYurvJBLNosOfR6f7/wuRTF}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   cookie-name: ${JWT_COOKIE_NAME:ddd_jwt}
   header: ${JWT_HEADER:Authorization}

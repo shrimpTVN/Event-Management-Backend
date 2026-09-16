@@ -2,8 +2,10 @@ package com.ddd.infrastructure.config.security;
 
 import com.ddd.infrastructure.config.security.custom.UserServiceCustom;
 import com.ddd.infrastructure.config.security.filter.JwtTokenValidatorFilter;
+import com.ddd.infrastructure.config.security.handler.JwtAccessDeniedHandler;
+import com.ddd.infrastructure.config.security.handler.JwtAuthenticationEntryPoint;
 import com.ddd.infrastructure.constant.SecurityConstant;
-import com.ddd.infrastructure.util.JwtUtil;
+import com.ddd.infrastructure.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +34,8 @@ public class SecurityConfig {
 
     private final UserServiceCustom userServiceCustom;
     private final JwtUtil  jwtUtil;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -46,6 +50,9 @@ public class SecurityConfig {
                     request
                             .requestMatchers(SecurityConstant.PUBLIC_ENDPOINTS).permitAll()
                             .anyRequest().authenticated())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(jwtAccessDeniedHandler))
                 .addFilterBefore(new JwtTokenValidatorFilter(jwtUtil), BasicAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)

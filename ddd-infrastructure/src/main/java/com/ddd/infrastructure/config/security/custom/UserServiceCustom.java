@@ -24,6 +24,9 @@ public class UserServiceCustom implements UserDetailsService {
     @Override
     public UserDetailsCustom loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
         User user  = userRepository.findByUsername(username);
+        if (user == null){
+            throw new UsernameNotFoundException(username);
+        }
 
         String roleName = user.getRole().toUpperCase();
         if (!roleName.startsWith("ROLE_")) {
@@ -34,6 +37,9 @@ public class UserServiceCustom implements UserDetailsService {
                 user.getId(),
                 user.getUsername(),
                 user.getPassword(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole(),
                 Collections.singletonList(authority));
     }
 
