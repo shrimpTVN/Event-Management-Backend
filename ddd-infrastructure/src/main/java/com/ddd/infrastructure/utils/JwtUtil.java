@@ -40,14 +40,12 @@ public class JwtUtil {
         if (request.getCookies() == null) {
             return null;
         }
-
         String cookieName = getCookieName();
         for (Cookie cookie : request.getCookies()) {
             if (cookie.getName().equals(cookieName)) {
                 return cookie.getValue();
             }
         }
-
         return null;
     }
 
@@ -81,7 +79,7 @@ public class JwtUtil {
 
         if (fetchedUser != null) {
             return Jwts.builder()
-                    .issuer("ticket-booking")
+                    .issuer("ddd-application")
                     .subject("JWT Token")
                     .claim("username", fetchedUser.getUsername())
                     .claim("userId", fetchedUser.getUserId())

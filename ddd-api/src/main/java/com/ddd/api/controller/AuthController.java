@@ -24,7 +24,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<BaseResponse<LoginResponseDto>> login(@RequestBody LoginRequestDto loginRequestDto){
-        LoginResult loginResult = authService.login(loginRequestDto.username(), loginRequestDto.password());
+        LoginResult loginResult = authService.login(loginRequestDto.email(), loginRequestDto.password());
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .header(HttpHeaders.SET_COOKIE, authService.getUserCookie(loginResult.jwtToken()).toString())

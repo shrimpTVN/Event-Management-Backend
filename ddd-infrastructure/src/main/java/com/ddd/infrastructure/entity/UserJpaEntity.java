@@ -22,7 +22,7 @@ public class UserJpaEntity extends BaseEntityJpa {
     private String password;
 
     @Column(name = "provider_id", length = 255)
-    private String providerId;
+    private String providerId="";
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)

@@ -1,9 +1,8 @@
 package com.ddd.application.dto.auth;
 
 public record UserRegisterDto(
-        String name,
-        int age,
-        String username,
+        String firstName,
+        String lastName,
         String email,
         String password
 ) {}

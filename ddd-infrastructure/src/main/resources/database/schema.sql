@@ -118,6 +118,7 @@ CREATE TABLE student_profiles
     association_id BIGINT,
     major_id       BIGINT,
     user_id        BIGINT      NOT NULL UNIQUE,
+    is_active      BOOLEAN     NOT NULL DEFAULT TRUE,
     --audit
     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by     BIGINT,

@@ -30,24 +30,22 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public LoginResult login(String username, String password) {
+    public LoginResult login(String email, String password) {
         var resultAuthentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password));
+                new UsernamePasswordAuthenticationToken(email, password));
         String jwtToken = jwtUtil.generateJwtToken(resultAuthentication);
 
         var fetchedUser = (UserDetailsCustom) resultAuthentication.getPrincipal();
 
         if (fetchedUser == null) {
-            throw new BadCredentialsException("Invalid username or password");
+            throw new BadCredentialsException("Invalid email or password");
         }
 
-        log.info("User:{} logged in successfully", username);
+        log.info("User:{} logged in successfully", email);
 
         LoginDto loginDto = new LoginDto(
                 fetchedUser.getUserId(),
-                fetchedUser.getName(),
                 fetchedUser.getUsername(),
-                fetchedUser.getEmail(),
                 fetchedUser.getRole()
         );
 
@@ -56,10 +54,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void createUser(UserRegisterDto userRegisterRequest) {
-        if (userRepository.existsByUsername(userRegisterRequest.username()))
-        {
-            throw new IllegalArgumentException("Username already exists");
-        }
         if (userRepository.existsByEmail(userRegisterRequest.email()))
         {
             throw new IllegalArgumentException("Email already exists");
@@ -67,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userDtoMapper.toUser(userRegisterRequest);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole("USER");
+        user.setRoleId(2L); // TODO: set roleId from Role entity when Role repository is available
         userRepository.save(user);
     }
 
