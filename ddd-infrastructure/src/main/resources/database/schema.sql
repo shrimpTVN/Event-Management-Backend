@@ -88,46 +88,61 @@ CREATE TABLE associations
 -- ============================================================
 CREATE TABLE users
 (
-    id             BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
-    first_name     VARCHAR(100),
-    last_name      VARCHAR(100),
-    email          VARCHAR(255) NOT NULL UNIQUE,
-    password       VARCHAR(255),
-    student_id     VARCHAR(50)  UNIQUE,
-    gender         VARCHAR(10),
-    k_number       INTEGER,
-    avatar_url     TEXT,
-    provider_id    VARCHAR(255),
-    is_active      BOOLEAN      NOT NULL DEFAULT TRUE,
-    role_id        BIGINT       NOT NULL,
-    association_id BIGINT,
-    major_id       BIGINT,
+    id          BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
+    email       VARCHAR(255) NOT NULL UNIQUE,
+    password    VARCHAR(255),
+    provider_id VARCHAR(255),
+    is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
+    role_id     BIGINT       NOT NULL,
     -- audit
-    created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    created_by     BIGINT,
-    updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_by     BIGINT,
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_by  BIGINT,
+    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_by  BIGINT,
     CONSTRAINT pk_users PRIMARY KEY (id)
 );
 
+-- ============================================================
+--  STUDENT_PROFILE
+--  Hồ sơ thông tin sinh viên
+-- ============================================================
+CREATE TABLE student_profiles
+(
+    id             BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    first_name     VARCHAR(100),
+    last_name      VARCHAR(100),
+    student_id     VARCHAR(50) UNIQUE,
+    gender         VARCHAR(10),
+    k_number       INTEGER,
+    avatar_url     TEXT,
+    association_id BIGINT,
+    major_id       BIGINT,
+    user_id        BIGINT      NOT NULL UNIQUE,
+    --audit
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by     BIGINT,
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by     BIGINT,
+    CONSTRAINT pk_student_profiles PRIMARY KEY (id)
+);
 -- ============================================================
 --  NOTIFICATION
 --  Thông báo cá nhân cho người dùng
 -- ============================================================
 CREATE TABLE notifications
 (
-    id         BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
+    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
     title      VARCHAR(255),
     message    TEXT,
-    status     VARCHAR(50)  NOT NULL DEFAULT 'UNREAD',
+    status     VARCHAR(50) NOT NULL DEFAULT 'UNREAD',
     icon_url   TEXT,
     url        TEXT,
-    is_active  BOOLEAN      NOT NULL DEFAULT TRUE,
-    user_id    BIGINT       NOT NULL,
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    user_id    BIGINT      NOT NULL,
     -- audit
-    created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by BIGINT,
-    updated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by BIGINT,
     CONSTRAINT pk_notifications PRIMARY KEY (id)
 );
@@ -138,21 +153,17 @@ CREATE TABLE notifications
 -- ============================================================
 CREATE TABLE fanpages
 (
-    id           BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
-    name         VARCHAR(255),
-    description  TEXT,
-    username     VARCHAR(100) UNIQUE,
-    password     VARCHAR(255),
-    email        VARCHAR(255) UNIQUE,
-    current_rep  VARCHAR(255),
-    avatar_url   TEXT,
-    status       VARCHAR(50)  NOT NULL DEFAULT 'ACTIVE',--'SPENDING','ACTIVE','BANNED'
-    is_active    BOOLEAN      NOT NULL DEFAULT TRUE,
+    id          BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    name        VARCHAR(255),
+    description TEXT,
+    avatar_url  TEXT,
+    status      VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',--'SPENDING','ACTIVE','BANNED'
+    is_active   BOOLEAN     NOT NULL DEFAULT TRUE,
     -- audit
-    created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    created_by   BIGINT,
-    updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_by   BIGINT,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by  BIGINT,
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by  BIGINT,
     CONSTRAINT pk_fanpages PRIMARY KEY (id)
 );
 
@@ -165,7 +176,7 @@ CREATE TABLE point_categories
     id                 BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
     name               VARCHAR(255) NOT NULL,
     description        TEXT,
-    maximum            INTEGER     NOT NULL DEFAULT 0,
+    maximum            INTEGER      NOT NULL DEFAULT 0,
     is_active          BOOLEAN      NOT NULL DEFAULT TRUE,
     date_apply         DATE,
     parent_category_id BIGINT,
@@ -260,27 +271,27 @@ CREATE TABLE event_types
 -- ============================================================
 CREATE TABLE events
 (
-    id                  BIGINT        NOT NULL GENERATED ALWAYS AS IDENTITY,
-    name                VARCHAR(255)  NOT NULL,
+    id                  BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
+    name                VARCHAR(255) NOT NULL,
     description         TEXT,
     date_open           TIMESTAMPTZ,
     date_close          TIMESTAMPTZ,
     date_happen         TIMESTAMPTZ,
-    capacity            INTEGER                DEFAULT 0,
-    male_quantity       INTEGER                DEFAULT 0,
-    female_quantity     INTEGER                DEFAULT 0,
+    capacity            INTEGER               DEFAULT 0,
+    male_quantity       INTEGER               DEFAULT 0,
+    female_quantity     INTEGER               DEFAULT 0,
     banner_url          TEXT,
     ai_screening_result TEXT,
-    ai_screening_score  NUMERIC(5, 2)          DEFAULT 0.00,
-    status              VARCHAR(50)   NOT NULL DEFAULT 'DRAFT',--'DRAFT','PUBLISHED','CLOSED','CANCELLED'
-    is_active           BOOLEAN       NOT NULL DEFAULT TRUE,
+    ai_screening_score  NUMERIC(5, 2)         DEFAULT 0.00,
+    status              VARCHAR(50)  NOT NULL DEFAULT 'DRAFT',--'DRAFT','PUBLISHED','CLOSED','CANCELLED'
+    is_active           BOOLEAN      NOT NULL DEFAULT TRUE,
     event_type_id       BIGINT,
     criteria_id         BIGINT,
     fanpage_id          BIGINT,
     -- audit
-    created_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    created_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_by          BIGINT,
-    updated_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_by          BIGINT,
     CONSTRAINT pk_events PRIMARY KEY (id)
 );
@@ -335,6 +346,9 @@ CREATE TABLE conversations
     fanpage_id BIGINT      NOT NULL,
     -- audit
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by   BIGINT,
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by   BIGINT,
     CONSTRAINT pk_conversations PRIMARY KEY (id)
 );
 
@@ -353,6 +367,8 @@ CREATE TABLE messages
     is_active       BOOLEAN     NOT NULL DEFAULT TRUE,
     conversation_id BIGINT      NOT NULL,
     -- audit
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by   BIGINT,
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by      BIGINT,
     CONSTRAINT pk_messages PRIMARY KEY (id)
@@ -364,55 +380,55 @@ CREATE TABLE messages
 -- ============================================================
 CREATE TABLE reports
 (
-    id         BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
+    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
     subject    VARCHAR(255),
     message    TEXT,
-    status     VARCHAR(50)  NOT NULL DEFAULT 'OPEN',  --  'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
-    is_active  BOOLEAN      NOT NULL DEFAULT TRUE,
-    user_id    BIGINT       NOT NULL,
-    fanpage_id BIGINT       NOT NULL,
+    status     VARCHAR(50) NOT NULL DEFAULT 'OPEN', --  'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    user_id    BIGINT      NOT NULL,
+    fanpage_id BIGINT      NOT NULL,
     -- audit
-    created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by BIGINT,
-    updated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by BIGINT,
     CONSTRAINT pk_reports PRIMARY KEY (id)
 );
 
 -- ============================================================
 --  GROUP
---  Nhóm cộng đồng
--- ============================================================
-CREATE TABLE groups
-(
-    id          BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
-    name        VARCHAR(255) NOT NULL,
-    description TEXT,
-    banner      TEXT,
-    is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
-    fanpage_id  BIGINT       NOT NULL,
-    -- audit
-    created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    created_by  BIGINT,
-    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_by  BIGINT,
-    CONSTRAINT pk_groups PRIMARY KEY (id)
-);
-
--- ============================================================
---  JOINING
---  Thành viên tham gia nhóm cộng đồng
--- ============================================================
-CREATE TABLE joinings
-(
-    user_id    BIGINT      NOT NULL,
-    group_id   BIGINT      NOT NULL,
-    join_date  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    -- audit
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by BIGINT,
-    CONSTRAINT pk_joinings PRIMARY KEY (user_id, group_id)
-);
+-- --  Nhóm cộng đồng
+-- -- ============================================================
+-- CREATE TABLE groups
+-- (
+--     id          BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
+--     name        VARCHAR(255) NOT NULL,
+--     description TEXT,
+--     banner      TEXT,
+--     is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
+--     fanpage_id  BIGINT       NOT NULL,
+--     -- audit
+--     created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+--     created_by  BIGINT,
+--     updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+--     updated_by  BIGINT,
+--     CONSTRAINT pk_groups PRIMARY KEY (id)
+-- );
+--
+-- -- ============================================================
+-- --  JOINING
+-- --  Thành viên tham gia nhóm cộng đồng
+-- -- ============================================================
+-- CREATE TABLE joinings
+-- (
+--     user_id    BIGINT      NOT NULL,
+--     group_id   BIGINT      NOT NULL,
+--     join_date  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--     -- audit
+--     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--     created_by BIGINT,
+--     CONSTRAINT pk_joinings PRIMARY KEY (user_id, group_id)
+-- );
 
 -- ============================================================
 --  FOREIGN KEY CONSTRAINTS
@@ -426,12 +442,16 @@ ALTER TABLE users
     ADD CONSTRAINT fk_users_roles
         FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE RESTRICT;
 
-ALTER TABLE users
-    ADD CONSTRAINT fk_users_majors
+ALTER TABLE student_profiles
+    ADD CONSTRAINT fk_student_profiles_users
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
+
+ALTER TABLE student_profiles
+    ADD CONSTRAINT fk_student_profiles_majors
         FOREIGN KEY (major_id) REFERENCES majors (id) ON DELETE SET NULL;
 
-ALTER TABLE users
-    ADD CONSTRAINT fk_users_associations
+ALTER TABLE student_profiles
+    ADD CONSTRAINT fk_student_profiles_associations
         FOREIGN KEY (association_id) REFERENCES associations (id) ON DELETE SET NULL;
 
 ALTER TABLE events
@@ -458,10 +478,6 @@ ALTER TABLE event_points
     ADD CONSTRAINT fk_event_points_categories
         FOREIGN KEY (point_category_id) REFERENCES point_categories (id) ON DELETE RESTRICT;
 
-ALTER TABLE groups
-    ADD CONSTRAINT fk_groups_fanpages
-        FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE RESTRICT;
-
 ALTER TABLE conversations
     ADD CONSTRAINT fk_conversations_users
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
@@ -481,14 +497,6 @@ ALTER TABLE registrations
 ALTER TABLE registrations
     ADD CONSTRAINT fk_registrations_events
         FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE;
-
-ALTER TABLE joinings
-    ADD CONSTRAINT fk_joinings_users
-        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
-
-ALTER TABLE joinings
-    ADD CONSTRAINT fk_joinings_groups
-        FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE;
 
 ALTER TABLE student_semester_points
     ADD CONSTRAINT fk_ssp_users
@@ -514,6 +522,17 @@ ALTER TABLE notifications
     ADD CONSTRAINT fk_notifications_users
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
 
+-- ALTER TABLE groups
+--     ADD CONSTRAINT fk_groups_fanpages
+--         FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE RESTRICT;
+-- ALTER TABLE joinings
+--     ADD CONSTRAINT fk_joinings_users
+--         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
+--
+-- ALTER TABLE joinings
+--     ADD CONSTRAINT fk_joinings_groups
+--         FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE;
+
 -- ============================================================
 --  AUTO-UPDATE updated_at VIA TRIGGER
 -- ============================================================
@@ -526,31 +545,114 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_roles_updated_at BEFORE UPDATE ON roles FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_schools_updated_at BEFORE UPDATE ON schools FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_majors_updated_at BEFORE UPDATE ON majors FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_event_types_updated_at BEFORE UPDATE ON event_types FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_criterias_updated_at BEFORE UPDATE ON criterias FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_events_updated_at BEFORE UPDATE ON events FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_point_categories_updated_at BEFORE UPDATE ON point_categories FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_event_points_updated_at BEFORE UPDATE ON event_points FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_associations_updated_at BEFORE UPDATE ON associations FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_fanpages_updated_at BEFORE UPDATE ON fanpages FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_groups_updated_at BEFORE UPDATE ON groups FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_messages_updated_at BEFORE UPDATE ON messages FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_registrations_updated_at BEFORE UPDATE ON registrations FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_semesters_updated_at BEFORE UPDATE ON semesters FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_ssp_updated_at BEFORE UPDATE ON student_semester_points FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_reports_updated_at BEFORE UPDATE ON reports FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_notifications_updated_at BEFORE UPDATE ON notifications FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_roles_updated_at
+    BEFORE UPDATE
+    ON roles
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE TRIGGER trg_schools_updated_at
+    BEFORE UPDATE
+    ON schools
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE TRIGGER trg_majors_updated_at
+    BEFORE UPDATE
+    ON majors
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE TRIGGER trg_users_updated_at
+    BEFORE UPDATE
+    ON users
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE TRIGGER trg_student_profiles_updated_at
+    BEFORE UPDATE
+    ON student_profiles
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE TRIGGER trg_event_types_updated_at
+    BEFORE UPDATE
+    ON event_types
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_criterias_updated_at
+    BEFORE UPDATE
+    ON criterias
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_events_updated_at
+    BEFORE UPDATE
+    ON events
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_point_categories_updated_at
+    BEFORE UPDATE
+    ON point_categories
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_event_points_updated_at
+    BEFORE UPDATE
+    ON event_points
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_associations_updated_at
+    BEFORE UPDATE
+    ON associations
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_fanpages_updated_at
+    BEFORE UPDATE
+    ON fanpages
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_groups_updated_at
+    BEFORE UPDATE
+    ON groups
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_messages_updated_at
+    BEFORE UPDATE
+    ON messages
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_registrations_updated_at
+    BEFORE UPDATE
+    ON registrations
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_semesters_updated_at
+    BEFORE UPDATE
+    ON semesters
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_ssp_updated_at
+    BEFORE UPDATE
+    ON student_semester_points
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_reports_updated_at
+    BEFORE UPDATE
+    ON reports
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_notifications_updated_at
+    BEFORE UPDATE
+    ON notifications
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
 
 -- ============================================================
 --  INDEXES
 -- ============================================================
 CREATE INDEX idx_users_email ON users (email);
 CREATE INDEX idx_users_role_id ON users (role_id);
-CREATE INDEX idx_users_major_id ON users (major_id);
+CREATE INDEX idx_student_profiles_user_id ON student_profiles (user_id);
+CREATE INDEX idx_student_profiles_major_id ON student_profiles (major_id);
 CREATE INDEX idx_events_status ON events (status);
 CREATE INDEX idx_events_date_happen ON events (date_happen);
 CREATE INDEX idx_events_type_id ON events (event_type_id);
