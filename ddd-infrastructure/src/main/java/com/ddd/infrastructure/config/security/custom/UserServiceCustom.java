@@ -1,6 +1,7 @@
 package com.ddd.infrastructure.config.security.custom;
 
 import com.ddd.domain.model.User;
+import com.ddd.domain.repository.RoleRepository;
 import com.ddd.domain.repository.UserRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -17,23 +18,21 @@ import java.util.Collections;
 public class UserServiceCustom implements UserDetailsService {
 
     private final UserRepository userRepository;
-
+    private final RoleRepository roleRepository;
 
     @Override
     public UserDetailsCustom loadUserByUsername(@NonNull String email) throws UsernameNotFoundException {
-        User user  = userRepository.findByEmail(email);
-        if (user == null){
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
             throw new UsernameNotFoundException(email);
         }
 
-        // TODO: Load role name from Role entity via roleId when Role repository is available
-        String roleName = "ROLE_USER";
+        String roleName = roleRepository.findById(user.getRoleId()).getName();
         GrantedAuthority authority = new SimpleGrantedAuthority(roleName);
         return new UserDetailsCustom(
                 user.getId(),
                 user.getEmail(),
                 user.getPassword(),
-                user.getEmail(),
                 roleName,
                 Collections.singletonList(authority));
     }
