@@ -54,4 +54,20 @@ public class SemesterServiceImpl implements SemesterService {
     public SemesterDto getCurrent() {
         return semesterDtoMapper.toDto(semesterRepository.getCurrent());
     }
+
+    @Override
+    public SemesterDto updateSemester(Long id, SemesterDto semesterDto) {
+        Semester existingSemester = semesterRepository.findById(id);
+        if (existingSemester == null) {
+            return createSemester(semesterDto);
+        }
+
+        semesterDtoMapper.updateEntityFromDto(semesterDto, existingSemester);
+        return semesterDtoMapper.toDto(semesterRepository.save(existingSemester));
+    }
+
+    @Override
+    public void deleteSemester(Long id) {
+        semesterRepository.delete(id);
+    }
 }

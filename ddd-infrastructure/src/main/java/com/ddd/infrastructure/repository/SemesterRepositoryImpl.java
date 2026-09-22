@@ -53,4 +53,12 @@ public class SemesterRepositoryImpl implements SemesterRepository {
                 .orElseThrow(() -> new IllegalArgumentException("Current semester not found"));
         return semesterMapper.toDomain(semesterEntity);
     }
+
+    @Override
+    public void delete(Long id) {
+        SemesterJpaEntity semesterEntity = semesterJpaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Semester not found"));
+        semesterEntity.setIsActive(false);
+        semesterJpaRepository.save(semesterEntity);
+    }
 }

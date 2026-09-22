@@ -12,4 +12,6 @@ public interface SemesterRepository {
     Semester findById(Long id);
 
     Semester getCurrent();
+
+    void delete(Long id);
 }

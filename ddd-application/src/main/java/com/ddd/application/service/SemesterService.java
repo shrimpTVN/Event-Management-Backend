@@ -12,4 +12,8 @@ public interface SemesterService {
     SemesterDto findById(Long id);
 
     SemesterDto getCurrent();
+
+    SemesterDto updateSemester(Long id, SemesterDto semesterDto);
+
+    void deleteSemester(Long id);
 }
