@@ -214,6 +214,7 @@ CREATE TABLE semesters
     end_date      DATE,
     status        VARCHAR(50) NOT NULL DEFAULT 'UPCOMING',-- 'UPCOMING', 'ONGOING', 'COMPLETED'
     is_current    BOOLEAN     NOT NULL DEFAULT FALSE,
+    is_active     BOOLEAN     NOT NULL DEFAULT TRUE,
     -- audit
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by    BIGINT,

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -128,17 +129,19 @@ public class GlobalExceptionHandler {
                 ErrorCodeEnum.ACCESS_DENIED_ERROR.getStatus()
                 );
     }
-//
-//    // ─────────────────────────────────────────────────────────────────────────
-//    // 404 Not Found
-//    // ─────────────────────────────────────────────────────────────────────────
-//
-//    @ExceptionHandler(ResourceNotFoundException.class)
-//    public ResponseEntity<ErrorResponseDto> handleNotFound(
-//            ResourceNotFoundException exception, WebRequest webRequest) {
-//        log.warn("Resource not found [{}]: {}", webRequest.getDescription(false), exception.getMessage());
-//        return buildError(HttpStatus.NOT_FOUND, exception.getMessage(), webRequest.getDescription(false));
-//    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 404 Not Found
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @ExceptionHandler( NoResourceFoundException.class)
+    public ResponseEntity<Object> handleNotFound(
+            NoResourceFoundException exception, WebRequest webRequest) {
+        log.warn("Resource not found [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(ErrorCodeEnum.NOT_FOUND_ERROR.getCode(),
+                ErrorCodeEnum.NOT_FOUND_ERROR.getDefaultMessage(),
+                ErrorCodeEnum.NOT_FOUND_ERROR.getStatus());
+    }
 //
 //    // ─────────────────────────────────────────────────────────────────────────
 //    // 409 Conflict
