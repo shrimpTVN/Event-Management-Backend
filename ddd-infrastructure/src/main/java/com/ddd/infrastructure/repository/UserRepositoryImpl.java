@@ -1,5 +1,6 @@
 package com.ddd.infrastructure.repository;
 
+import com.ddd.domain.enums.RoleEnum;
 import com.ddd.domain.model.User;
 import com.ddd.infrastructure.entity.RoleJpaEntity;
 import com.ddd.infrastructure.entity.UserJpaEntity;
@@ -39,8 +40,8 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public void save(User user) {
-        RoleJpaEntity roleJpaEntity = roleJpaRepository.findById(user.getRoleId())
-                .orElseThrow(() -> new ResourceAccessException("Role not found with id: " + user.getRoleId()));
+        RoleJpaEntity roleJpaEntity = roleJpaRepository.findByName(RoleEnum.STUDENT.name())
+                .orElseThrow(() -> new ResourceAccessException("Role not found with name: " + RoleEnum.STUDENT.name()));
         UserJpaEntity userJpaEntity = userMapper.toEntity(user);
         userJpaEntity.setRole(roleJpaEntity);
         userJpaRepository.save(userJpaEntity);

@@ -61,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userDtoMapper.toUser(userRegisterRequest);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRoleId(2L); // TODO: set roleId from Role entity when Role repository is available
+//        user.setRoleId(2L);
         userRepository.save(user);
     }
 
