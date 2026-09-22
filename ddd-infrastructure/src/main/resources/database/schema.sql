@@ -167,6 +167,18 @@ CREATE TABLE fanpages
     CONSTRAINT pk_fanpages PRIMARY KEY (id)
 );
 
+CREATE TABLE fanpage_members
+(
+    fanpage_id BIGINT      NOT NULL,
+    user_id    BIGINT      NOT NULL,
+    role       VARCHAR(50) NOT NULL DEFAULT 'MEMBER',--'MEMBER','ADMIN'
+    -- audit
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by BIGINT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by BIGINT,
+    CONSTRAINT pk_fanpage_members PRIMARY KEY (fanpage_id, user_id)
+);
 -- ============================================================
 --  POINT_CATEGORY
 --  Mục điểm rèn luyện (Cấu trúc phân cấp cây)
@@ -454,6 +466,15 @@ ALTER TABLE student_profiles
     ADD CONSTRAINT fk_student_profiles_associations
         FOREIGN KEY (association_id) REFERENCES associations (id) ON DELETE SET NULL;
 
+ALTER TABLE fanpage_members
+    ADD CONSTRAINT fk_fanpage_members_users
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
+
+ALTER TABLE fanpage_members
+    ADD CONSTRAINT fk_fanpage_members_fanpages
+        FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE CASCADE;
+
+
 ALTER TABLE events
     ADD CONSTRAINT fk_events_event_types
         FOREIGN KEY (event_type_id) REFERENCES event_types (id) ON DELETE SET NULL;
@@ -585,6 +606,7 @@ CREATE TRIGGER trg_criterias_updated_at
     ON criterias
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+
 CREATE TRIGGER trg_events_updated_at
     BEFORE UPDATE
     ON events
@@ -595,26 +617,31 @@ CREATE TRIGGER trg_point_categories_updated_at
     ON point_categories
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+
 CREATE TRIGGER trg_event_points_updated_at
     BEFORE UPDATE
     ON event_points
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+
 CREATE TRIGGER trg_associations_updated_at
     BEFORE UPDATE
     ON associations
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+
 CREATE TRIGGER trg_fanpages_updated_at
     BEFORE UPDATE
     ON fanpages
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_groups_updated_at
+
+CREATE TRIGGER trg_fanpage_members_updated_at
     BEFORE UPDATE
-    ON groups
+    ON fanpage_members
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+
 CREATE TRIGGER trg_messages_updated_at
     BEFORE UPDATE
     ON messages
@@ -635,6 +662,7 @@ CREATE TRIGGER trg_ssp_updated_at
     ON student_semester_points
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+
 CREATE TRIGGER trg_reports_updated_at
     BEFORE UPDATE
     ON reports
@@ -646,6 +674,11 @@ CREATE TRIGGER trg_notifications_updated_at
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
 
+-- CREATE TRIGGER trg_groups_updated_at
+--     BEFORE UPDATE
+--     ON groups
+--     FOR EACH ROW
+-- EXECUTE FUNCTION fn_set_updated_at();
 -- ============================================================
 --  INDEXES
 -- ============================================================
