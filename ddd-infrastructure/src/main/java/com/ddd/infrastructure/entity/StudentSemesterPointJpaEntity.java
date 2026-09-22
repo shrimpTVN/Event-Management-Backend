@@ -18,14 +18,17 @@ public class StudentSemesterPointJpaEntity {
     @EmbeddedId
     private StudentSemesterPointId id;
 
+    @MapsId("userId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserJpaEntity user;
 
+    @MapsId("semesterId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "semester_id", nullable = false)
     private SemesterJpaEntity semester;
 
+    @MapsId("pointCategoryId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "point_category_id", nullable = false)
     private PointCategoryJpaEntity pointCategory;

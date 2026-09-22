@@ -18,9 +18,9 @@ import java.util.Objects;
 public class EventPointId implements Serializable {
 
     @Column(name = "event_id")
-    private Long event;
+    private Long eventId;
 
     @Column(name = "point_category_id")
-    private Long pointCategory;
+    private Long pointCategoryId;
 
 }

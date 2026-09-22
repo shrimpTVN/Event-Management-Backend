@@ -33,7 +33,6 @@ public class UserServiceCustom implements UserDetailsService {
                 user.getId(),
                 user.getEmail(),
                 user.getPassword(),
-                user.getFirstName(),
                 user.getEmail(),
                 roleName,
                 Collections.singletonList(authority));

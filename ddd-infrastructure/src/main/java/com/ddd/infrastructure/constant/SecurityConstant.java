@@ -9,7 +9,6 @@ public class SecurityConstant {
             "/v3/api-docs/**",
             "/api/auth/register",
             "/api/auth/login"
-//            "/error"
     };
 
     public static final String[] SECURE_ENDPOINTS = {

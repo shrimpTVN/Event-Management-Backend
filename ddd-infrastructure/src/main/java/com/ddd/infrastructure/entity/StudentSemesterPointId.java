@@ -15,10 +15,10 @@ import java.util.Objects;
 public class StudentSemesterPointId implements Serializable {
 
     @Column(name = "user_id", nullable = false)
-    private Long user;
+    private Long userId;
     @Column(name = "semester_id", nullable = false)
-    private Long semester;
+    private Long semesterId;
     @Column(name = "point_category_id", nullable = false)
-    private Long pointCategory;
+    private Long pointCategoryId;
 
 }

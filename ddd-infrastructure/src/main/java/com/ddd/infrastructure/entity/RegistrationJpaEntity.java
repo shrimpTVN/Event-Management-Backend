@@ -18,11 +18,14 @@ public class RegistrationJpaEntity {
     @EmbeddedId
     private RegistrationId id;
 
+    @MapsId("userId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserJpaEntity user;
 
 
+
+    @MapsId("eventId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id", nullable = false)
     private EventJpaEntity event;

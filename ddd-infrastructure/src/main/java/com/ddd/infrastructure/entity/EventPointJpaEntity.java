@@ -17,10 +17,12 @@ public class EventPointJpaEntity {
     @EmbeddedId
     private EventPointId id;
 
+    @MapsId("eventId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id", nullable = false)
     private EventJpaEntity event;
 
+    @MapsId("pointCategoryId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "point_category_id", nullable = false)
     private PointCategoryJpaEntity pointCategory;

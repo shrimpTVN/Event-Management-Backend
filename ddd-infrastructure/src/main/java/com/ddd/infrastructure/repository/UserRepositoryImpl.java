@@ -40,8 +40,4 @@ public class UserRepositoryImpl implements UserRepository {
         userJpaRepository.save(userMapper.toEntity(user));
     }
 
-    @Override
-    public void save(List<User> users) {
-        userJpaRepository.saveAll(users.stream().map(userMapper::toEntity).toList());
-    }
 }

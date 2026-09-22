@@ -14,9 +14,9 @@ import java.util.Objects;
 @Embeddable
 public class RegistrationId implements Serializable {
     @Column(name = "user_id", nullable = false)
-    private Long user;
+    private Long userId;
     @Column(name = "event_id", nullable = false)
-    private Long event;
+    private Long eventId;
 
 
 }
