@@ -11,6 +11,5 @@ public record SemesterResponseDto(@Positive Integer number,
                                   @NotNull LocalDate startDate,
                                   @NotNull LocalDate endDate,
                                   @NotNull String status,
-                                  @NotNull Boolean isCurrent,
                                   @Positive Long id) implements Serializable {
 }

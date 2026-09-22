@@ -6,4 +6,10 @@ import java.util.List;
 
 public interface SemesterRepository {
     List<Semester> findAll();
+
+    Semester save(Semester semester);
+
+    Semester findById(Long id);
+
+    Semester getCurrent();
 }

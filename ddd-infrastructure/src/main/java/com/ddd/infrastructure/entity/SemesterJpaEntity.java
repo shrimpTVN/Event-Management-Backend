@@ -32,6 +32,4 @@ public class SemesterJpaEntity extends BaseEntityJpa {
     @Column(name = "status", nullable = false, length = 50)
     private String status = "UPCOMING";
 
-    @Column(name = "is_current", nullable = false)
-    private Boolean isCurrent = false;
 }
