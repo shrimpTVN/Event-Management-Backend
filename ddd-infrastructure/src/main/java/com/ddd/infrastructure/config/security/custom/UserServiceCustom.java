@@ -6,12 +6,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Collection;
 import java.util.Collections;
 
 @Service
@@ -22,24 +20,22 @@ public class UserServiceCustom implements UserDetailsService {
 
 
     @Override
-    public UserDetailsCustom loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
-        User user  = userRepository.findByUsername(username);
+    public UserDetailsCustom loadUserByUsername(@NonNull String email) throws UsernameNotFoundException {
+        User user  = userRepository.findByEmail(email);
         if (user == null){
-            throw new UsernameNotFoundException(username);
+            throw new UsernameNotFoundException(email);
         }
 
-        String roleName = user.getRole().toUpperCase();
-        if (!roleName.startsWith("ROLE_")) {
-            roleName = "ROLE_"+roleName;
-        }
+        // TODO: Load role name from Role entity via roleId when Role repository is available
+        String roleName = "ROLE_USER";
         GrantedAuthority authority = new SimpleGrantedAuthority(roleName);
         return new UserDetailsCustom(
                 user.getId(),
-                user.getUsername(),
-                user.getPassword(),
-                user.getName(),
                 user.getEmail(),
-                user.getRole(),
+                user.getPassword(),
+                user.getFirstName(),
+                user.getEmail(),
+                roleName,
                 Collections.singletonList(authority));
     }
 

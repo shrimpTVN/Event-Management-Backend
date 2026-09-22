@@ -11,8 +11,6 @@ import org.springframework.web.client.ResourceAccessException;
 
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
-
 @Component
 @RequiredArgsConstructor
 public class UserRepositoryImpl implements UserRepository {
@@ -20,20 +18,15 @@ public class UserRepositoryImpl implements UserRepository {
     private final UserMapper userMapper;
 
     @Override
-    public User findByUsername(String username) {
-        UserJpaEntity userJpaEntity = userJpaRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceAccessException("User not found with username: " + username));
+    public User findByEmail(String email) {
+        UserJpaEntity userJpaEntity = userJpaRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceAccessException("User not found with email: " + email));
         return userMapper.toDomain(userJpaEntity);
     }
 
     @Override
     public List<User> findAll(){
         return userJpaRepository.findAll().stream().map(userMapper::toDomain).toList();
-    }
-
-    @Override
-    public Boolean existsByUsername(String username) {
-        return  userJpaRepository.existsByUsername(username);
     }
 
     @Override
