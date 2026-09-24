@@ -3,7 +3,11 @@ package com.ddd.application.service.impl;
 import com.ddd.application.dto.auth.LoginDto;
 import com.ddd.application.dto.auth.LoginResult;
 import com.ddd.application.dto.auth.UserRegisterDto;
+import com.ddd.application.dto.user.StudentProfileDto;
+import com.ddd.application.dto.user.UserDto;
 import com.ddd.application.mapper.UserDtoMapper;
+import com.ddd.application.service.studentprofile.StudentProfileCommandService;
+import com.ddd.application.service.user.UserCommandService;
 import com.ddd.domain.model.User;
 import com.ddd.domain.repository.UserRepository;
 import com.ddd.application.service.AuthService;
@@ -17,17 +21,18 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AuthServiceImpl implements AuthService {
 
-    private final UserRepository userRepository;
-    private final UserDtoMapper userDtoMapper;
     private final AuthenticationManager authenticationManager;
+    private final UserCommandService userCommandService;
+    private final StudentProfileCommandService studentProfileCommandService;
     private final JwtUtil jwtUtil;
-    private final PasswordEncoder passwordEncoder;
+
 
     @Override
     public LoginResult login(String email, String password) {
@@ -52,17 +57,12 @@ public class AuthServiceImpl implements AuthService {
         return new LoginResult(loginDto, jwtToken);
     }
 
+    @Transactional
     @Override
-    public void createUser(UserRegisterDto userRegisterRequest) {
-        if (userRepository.existsByEmail(userRegisterRequest.email()))
-        {
-            throw new IllegalArgumentException("Email already exists");
-        }
-
-        User user = userDtoMapper.toUser(userRegisterRequest);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-//        user.setRoleId(2L);
-        userRepository.save(user);
+    public void createUser(UserDto userDto, StudentProfileDto studentProfileDto) {
+        Long userId = userCommandService.createUser(userDto);
+        studentProfileCommandService.createStudentProfile(studentProfileDto, userId);
+        log.info("User:{} created successfully", userDto.email());
     }
 
     @Override

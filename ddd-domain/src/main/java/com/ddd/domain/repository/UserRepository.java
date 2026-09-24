@@ -8,6 +8,6 @@ public interface UserRepository {
     User findByEmail(String email);
     List<User> findAll();
     Boolean existsByEmail(String email);
-    void save(User user);
+    User save(User user);
 
 }
