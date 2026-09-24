@@ -22,8 +22,7 @@ public class UserRepositoryImpl implements UserRepository {
     private final RoleJpaRepository roleJpaRepository;
     @Override
     public User findByEmail(String email) {
-        UserJpaEntity userJpaEntity = userJpaRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceAccessException("User not found with email: " + email));
+        UserJpaEntity userJpaEntity = userJpaRepository.findByEmail(email);
         return userMapper.toDomain(userJpaEntity);
     }
 
@@ -39,12 +38,12 @@ public class UserRepositoryImpl implements UserRepository {
 
 
     @Override
-    public void save(User user) {
+    public User save(User user) {
         RoleJpaEntity roleJpaEntity = roleJpaRepository.findByName(RoleEnum.STUDENT.name())
                 .orElseThrow(() -> new ResourceAccessException("Role not found with name: " + RoleEnum.STUDENT.name()));
         UserJpaEntity userJpaEntity = userMapper.toEntity(user);
         userJpaEntity.setRole(roleJpaEntity);
-        userJpaRepository.save(userJpaEntity);
+        return userMapper.toDomain(userJpaRepository.save(userJpaEntity));
     }
 
 }
