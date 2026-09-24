@@ -8,7 +8,12 @@ public class SecurityConstant {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/api/auth/register",
-            "/api/auth/login"
+            "/api/auth/login",
+            "/api/semesters/**"
+    };
+
+    public static final String[] ADMIN_ENDPOINTS = {
+            "/api/semesters/admin/**"
     };
 
     public static final String[] SECURE_ENDPOINTS = {

@@ -29,22 +29,9 @@ public class SemesterServiceImpl implements SemesterService {
     }
 
     @Override
-    @Transactional
-    public SemesterDto createSemester(SemesterDto semesterDto) {
-        validateDateRange(semesterDto.startDate(), semesterDto.endDate());
-
-        if (semesterRepository.existsByNumberAndDateRange(semesterDto.number(), semesterDto.startDate(), semesterDto.endDate())) {
-            throw new DuplicateResourceException("Semester already exists with the same number and date range");
-        }
-
-        if (semesterRepository.existsOverlappingDateRange(semesterDto.startDate(), semesterDto.endDate())) {
-            throw new DuplicateResourceException("Semester date range overlaps with an existing semester");
-        }
-
-        Semester semester = semesterDtoMapper.toEntity(semesterDto);
-        semester.setStatus(resolveStatus(semester.getStartDate(), semester.getEndDate()));
-
-        return semesterDtoMapper.toDto(semesterRepository.save(semester));
+    public List<SemesterDto> findAllActive() {
+        return semesterRepository.findAllActive().stream()
+                .map(semesterDtoMapper::toDto).toList();
     }
 
     @Override
@@ -57,6 +44,28 @@ public class SemesterServiceImpl implements SemesterService {
     @Override
     public SemesterDto getCurrent() {
         return semesterDtoMapper.toDto(semesterRepository.getCurrent());
+    }
+
+
+    @Override
+    @Transactional
+    public SemesterDto createSemester(SemesterDto semesterDto) {
+        //check whether date range is valid
+        validateDateRange(semesterDto.startDate(), semesterDto.endDate());
+
+        if (semesterRepository.existsByNumberAndDateRange(semesterDto.number(), semesterDto.startDate(), semesterDto.endDate())) {
+            throw new DuplicateResourceException("Semester already exists with the same number and date range");
+        }
+
+        if (semesterRepository.existsOverlappingDateRange(semesterDto.startDate(), semesterDto.endDate())) {
+            throw new DuplicateResourceException("Semester date range overlaps with an existing semester");
+        }
+
+        Semester semester = semesterDtoMapper.toEntity(semesterDto);
+        // Set the status based on the start, end dates and current date
+        semester.setStatus(resolveStatus(semester.getStartDate(), semester.getEndDate()));
+
+        return semesterDtoMapper.toDto(semesterRepository.save(semester));
     }
 
     @Override
@@ -77,12 +86,6 @@ public class SemesterServiceImpl implements SemesterService {
     @Transactional
     public void deleteSemester(Long id) {
         semesterRepository.delete(id);
-    }
-
-    @Override
-    public List<SemesterDto> findAllActive() {
-        return semesterRepository.findAllActive().stream()
-                .map(semesterDtoMapper::toDto).toList();
     }
 
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {

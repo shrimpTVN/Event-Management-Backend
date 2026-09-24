@@ -43,21 +43,21 @@ public class SemesterController {
         return BaseResponse.of(semesterApiMapper.toResponseDto(semesterDto));
     }
 
-    @PostMapping({"","/"})
+    @PostMapping({"/admin","/admin/"})
     public BaseResponse<SemesterResponseDto> createSemester(@RequestBody @Valid SemesterRequestDto requestDto) {
         SemesterDto semesterDto = semesterApiMapper.toDto(requestDto);
         SemesterDto createdSemester = semesterService.createSemester(semesterDto);
         return BaseResponse.of(semesterApiMapper.toResponseDto(createdSemester));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/admin/{id}")
     public BaseResponse<SemesterResponseDto> updateSemester(@PathVariable Long id, @RequestBody @Valid SemesterRequestDto requestDto) {
         SemesterDto semesterDto = semesterApiMapper.toDto(requestDto);
         SemesterDto updatedSemester = semesterService.updateSemester(id, semesterDto);
         return BaseResponse.of(semesterApiMapper.toResponseDto(updatedSemester));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/admin/{id}")
     public BaseResponse<Object> deleteSemester(@PathVariable Long id) {
         semesterService.deleteSemester(id);
         return BaseResponse.ok();
