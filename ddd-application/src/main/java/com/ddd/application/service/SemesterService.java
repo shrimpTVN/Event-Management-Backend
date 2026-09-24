@@ -16,4 +16,6 @@ public interface SemesterService {
     SemesterDto updateSemester(Long id, SemesterDto semesterDto);
 
     void deleteSemester(Long id);
+
+    List<SemesterDto> findAllActive();
 }

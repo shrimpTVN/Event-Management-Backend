@@ -79,6 +79,12 @@ public class SemesterServiceImpl implements SemesterService {
         semesterRepository.delete(id);
     }
 
+    @Override
+    public List<SemesterDto> findAllActive() {
+        return semesterRepository.findAllActive().stream()
+                .map(semesterDtoMapper::toDto).toList();
+    }
+
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {
         if (startDate.isAfter(endDate)) {
             throw new IllegalArgumentException("Start date must be before end date");

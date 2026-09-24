@@ -1,4 +1,4 @@
-package com.ddd.api.dto.auth.req;
+package com.ddd.api.dto.semester;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;

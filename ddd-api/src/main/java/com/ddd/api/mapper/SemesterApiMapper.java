@@ -1,7 +1,7 @@
 package com.ddd.api.mapper;
 
-import com.ddd.api.dto.auth.req.SemesterRequestDto;
-import com.ddd.api.dto.auth.res.SemesterResponseDto;
+import com.ddd.api.dto.semester.SemesterRequestDto;
+import com.ddd.api.dto.semester.SemesterResponseDto;
 import com.ddd.application.dto.SemesterDto;
 import org.mapstruct.Mapper;
 

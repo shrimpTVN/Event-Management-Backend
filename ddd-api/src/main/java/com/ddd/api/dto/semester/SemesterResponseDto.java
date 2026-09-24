@@ -1,4 +1,4 @@
-package com.ddd.api.dto.auth.res;
+package com.ddd.api.dto.semester;
 
 import com.ddd.domain.enums.SemesterStatusEnum;
 

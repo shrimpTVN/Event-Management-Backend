@@ -23,6 +23,12 @@ public class SemesterRepositoryImpl implements SemesterRepository {
 
     @Override
     public List<Semester> findAll() {
+        return semesterJpaRepository.findAll().stream()
+                .map(semesterMapper::toDomain).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Semester> findAllActive() {
         return semesterJpaRepository.findAllByIsActive(true).stream()
                 .map(semesterMapper::toDomain).collect(Collectors.toList());
     }
@@ -63,4 +69,6 @@ public class SemesterRepositoryImpl implements SemesterRepository {
     public boolean existsOverlappingDateRange(LocalDate startDate, LocalDate endDate) {
         return semesterJpaRepository.existsByStartDateBeforeAndEndDateAfter(startDate, endDate);
     }
+
+
 }

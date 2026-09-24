@@ -1,8 +1,8 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
-import com.ddd.api.dto.auth.req.SemesterRequestDto;
-import com.ddd.api.dto.auth.res.SemesterResponseDto;
+import com.ddd.api.dto.semester.SemesterRequestDto;
+import com.ddd.api.dto.semester.SemesterResponseDto;
 import com.ddd.api.mapper.SemesterApiMapper;
 import com.ddd.application.dto.SemesterDto;
 import com.ddd.application.service.SemesterService;
@@ -18,7 +18,14 @@ import java.util.List;
 public class SemesterController {
     private final SemesterService semesterService;
     private final SemesterApiMapper semesterApiMapper;
+
     @GetMapping({"","/"})
+    public BaseResponse<List<SemesterResponseDto>> getAllActiveSemester() {
+        List<SemesterDto> semesterDtos = semesterService.findAllActive();
+        return BaseResponse.of(semesterDtos.stream().map(semesterApiMapper::toResponseDto).toList());
+    }
+
+    @GetMapping({"/admin","/admin/"})
     public BaseResponse<List<SemesterResponseDto>> getAllSemester() {
         List<SemesterDto> semesterDtos = semesterService.findAll();
         return BaseResponse.of(semesterDtos.stream().map(semesterApiMapper::toResponseDto).toList());
