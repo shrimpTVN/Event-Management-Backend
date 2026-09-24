@@ -26,4 +26,6 @@ public class FanpageJpaEntity extends BaseEntityJpa {
 
     @Column(name = "status", nullable = false, length = 50)
     private String status = "ACTIVE";
+
+
 }

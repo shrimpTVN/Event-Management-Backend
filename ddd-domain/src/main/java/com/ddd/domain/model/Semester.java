@@ -1,5 +1,6 @@
 package com.ddd.domain.model;
 
+import com.ddd.domain.enums.SemesterStatusEnum;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,5 +13,5 @@ public class Semester extends BaseModel {
     private String academicYear;
     private LocalDate startDate;
     private LocalDate endDate;
-    private String status;
+    private SemesterStatusEnum status;
 }

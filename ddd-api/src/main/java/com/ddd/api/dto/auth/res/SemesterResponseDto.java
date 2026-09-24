@@ -1,15 +1,14 @@
 package com.ddd.api.dto.auth.res;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import com.ddd.domain.enums.SemesterStatusEnum;
 
 import java.io.Serializable;
 import java.time.LocalDate;
 
-public record SemesterResponseDto(@Positive Integer number,
-                                  @NotNull String academicYear,
-                                  @NotNull LocalDate startDate,
-                                  @NotNull LocalDate endDate,
-                                  @NotNull String status,
-                                  @Positive Long id) implements Serializable {
+public record SemesterResponseDto(Integer number,
+        String academicYear,
+        LocalDate startDate,
+        LocalDate endDate,
+        SemesterStatusEnum status,
+        Long id) implements Serializable {
 }

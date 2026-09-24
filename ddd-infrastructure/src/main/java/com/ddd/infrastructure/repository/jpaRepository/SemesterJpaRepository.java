@@ -1,5 +1,6 @@
 package com.ddd.infrastructure.repository.jpaRepository;
 
+import com.ddd.domain.enums.SemesterStatusEnum;
 import com.ddd.infrastructure.entity.SemesterJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -16,5 +17,5 @@ public interface SemesterJpaRepository extends JpaRepository<SemesterJpaEntity, 
 
     boolean existsByStartDateBeforeAndEndDateAfter(LocalDate startDate, LocalDate endDate);
 
-    Optional<SemesterJpaEntity> findByStatus(String name);
+    Optional<SemesterJpaEntity> findByStatus(SemesterStatusEnum status);
 }
