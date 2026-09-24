@@ -48,6 +48,7 @@ public class SecurityConfig {
                 .cors(corsConfig -> corsConfig.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests( request ->
                     request
+                            .requestMatchers(SecurityConstant.ADMIN_ENDPOINTS).hasRole("ADMIN")
                             .requestMatchers(SecurityConstant.PUBLIC_ENDPOINTS).permitAll()
                             .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex

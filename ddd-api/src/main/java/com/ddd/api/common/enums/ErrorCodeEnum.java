@@ -15,6 +15,17 @@ public enum ErrorCodeEnum {
     INTERNAL_SERVER_ERROR("004", HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error"),
     CONCURRENT_MODIFICATION(
             "005", HttpStatus.CONFLICT, "Concurrent occurs when try to persist the entity"),
+    DUPLICATE_RESOURCE("006", HttpStatus.CONFLICT, "Resource already exists"),
+    RESOURCE_NOT_FOUND("007", HttpStatus.NOT_FOUND, "Resource not found"),
+
+    // SEMESTER
+    SEMESTER_NOT_FOUND("SEMESTER.001", HttpStatus.NOT_FOUND, "Semester not found"),
+    SEMESTER_DUPLICATE("SEMESTER.002", HttpStatus.CONFLICT, "Semester already exists"),
+
+    // STUDENT_PROFILE
+    STUDENT_PROFILE_NOT_FOUND("STUDENT.001", HttpStatus.NOT_FOUND, "Student profile not found"),
+    STUDENT_ID_DUPLICATE("STUDENT.002", HttpStatus.CONFLICT, "Student ID already exists"),
+    STUDENT_USER_ALREADY_LINKED("STUDENT.003", HttpStatus.CONFLICT, "User is already linked to another student profile"),
 
     // ROLE
     ROLES_NOT_FOUND("ROLE.001", HttpStatus.NOT_FOUND, "One or more roles could not be found"),

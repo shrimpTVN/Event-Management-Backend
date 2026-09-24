@@ -1,4 +1,4 @@
-package com.ddd.api.dto.auth;
+package com.ddd.api.dto;
 
 import org.springframework.http.HttpStatus;
 

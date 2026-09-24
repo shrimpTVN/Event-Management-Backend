@@ -1,4 +1,4 @@
-package com.ddd.application.service.auth;
+package com.ddd.application.service;
 
 import com.ddd.application.dto.auth.LoginResult;
 import com.ddd.application.dto.auth.UserRegisterDto;

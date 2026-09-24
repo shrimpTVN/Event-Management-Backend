@@ -1,5 +1,6 @@
 package com.ddd.infrastructure.entity;
 
+import com.ddd.domain.enums.SemesterStatusEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,9 +30,8 @@ public class SemesterJpaEntity extends BaseEntityJpa {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 50)
-    private String status = "UPCOMING";
+    private SemesterStatusEnum status = SemesterStatusEnum.UPCOMING;
 
-    @Column(name = "is_current", nullable = false)
-    private Boolean isCurrent = false;
 }

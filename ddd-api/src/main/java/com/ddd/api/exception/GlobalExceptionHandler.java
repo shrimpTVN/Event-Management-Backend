@@ -3,6 +3,8 @@ package com.ddd.api.exception;
 
 import com.ddd.api.common.BaseResponse;
 import com.ddd.api.common.enums.ErrorCodeEnum;
+import com.ddd.domain.exception.DuplicateResourceException;
+import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.exception.UnauthorizedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -128,37 +131,41 @@ public class GlobalExceptionHandler {
                 ErrorCodeEnum.ACCESS_DENIED_ERROR.getStatus()
                 );
     }
-//
-//    // ─────────────────────────────────────────────────────────────────────────
-//    // 404 Not Found
-//    // ─────────────────────────────────────────────────────────────────────────
-//
-//    @ExceptionHandler(ResourceNotFoundException.class)
-//    public ResponseEntity<ErrorResponseDto> handleNotFound(
-//            ResourceNotFoundException exception, WebRequest webRequest) {
-//        log.warn("Resource not found [{}]: {}", webRequest.getDescription(false), exception.getMessage());
-//        return buildError(HttpStatus.NOT_FOUND, exception.getMessage(), webRequest.getDescription(false));
-//    }
-//
-//    // ─────────────────────────────────────────────────────────────────────────
-//    // 409 Conflict
-//    // ─────────────────────────────────────────────────────────────────────────
-//
-//    /** Optimistic-locking / concurrent seat collision. */
-//    @ExceptionHandler(ConcurrentSeatBookingException.class)
-//    public ResponseEntity<ErrorResponseDto> handleConcurrentSeatBooking(
-//            ConcurrentSeatBookingException exception, HttpServletRequest request) {
-//        log.warn("Booking conflict [{}]: {}", request.getRequestURI(), exception.getMessage());
-//        return buildError(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI());
-//    }
-//
-//    /** Attempt to create a resource that already exists. */
-//    @ExceptionHandler(DuplicateResourceException.class)
-//    public ResponseEntity<ErrorResponseDto> handleDuplicateResource(
-//            DuplicateResourceException exception, WebRequest webRequest) {
-//        log.warn("Duplicate resource [{}]: {}", webRequest.getDescription(false), exception.getMessage());
-//        return buildError(HttpStatus.CONFLICT, exception.getMessage(), webRequest.getDescription(false));
-//    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 404 Not Found
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Object> handleNotFound(
+            NoResourceFoundException exception, WebRequest webRequest) {
+        log.warn("Resource not found [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(ErrorCodeEnum.NOT_FOUND_ERROR.getCode(),
+                ErrorCodeEnum.NOT_FOUND_ERROR.getDefaultMessage(),
+                ErrorCodeEnum.NOT_FOUND_ERROR.getStatus());
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Object> handleResourceNotFound(
+            ResourceNotFoundException exception, WebRequest webRequest) {
+        log.warn("Resource not found [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(ErrorCodeEnum.RESOURCE_NOT_FOUND.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.RESOURCE_NOT_FOUND.getDefaultMessage(),
+                ErrorCodeEnum.RESOURCE_NOT_FOUND.getStatus());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 409 Conflict
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<Object> handleDuplicateResource(
+            DuplicateResourceException exception, WebRequest webRequest) {
+        log.warn("Duplicate resource [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(ErrorCodeEnum.DUPLICATE_RESOURCE.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.DUPLICATE_RESOURCE.getDefaultMessage(),
+                ErrorCodeEnum.DUPLICATE_RESOURCE.getStatus());
+    }
 //
 //    // ─────────────────────────────────────────────────────────────────────────
 //    // 422 Unprocessable Entity

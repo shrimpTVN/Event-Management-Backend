@@ -1,4 +1,4 @@
-package com.ddd.application.service.auth.impl;
+package com.ddd.application.service.impl;
 
 import com.ddd.application.dto.auth.LoginDto;
 import com.ddd.application.dto.auth.LoginResult;
@@ -6,7 +6,7 @@ import com.ddd.application.dto.auth.UserRegisterDto;
 import com.ddd.application.mapper.UserDtoMapper;
 import com.ddd.domain.model.User;
 import com.ddd.domain.repository.UserRepository;
-import com.ddd.application.service.auth.AuthService;
+import com.ddd.application.service.AuthService;
 import com.ddd.infrastructure.config.security.custom.UserDetailsCustom;
 import com.ddd.infrastructure.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
