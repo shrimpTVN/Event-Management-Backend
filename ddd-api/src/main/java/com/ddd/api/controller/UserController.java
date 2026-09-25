@@ -33,19 +33,17 @@ public class UserController {
     }
 
     @GetMapping("/admin/profiles")
-    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<Page<StudentProfileResponseDto>> getAdminProfiles(@RequestParam(defaultValue = "true") boolean isActive,
                                                                           @RequestParam(defaultValue = "0") int page,
                                                                           @RequestParam(defaultValue = "10") int size,
                                                                           @RequestParam(defaultValue = "createdAt") String sortBy,
                                                                           @RequestParam(defaultValue = "desc") String sortDir){
-        //userCommandService.getAllProfiles(isActive);
-//        Page<StudentProfileResponseDto> profiles = userQueryService.getAllProfiles(isActive);
-        return BaseResponse.ok();
+
+        Page<StudentProfileSummaryDto> pageProfiles = userQueryService.getAllProfiles(isActive, page, size, sortBy, sortDir);
+        return BaseResponse.of(pageProfiles.map(studentProfileApiMapper::toStudentProfileResponseDto));
     }
 
     @GetMapping("/admin/{id}/profile")
-    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<StudentProfileResponseDto> getAdminProfileById(@RequestParam Long id){
         //userCommandService.getProfileById(id);
         return BaseResponse.ok();
@@ -65,22 +63,19 @@ public class UserController {
     }
 
     @PutMapping("/admin/{id}/profile")
-    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<StudentProfileResponseDto> updateAdminProfile(@RequestParam Long id,
                                                                        @RequestBody StudentProfileRequestDto studentProfileRequestDto) {
         //userCommandService.updateProfileById(id, studentProfileResponseDto);
         return BaseResponse.ok();
     }
 
-    @PatchMapping("/admin/{id}/profile/change-status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/admin/{id}/change-status")
     public BaseResponse<StudentProfileResponseDto> updateAdminProfileStatus(@PathVariable Long id) {
         //userCommandService.updateProfileStatusById(id);
         return BaseResponse.ok();
     }
 
-    @PatchMapping("/admin/{id}/profile/change-role")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/admin/{id}/change-role")
     public BaseResponse<StudentProfileResponseDto> updateAdminProfileRole(@PathVariable Long id,
                                                                            @RequestParam String role) {
         //userCommandService.updateProfileRoleById(id, role);

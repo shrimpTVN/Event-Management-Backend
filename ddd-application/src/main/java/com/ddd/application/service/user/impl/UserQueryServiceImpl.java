@@ -9,6 +9,10 @@ import com.ddd.domain.repository.UserRepository;
 import com.ddd.infrastructure.entity.StudentProfileJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.StudentProfileJpaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,8 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserQueryServiceImpl implements UserQueryService {
     private final StudentProfileJpaRepository studentProfileJpaRepository;
-
-
     private final StudentProfileDtoMapper studentProfileDtoMapper;
 
     @Override
@@ -28,5 +30,16 @@ public class UserQueryServiceImpl implements UserQueryService {
             throw new ResourceNotFoundException("Student profile not found for email: " + email);
         }
         return studentProfileDtoMapper.toStudentProfileSummaryDto(studentProfileJpaEntity);
+    }
+
+    @Override
+    public Page<StudentProfileSummaryDto> getAllProfiles(boolean isActive, int page, int size, String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ?
+                Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+
+        return studentProfileJpaRepository.findAllByIsActive(isActive, pageable)
+                .map(studentProfileDtoMapper::toStudentProfileSummaryDto);
     }
 }
