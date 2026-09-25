@@ -13,7 +13,8 @@ public class SecurityConstant {
     };
 
     public static final String[] ADMIN_ENDPOINTS = {
-            "/api/semesters/admin/**"
+            "/api/semesters/admin/**",
+            "/api/users/admin/**"
     };
 
     public static final String[] SECURE_ENDPOINTS = {
