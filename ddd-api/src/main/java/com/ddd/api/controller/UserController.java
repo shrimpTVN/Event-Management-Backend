@@ -3,33 +3,35 @@ package com.ddd.api.controller;
 import com.ddd.api.common.BaseResponse;
 import com.ddd.api.dto.user.req.StudentProfileRequestDto;
 import com.ddd.api.dto.user.res.StudentProfileResponseDto;
+import com.ddd.api.dto.user.res.UserResponseDto;
 import com.ddd.api.mapper.StudentProfileApiMapper;
+import com.ddd.api.mapper.UserApiMapper;
 import com.ddd.application.dto.user.StudentProfileSummaryDto;
+import com.ddd.application.dto.user.UserSummaryDto;
 import com.ddd.application.service.user.UserCommandService;
 import com.ddd.application.service.user.UserQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
-     private final UserQueryService userQueryService;
-     private final UserCommandService userCommandService;
-     private final StudentProfileApiMapper studentProfileApiMapper;
-//    private final UserService userService;
+    private final UserQueryService userQueryService;
+    private final UserCommandService userCommandService;
+    private final StudentProfileApiMapper studentProfileApiMapper;
+    private final UserApiMapper userApiMapper;
+
 
     @GetMapping("/me/profile")
-    public BaseResponse<StudentProfileResponseDto> getUserProfile(Authentication authentication){
-            String email = authentication.getName();
-            StudentProfileSummaryDto profileSummaryDto = userQueryService.getProfileByEmail(email);
-            return BaseResponse.of(studentProfileApiMapper.toStudentProfileResponseDto(profileSummaryDto));
+    public BaseResponse<StudentProfileResponseDto> getUserProfile(Authentication authentication) {
+        String email = authentication.getName();
+        StudentProfileSummaryDto profileSummaryDto = userQueryService.getProfileByEmail(email);
+        return BaseResponse.of(studentProfileApiMapper.toStudentProfileResponseDto(profileSummaryDto));
     }
 
     @GetMapping("/admin/profiles")
@@ -37,47 +39,57 @@ public class UserController {
                                                                           @RequestParam(defaultValue = "0") int page,
                                                                           @RequestParam(defaultValue = "10") int size,
                                                                           @RequestParam(defaultValue = "createdAt") String sortBy,
-                                                                          @RequestParam(defaultValue = "desc") String sortDir){
+                                                                          @RequestParam(defaultValue = "desc") String sortDir) {
 
         Page<StudentProfileSummaryDto> pageProfiles = userQueryService.getAllProfiles(isActive, page, size, sortBy, sortDir);
         return BaseResponse.of(pageProfiles.map(studentProfileApiMapper::toStudentProfileResponseDto));
     }
 
+    @GetMapping("/admin")
+    public BaseResponse<Page<UserResponseDto>> getAllUsers(@RequestParam(defaultValue = "true") boolean isActive,
+                                                           @RequestParam(defaultValue = "0") int page,
+                                                           @RequestParam(defaultValue = "10") int size,
+                                                           @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                           @RequestParam(defaultValue = "desc") String sortDir) {
+        Page<UserSummaryDto> pageUsers = userQueryService.getAllUsers(isActive, page, size, sortBy, sortDir);
+        return BaseResponse.of(pageUsers.map(userApiMapper::toUserResponseDto));
+    }
+
     @GetMapping("/admin/{id}/profile")
-    public BaseResponse<StudentProfileResponseDto> getAdminProfileById(@RequestParam Long id){
+    public BaseResponse<StudentProfileResponseDto> getAdminProfileById(@RequestParam Long id) {
         //userCommandService.getProfileById(id);
         return BaseResponse.ok();
     }
 
     @PutMapping("/me/profile")
     public BaseResponse<StudentProfileResponseDto> updateUserProfile(Authentication authentication,
-                                                                     @RequestBody StudentProfileRequestDto studentProfileRequestDto){
+                                                                     @RequestBody StudentProfileRequestDto studentProfileRequestDto) {
         //userCommandService.updateProfile(authentication, studentProfileResponseDto);
         return BaseResponse.ok();
     }
 
     @PatchMapping("/me/profile/change-avatar")
-    public BaseResponse<StudentProfileResponseDto> updateAvatar(@RequestBody Map<String, String> avatarUrl){
+    public BaseResponse<StudentProfileResponseDto> updateAvatar(@RequestBody Map<String, String> avatarUrl) {
         //userCommandService.updateAvatar(studentProfileRequestDto);
         return BaseResponse.ok();
     }
 
     @PutMapping("/admin/{id}/profile")
     public BaseResponse<StudentProfileResponseDto> updateAdminProfile(@RequestParam Long id,
-                                                                       @RequestBody StudentProfileRequestDto studentProfileRequestDto) {
+                                                                      @RequestBody StudentProfileRequestDto studentProfileRequestDto) {
         //userCommandService.updateProfileById(id, studentProfileResponseDto);
         return BaseResponse.ok();
     }
 
     @PatchMapping("/admin/{id}/change-status")
-    public BaseResponse<StudentProfileResponseDto> updateAdminProfileStatus(@PathVariable Long id) {
+    public BaseResponse<UserResponseDto> updateAdminProfileStatus(@PathVariable Long id) {
         //userCommandService.updateProfileStatusById(id);
         return BaseResponse.ok();
     }
 
     @PatchMapping("/admin/{id}/change-role")
-    public BaseResponse<StudentProfileResponseDto> updateAdminProfileRole(@PathVariable Long id,
-                                                                           @RequestParam String role) {
+    public BaseResponse<UserResponseDto> updateAdminProfileRole(@PathVariable Long id,
+                                                                          @RequestParam String role) {
         //userCommandService.updateProfileRoleById(id, role);
         return BaseResponse.ok();
     }
