@@ -22,5 +22,5 @@ public interface StudentProfileJpaRepository extends JpaRepository<StudentProfil
     @EntityGraph(attributePaths = {"user", "major", "association", "major.school"})
     @Query("SELECT s FROM StudentProfileJpaEntity s WHERE s.user.isActive = :isActive")
     Page<StudentProfileJpaEntity> findAllByIsActive(boolean isActive, Pageable pageable);
-//    Page<StudentProfileJpaEntity> findAllByIsActive(boolean isActive, Pageable pageable);
+
 }
