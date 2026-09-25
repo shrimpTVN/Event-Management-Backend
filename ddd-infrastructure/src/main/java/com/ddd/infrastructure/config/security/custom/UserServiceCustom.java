@@ -27,7 +27,11 @@ public class UserServiceCustom implements UserDetailsService {
             throw new UsernameNotFoundException(email);
         }
 
-        String roleName = roleRepository.findById(user.getRoleId()).getName();
+        String roleName = roleRepository.findById(user.getRoleId()).getName().toUpperCase();
+        if (!roleName.startsWith("ROLE_")) {
+            roleName = "ROLE_" + roleName;
+        }
+
         GrantedAuthority authority = new SimpleGrantedAuthority(roleName);
         return new UserDetailsCustom(
                 user.getId(),

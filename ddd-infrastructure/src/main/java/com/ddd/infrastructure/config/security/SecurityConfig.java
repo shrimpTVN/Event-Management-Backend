@@ -1,5 +1,6 @@
 package com.ddd.infrastructure.config.security;
 
+import com.ddd.domain.enums.RoleEnum;
 import com.ddd.infrastructure.config.security.custom.UserServiceCustom;
 import com.ddd.infrastructure.config.security.filter.JwtTokenValidatorFilter;
 import com.ddd.infrastructure.config.security.handler.JwtAccessDeniedHandler;
@@ -48,7 +49,7 @@ public class SecurityConfig {
                 .cors(corsConfig -> corsConfig.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests( request ->
                     request
-                            .requestMatchers(SecurityConstant.ADMIN_ENDPOINTS).hasRole("ADMIN")
+                            .requestMatchers(SecurityConstant.ADMIN_ENDPOINTS).hasRole(RoleEnum.ADMIN.name())
                             .requestMatchers(SecurityConstant.PUBLIC_ENDPOINTS).permitAll()
                             .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
