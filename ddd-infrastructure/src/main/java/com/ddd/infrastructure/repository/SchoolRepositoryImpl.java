@@ -52,8 +52,9 @@ public class SchoolRepositoryImpl implements SchoolRepository {
         SchoolJpaEntity schoolJpaEntity = schoolJpaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Not found School"));
 
-        return schoolMapper.toDomainModel(schoolJpaRepository.save(schoolJpaEntity));
+        schoolMapper.updateJpaEntity(school, schoolJpaEntity);
 
+        return schoolMapper.toDomainModel(schoolJpaRepository.save(schoolJpaEntity));
     }
 
 

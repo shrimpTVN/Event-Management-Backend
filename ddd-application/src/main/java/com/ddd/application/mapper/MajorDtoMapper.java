@@ -11,11 +11,14 @@ import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
 public interface MajorDtoMapper {
+    @Mapping(source = "active", target = "isActive")
     MajorDto toMajorDto(Major major);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(source = "isActive", target = "active")
     Major toMajorEntity(MajorDto majorDto);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(source = "isActive", target = "active")
     void updateMajorEntityFromDto(@MappingTarget Major major, MajorDto majorDto);
 }
