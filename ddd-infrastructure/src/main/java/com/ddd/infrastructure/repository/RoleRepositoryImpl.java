@@ -24,7 +24,7 @@ public class RoleRepositoryImpl implements RoleRepository {
 
     @Override
     public List<Role> findAll() {
-        return roleJpaRepository.findAllByActive(true).stream()
+        return roleJpaRepository.findAllByIsActive(true).stream()
                 .map(roleMapper::toDomainModel).toList();
     }
 
