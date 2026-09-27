@@ -9,5 +9,5 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-admin}
       POSTGRES_DB: ${DATABASE_NAME:-mydb}
     volumes:
-      # Sửa lại thành Bind Mount trỏ đúng vào thư mục /data bên trong container
-      - ${POSTGRES_DATA_PATH:-/home/shrimp/code/portgres-db}:/var/lib/postgresql
+      # Hardcode binding to project directory to prevent Mac file sharing errors
+      - ./postgres-data:/var/lib/postgresql
