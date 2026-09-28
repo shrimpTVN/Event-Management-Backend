@@ -4,4 +4,8 @@ import com.ddd.application.dto.fanpage.FanpageRegisterDto;
 
 public interface FanpageService {
     void createFanpage(FanpageRegisterDto registerDto, String email);
+
+    void acceptFanpage(Long fanpageId);
+
+    void banFanpage(Long fanpageId);
 }

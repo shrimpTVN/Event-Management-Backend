@@ -9,6 +9,8 @@ import com.ddd.infrastructure.repository.jpaRepository.FanpageJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 @RequiredArgsConstructor
 public class FanpageRepositoryImpl implements FanpageRepository {
@@ -23,10 +25,11 @@ public class FanpageRepositoryImpl implements FanpageRepository {
     @Override
     public Fanpage save(Fanpage fanpage) {
         FanpageJpaEntity fanpageJpaEntity = fanpageMapper.toEntity(fanpage);
-
-        fanpageJpaEntity.setStatus(FanpageStatusEnum.SPENDING.name());
-
-
         return fanpageMapper.toDomain( fanpageJpaRepository.save(fanpageJpaEntity));
+    }
+
+    @Override
+    public Optional<Fanpage> findById(Long fanpageId) {
+        return fanpageJpaRepository.findById(fanpageId).map(fanpageMapper::toDomain);
     }
 }
