@@ -3,9 +3,7 @@ package com.ddd.infrastructure.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.validation.constraints.NotNull;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.io.Serializable;
 
@@ -13,6 +11,8 @@ import java.io.Serializable;
 @Setter
 @EqualsAndHashCode
 @Embeddable
+@AllArgsConstructor
+@NoArgsConstructor
 public class FanpageMemberJpaEntityId implements Serializable {
     private static final long serialVersionUID = -936829970249940622L;
     @NotNull
