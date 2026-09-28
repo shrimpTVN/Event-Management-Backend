@@ -45,4 +45,11 @@ public class StudentProfileRepositoryImpl implements StudentProfileRepository {
 
         studentProfileJpaRepository.save(studentProfileJpaEntity);
     }
+
+    @Override
+    public StudentProfile findById(Long id){
+        StudentProfileJpaEntity studentProfileJpaEntity = studentProfileJpaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Not found studentProfile"));
+        return studentProfileMapper.toDomain(studentProfileJpaEntity);
+    }
 }

@@ -56,9 +56,9 @@ public class UserController {
     }
 
     @GetMapping("/admin/{id}/profile")
-    public BaseResponse<StudentProfileResponseDto> getAdminProfileById(@RequestParam Long id) {
-        //userCommandService.getProfileById(id);
-        return BaseResponse.ok();
+    public BaseResponse<StudentProfileResponseDto> getAdminProfileById(@PathVariable Long id) {
+        StudentProfileSummaryDto profileSummaryDto = userQueryService.getProfileById(id);
+        return BaseResponse.of(studentProfileApiMapper.toStudentProfileResponseDto(profileSummaryDto));
     }
 
     @PutMapping("/me/profile")

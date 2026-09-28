@@ -17,6 +17,10 @@ public interface StudentProfileJpaRepository extends JpaRepository<StudentProfil
             "JOIN FETCH s.user u JOIN FETCH s.major m JOIN FETCH s.association a JOIN FETCH m.school " +
             "WHERE u.email = :email")
     StudentProfileJpaEntity findByEmail(String email);
+    @Query("SELECT s FROM StudentProfileJpaEntity s " +
+            "JOIN FETCH s.user u JOIN FETCH s.major m JOIN FETCH s.association a JOIN FETCH m.school " +
+            "WHERE u.id = :userId")
+    StudentProfileJpaEntity findByUserId(Long userId);
 
 
     @EntityGraph(attributePaths = {"user", "major", "association", "major.school"})
