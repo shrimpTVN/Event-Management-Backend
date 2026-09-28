@@ -1,9 +1,11 @@
 package com.ddd.api.mapper;
 
+import com.ddd.api.dto.auth.req.FanpageAdminRegisterRequestDto;
 import com.ddd.api.dto.auth.req.RegisterRequestDto;
 import com.ddd.api.dto.auth.res.LoginResponseDto;
 import com.ddd.application.dto.auth.LoginDto;
-import com.ddd.application.dto.auth.UserRegisterDto;
+import com.ddd.application.dto.user.FanpageAdminProfileDto;
+import com.ddd.application.dto.user.StudentProfileDto;
 import com.ddd.application.dto.user.UserDto;
 import org.mapstruct.Mapper;
 
@@ -13,6 +15,9 @@ public interface AuthApiMapper {
     LoginResponseDto toLoginResponse(LoginDto loginDto);
 
     UserDto toUserDto(RegisterRequestDto registerRequestDto);
+    UserDto toUserDto(FanpageAdminRegisterRequestDto fanpageAdminRegisterRequestDto);
 
-    com.ddd.application.dto.user.StudentProfileDto toUserProfileDto(RegisterRequestDto userRegisterRequestDto);
+
+    StudentProfileDto toUserProfileDto(RegisterRequestDto userRegisterRequestDto);
+    FanpageAdminProfileDto toFanpageAdminProfileDto(FanpageAdminRegisterRequestDto fanpageAdminRegisterRequestDto);
 }

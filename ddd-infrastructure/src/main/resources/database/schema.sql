@@ -126,6 +126,34 @@ CREATE TABLE student_profiles
     updated_by     BIGINT,
     CONSTRAINT pk_student_profiles PRIMARY KEY (id)
 );
+
+-- ============================================================
+--  FANPAGE_ADMIN_PROFILE
+--  Hồ sơ thông tin ban tổ chức sự kiện / fanpage admin
+-- ============================================================
+CREATE TABLE fanpage_admin_profiles
+(
+    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    first_name VARCHAR(100),
+    last_name  VARCHAR(100),
+    staff_id   VARCHAR(20) NOT NULL UNIQUE,
+    org_name   VARCHAR(20),
+    title      VARCHAR(100),
+    DoB        DATE,
+    gender    VARCHAR(10),
+    phone_number VARCHAR(20),
+    avatar_url TEXT,
+    user_id    BIGINT      NOT NULL UNIQUE,
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+
+    --audit
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by BIGINT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by BIGINT,
+    CONSTRAINT pk_fanpage_admin_profiles PRIMARY KEY (id)
+);
+
 -- ============================================================
 --  NOTIFICATION
 --  Thông báo cá nhân cho người dùng
@@ -154,17 +182,22 @@ CREATE TABLE notifications
 -- ============================================================
 CREATE TABLE fanpages
 (
-    id          BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
-    name        VARCHAR(255),
-    description TEXT,
-    avatar_url  TEXT,
-    status      VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',--'SPENDING','ACTIVE','BANNED'
-    is_active   BOOLEAN     NOT NULL DEFAULT TRUE,
+    id           BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
+    name         VARCHAR(255) NOT NULL,
+    description  TEXT,
+    avatar_url   TEXT,
+    org_type     VARCHAR(100) NOT NULL,
+    org_name     VARCHAR(255) NOT NULL,
+    parent_org   VARCHAR(255) NOT NULL,
+    help_contact VARCHAR(255),
+    help_phone   VARCHAR(20),
+    status       VARCHAR(50)  NOT NULL DEFAULT 'ACTIVE',--'SPENDING','ACTIVE','BANNED'
+    is_active    BOOLEAN      NOT NULL DEFAULT TRUE,
     -- audit
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by  BIGINT,
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_by  BIGINT,
+    created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_by   BIGINT,
+    updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_by   BIGINT,
     CONSTRAINT pk_fanpages PRIMARY KEY (id)
 );
 
@@ -290,6 +323,7 @@ CREATE TABLE events
     date_open           TIMESTAMPTZ,
     date_close          TIMESTAMPTZ,
     date_happen         TIMESTAMPTZ,
+    address             TEXT,
     capacity            INTEGER               DEFAULT 0,
     male_quantity       INTEGER               DEFAULT 0,
     female_quantity     INTEGER               DEFAULT 0,
@@ -359,9 +393,9 @@ CREATE TABLE conversations
     fanpage_id BIGINT      NOT NULL,
     -- audit
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by   BIGINT,
-    updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_by   BIGINT,
+    created_by BIGINT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by BIGINT,
     CONSTRAINT pk_conversations PRIMARY KEY (id)
 );
 
@@ -380,8 +414,8 @@ CREATE TABLE messages
     is_active       BOOLEAN     NOT NULL DEFAULT TRUE,
     conversation_id BIGINT      NOT NULL,
     -- audit
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by   BIGINT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by      BIGINT,
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by      BIGINT,
     CONSTRAINT pk_messages PRIMARY KEY (id)
@@ -454,6 +488,10 @@ ALTER TABLE majors
 ALTER TABLE users
     ADD CONSTRAINT fk_users_roles
         FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE RESTRICT;
+
+ALTER TABLE fanpage_admin_profiles
+    ADD CONSTRAINT fk_fanpage_admin_profiles_users
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
 
 ALTER TABLE student_profiles
     ADD CONSTRAINT fk_student_profiles_users
@@ -588,6 +626,12 @@ EXECUTE FUNCTION fn_set_updated_at();
 CREATE TRIGGER trg_users_updated_at
     BEFORE UPDATE
     ON users
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE TRIGGER trg_fanpage_admin_profiles_updated_at
+    BEFORE UPDATE
+    ON fanpage_admin_profiles
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
 

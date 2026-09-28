@@ -3,6 +3,7 @@ package com.ddd.application.service.user.impl;
 import com.ddd.application.dto.user.UserDto;
 import com.ddd.application.mapper.UserDtoMapper;
 import com.ddd.application.service.user.UserCommandService;
+import com.ddd.domain.exception.DuplicateResourceException;
 import com.ddd.domain.model.User;
 import com.ddd.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,15 +20,14 @@ public class UserCommandServiceImpl implements UserCommandService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public Long createUser(UserDto userDto) {
+    public Long createUser(UserDto userDto, String roleName) {
         if (userRepository.existsByEmail(userDto.email())) {
-            throw new IllegalArgumentException("User with email " + userDto.email() + " already exists.");
+            throw new DuplicateResourceException("User with email " + userDto.email() + " already exists.");
         }
 
         var user = userDtoMapper.toUser(userDto);
         user.setPassword(passwordEncoder.encode(userDto.password()));
-        System.out.println("Creating user: " + user.getEmail() + ", encoded password: " + user.getPassword());
-        User savedUser = userRepository.save(user);
+        User savedUser = userRepository.save(user, roleName);
         return savedUser.getId();
     }
 }

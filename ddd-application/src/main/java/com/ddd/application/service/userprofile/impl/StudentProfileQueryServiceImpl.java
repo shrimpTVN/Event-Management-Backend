@@ -1,6 +1,6 @@
-package com.ddd.application.service.studentprofile.impl;
+package com.ddd.application.service.userprofile.impl;
 
-import com.ddd.application.service.studentprofile.StudentProfileQueryService;
+import com.ddd.application.service.userprofile.StudentProfileQueryService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

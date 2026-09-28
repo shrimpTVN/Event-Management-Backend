@@ -38,9 +38,9 @@ public class UserRepositoryImpl implements UserRepository {
 
 
     @Override
-    public User save(User user) {
-        RoleJpaEntity roleJpaEntity = roleJpaRepository.findByName(RoleEnum.STUDENT.name())
-                .orElseThrow(() -> new ResourceAccessException("Role not found with name: " + RoleEnum.STUDENT.name()));
+    public User save(User user, String roleName) {
+        RoleJpaEntity roleJpaEntity = roleJpaRepository.findByName(roleName)
+                .orElseThrow(() -> new ResourceAccessException("Role not found with name: " + roleName));
         UserJpaEntity userJpaEntity = userMapper.toEntity(user);
         userJpaEntity.setRole(roleJpaEntity);
         return userMapper.toDomain(userJpaRepository.save(userJpaEntity));
