@@ -16,7 +16,7 @@ import java.time.OffsetDateTime;
 @Setter
 @Entity
 @Table(name = "fanpage_members")
-public class FanpageMemberJpaEntity {
+public class FanpageMemberJpaEntity extends BaseEntityJpa {
     @EmbeddedId
     private FanpageMemberJpaEntityId id;
 
@@ -38,21 +38,7 @@ public class FanpageMemberJpaEntity {
     @Column(name = "role", nullable = false, length = 50)
     private String role="MEMBER";
 
-    @NotNull
-    @ColumnDefault("now()")
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
 
-    @Column(name = "created_by")
-    private Long createdBy;
-
-    @NotNull
-    @ColumnDefault("now()")
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
-
-    @Column(name = "updated_by")
-    private Long updatedBy;
 
 
 }

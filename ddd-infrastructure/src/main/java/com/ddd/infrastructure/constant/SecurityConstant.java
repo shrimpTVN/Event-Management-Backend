@@ -10,12 +10,17 @@ public class SecurityConstant {
             "/api/auth/register",
             "/api/auth/login",
             "/api/auth/register/fanpage-admin",
-            "/api/semesters/**"
+            "/api/semesters/**",
+            "/api/fanpages/**"
     };
 
     public static final String[] ADMIN_ENDPOINTS = {
             "/api/semesters/admin/**",
             "/api/users/admin/**"
+    };
+
+    public static final String[] FANPAGE_ADMIN_ENDPOINTS = {
+            "/api/fanpages/fanpage-admin/**"
     };
 
     public static final String[] SECURE_ENDPOINTS = {
