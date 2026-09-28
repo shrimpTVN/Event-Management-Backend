@@ -24,10 +24,10 @@ public abstract class BaseEntityJpa {
     @Column(name = "created_by")
     private Long createdBy;
 
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     @UpdateTimestamp
     private Instant updatedAt;
 
-    @Column(name = "updated_by", nullable = false)
+    @Column(name = "updated_by")
     private Long updatedBy;
 }

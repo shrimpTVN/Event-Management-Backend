@@ -10,4 +10,9 @@ public class Fanpage extends BaseModel {
     private String description;
     private String avatarUrl;
     private String status;
+    private String orgType;
+    private String orgName;
+    private String parentOrg;
+    private String helpContact;
+    private String helpPhone;
 }
