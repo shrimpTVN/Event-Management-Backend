@@ -1,8 +1,8 @@
-package com.ddd.application.service.studentprofile.impl;
+package com.ddd.application.service.userprofile.impl;
 
 import com.ddd.application.dto.user.StudentProfileDto;
 import com.ddd.application.mapper.StudentProfileDtoMapper;
-import com.ddd.application.service.studentprofile.StudentProfileCommandService;
+import com.ddd.application.service.userprofile.StudentProfileCommandService;
 import com.ddd.domain.model.StudentProfile;
 import com.ddd.domain.repository.StudentProfileRepository;
 import lombok.RequiredArgsConstructor;

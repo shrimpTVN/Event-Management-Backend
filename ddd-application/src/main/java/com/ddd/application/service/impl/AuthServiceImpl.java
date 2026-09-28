@@ -2,15 +2,14 @@ package com.ddd.application.service.impl;
 
 import com.ddd.application.dto.auth.LoginDto;
 import com.ddd.application.dto.auth.LoginResult;
-import com.ddd.application.dto.auth.UserRegisterDto;
+import com.ddd.application.dto.user.FanpageAdminProfileDto;
 import com.ddd.application.dto.user.StudentProfileDto;
 import com.ddd.application.dto.user.UserDto;
-import com.ddd.application.mapper.UserDtoMapper;
-import com.ddd.application.service.studentprofile.StudentProfileCommandService;
+import com.ddd.application.service.userprofile.FanpageAdminProfileCommandService;
+import com.ddd.application.service.userprofile.StudentProfileCommandService;
 import com.ddd.application.service.user.UserCommandService;
-import com.ddd.domain.model.User;
-import com.ddd.domain.repository.UserRepository;
 import com.ddd.application.service.AuthService;
+import com.ddd.domain.enums.RoleEnum;
 import com.ddd.infrastructure.config.security.custom.UserDetailsCustom;
 import com.ddd.infrastructure.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +18,6 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +29,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserCommandService userCommandService;
     private final StudentProfileCommandService studentProfileCommandService;
+    private final FanpageAdminProfileCommandService fanpageAdminProfileCommandService;
     private final JwtUtil jwtUtil;
 
 
@@ -60,9 +59,17 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     @Override
     public void createUser(UserDto userDto, StudentProfileDto studentProfileDto) {
-        Long userId = userCommandService.createUser(userDto);
+        Long userId = userCommandService.createUser(userDto, RoleEnum.STUDENT.name());
         studentProfileCommandService.createStudentProfile(studentProfileDto, userId);
-        log.info("User:{} created successfully", userDto.email());
+        log.info("Student:{} created successfully", userDto.email());
+    }
+
+    @Transactional
+    @Override
+    public void createFanpageAdmin(UserDto userDto, FanpageAdminProfileDto fanpageAdminProfileDto) {
+        Long userId = userCommandService.createUser(userDto, RoleEnum.FANPAGE_ADMIN.name());
+        fanpageAdminProfileCommandService.createFanpageAdminProfile(fanpageAdminProfileDto, userId);
+        log.info("Fanpage Admin:{} created successfully", userDto.email());
     }
 
     @Override

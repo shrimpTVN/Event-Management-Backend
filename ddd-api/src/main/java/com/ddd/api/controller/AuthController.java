@@ -1,11 +1,13 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
+import com.ddd.api.dto.auth.req.FanpageAdminRegisterRequestDto;
 import com.ddd.api.dto.auth.req.LoginRequestDto;
 import com.ddd.api.dto.auth.req.RegisterRequestDto;
 import com.ddd.api.dto.auth.res.LoginResponseDto;
 import com.ddd.api.mapper.AuthApiMapper;
 import com.ddd.application.dto.auth.LoginResult;
+import com.ddd.application.dto.user.FanpageAdminProfileDto;
 import com.ddd.application.dto.user.StudentProfileDto;
 import com.ddd.application.dto.user.UserDto;
 import com.ddd.application.service.AuthService;
@@ -41,6 +43,14 @@ public class AuthController {
         UserDto userDto = authApiMapper.toUserDto(userRegisterRequestDto);
         StudentProfileDto studentProfileDto = authApiMapper.toUserProfileDto(userRegisterRequestDto);
         authService.createUser(userDto, studentProfileDto);
+        return BaseResponse.ok();
+    }
+
+    @PostMapping("/register/fanpage-admin")
+    public BaseResponse<Void> registerFanpageAdmin(@RequestBody @Valid FanpageAdminRegisterRequestDto fanpageAdminRegisterRequestDto) {
+        UserDto userDto = authApiMapper.toUserDto(fanpageAdminRegisterRequestDto);
+        FanpageAdminProfileDto fanpageAdminProfileDto = authApiMapper.toFanpageAdminProfileDto(fanpageAdminRegisterRequestDto);
+        authService.createFanpageAdmin(userDto, fanpageAdminProfileDto);
         return BaseResponse.ok();
     }
 

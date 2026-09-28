@@ -1,4 +1,4 @@
-package com.ddd.application.service.studentprofile;
+package com.ddd.application.service.userprofile;
 
 import com.ddd.application.dto.user.StudentProfileDto;
 
