@@ -21,19 +21,22 @@ public class EventJpaEntity extends BaseEntityJpa {
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "date_open")
+    @Column(name = "location", nullable = false, columnDefinition = "TEXT")
+    private String location;
+
+    @Column(name = "date_open", nullable = false)
     private Instant dateOpen;
 
-    @Column(name = "date_close")
+    @Column(name = "date_close", nullable = false)
     private Instant dateClose;
 
-    @Column(name = "date_happen")
+    @Column(name = "date_happen", nullable = false)
     private Instant dateHappen;
 
-    @Column(name = "capacity")
+    @Column(name = "capacity", nullable = false)
     private Integer capacity = 0;
 
     @Column(name = "male_quantity")
@@ -42,7 +45,7 @@ public class EventJpaEntity extends BaseEntityJpa {
     @Column(name = "female_quantity")
     private Integer femaleQuantity = 0;
 
-    @Column(name = "banner_url", columnDefinition = "TEXT")
+    @Column(name = "banner_url", nullable = false, columnDefinition = "TEXT")
     private String bannerUrl;
 
     @Column(name = "status", nullable = false, length = 50)

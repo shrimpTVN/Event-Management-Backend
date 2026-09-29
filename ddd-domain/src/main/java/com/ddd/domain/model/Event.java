@@ -11,6 +11,7 @@ import java.time.Instant;
 public class Event extends BaseModel {
     private String name;
     private String description;
+    private String location;
     private Instant dateOpen;
     private Instant dateClose;
     private Instant dateHappen;

@@ -133,24 +133,24 @@ CREATE TABLE student_profiles
 -- ============================================================
 CREATE TABLE fanpage_admin_profiles
 (
-    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
-    first_name VARCHAR(100),
-    last_name  VARCHAR(100),
-    staff_id   VARCHAR(20) NOT NULL UNIQUE,
-    org_name   VARCHAR(20),
-    title      VARCHAR(100),
-    DoB        DATE,
-    gender    VARCHAR(10),
+    id           BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    first_name   VARCHAR(100),
+    last_name    VARCHAR(100),
+    staff_id     VARCHAR(20) NOT NULL UNIQUE,
+    org_name     VARCHAR(20),
+    title        VARCHAR(100),
+    DoB          DATE,
+    gender       VARCHAR(10),
     phone_number VARCHAR(20),
-    avatar_url TEXT,
-    user_id    BIGINT      NOT NULL UNIQUE,
-    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    avatar_url   TEXT,
+    user_id      BIGINT      NOT NULL UNIQUE,
+    is_active    BOOLEAN     NOT NULL DEFAULT TRUE,
 
     --audit
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by BIGINT,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_by BIGINT,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by   BIGINT,
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by   BIGINT,
     CONSTRAINT pk_fanpage_admin_profiles PRIMARY KEY (id)
 );
 
@@ -206,7 +206,7 @@ CREATE TABLE fanpage_members
     fanpage_id BIGINT      NOT NULL,
     user_id    BIGINT      NOT NULL,
     role       VARCHAR(50) NOT NULL DEFAULT 'MEMBER',--'MEMBER','ADMIN'
-    is_active BOOLEAN     NOT NULL DEFAULT TRUE,
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
     -- audit
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by BIGINT,
@@ -222,7 +222,7 @@ CREATE TABLE point_categories
 (
     id                 BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
     name               VARCHAR(255) NOT NULL,
-    note        TEXT,
+    note               TEXT,
     maximum            INTEGER      NOT NULL DEFAULT 0,
     is_active          BOOLEAN      NOT NULL DEFAULT TRUE,
     date_apply         DATE,
@@ -320,27 +320,27 @@ CREATE TABLE event_types
 -- ============================================================
 CREATE TABLE events
 (
-    id                  BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
-    name                VARCHAR(255) NOT NULL,
-    description         TEXT,
-    date_open           TIMESTAMPTZ,
-    date_close          TIMESTAMPTZ,
-    date_happen         TIMESTAMPTZ,
-    address             TEXT,
-    capacity            INTEGER               DEFAULT 0,
-    male_quantity       INTEGER               DEFAULT 0,
-    female_quantity     INTEGER               DEFAULT 0,
-    banner_url          TEXT,
-    status              VARCHAR(50)  NOT NULL DEFAULT 'DRAFT',--'DRAFT','PUBLISHED','CLOSED','CANCELLED'
-    is_active           BOOLEAN      NOT NULL DEFAULT TRUE,
-    event_type_id       BIGINT,
-    criteria_id         BIGINT,
-    fanpage_id          BIGINT,
+    id              BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
+    name            VARCHAR(255) NOT NULL,
+    description     TEXT         NOT NULL,
+    date_open       TIMESTAMPTZ  NOT NULL,
+    date_close      TIMESTAMPTZ  NOT NULL,
+    date_happen     TIMESTAMPTZ  NOT NULL,
+    location        TEXT         NOT NULL,
+    capacity        INTEGER      NOT NULL,
+    male_quantity   INTEGER               DEFAULT 0,
+    female_quantity INTEGER               DEFAULT 0,
+    banner_url      TEXT         NOT NULL,
+    status          VARCHAR(50)  NOT NULL DEFAULT 'DRAFT',--'DRAFT','PUBLISHED','CLOSED','CANCELLED'
+    is_active       BOOLEAN      NOT NULL DEFAULT TRUE,
+    event_type_id   BIGINT,
+    criteria_id     BIGINT,
+    fanpage_id      BIGINT,
     -- audit
-    created_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    created_by          BIGINT,
-    updated_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_by          BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_by      BIGINT,
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_by      BIGINT,
     CONSTRAINT pk_events PRIMARY KEY (id)
 );
 
@@ -354,7 +354,7 @@ CREATE TABLE event_points
     event_id          BIGINT      NOT NULL,
     point_category_id BIGINT      NOT NULL,
     point             INTEGER     NOT NULL DEFAULT 0,
-    isActive         BOOLEAN     NOT NULL DEFAULT TRUE,
+    isActive          BOOLEAN     NOT NULL DEFAULT TRUE,
     -- audit
     created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by        BIGINT,
