@@ -10,11 +10,13 @@ import com.ddd.domain.model.PointCategory;
 import com.ddd.domain.repository.PointCategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class PointCategoryServiceImpl implements PointCategoryService {
     private final PointCategoryRepository pointCategoryRepository;
     private final PointCategoryDtoMapper pointCategoryDtoMapper;
@@ -33,11 +35,13 @@ public class PointCategoryServiceImpl implements PointCategoryService {
         return pointCategoryDtoMapper.toInfoDto(pointCategoryRepository.save(pointCategory));
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<PointCategoryInfoDto> getAllPointCategories() {
         return pointCategoryDtoMapper.toInfoDtoList(pointCategoryRepository.findAll());
     }
 
+    @Transactional(readOnly = true)
     @Override
     public PointCategoryInfoDto getPointCategoryById(Long id) {
         PointCategory category = pointCategoryRepository.findById(id)
@@ -45,11 +49,13 @@ public class PointCategoryServiceImpl implements PointCategoryService {
         return pointCategoryDtoMapper.toInfoDto(category);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<PointCategoryInfoDto> getPointCategoryByLevel(Integer level) {
         return pointCategoryDtoMapper.toInfoDtoList(pointCategoryRepository.findByLevel(level));
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<PointCategoryInfoDto> getPointCategoryByParentId(Long parentId) {
         return pointCategoryDtoMapper.toInfoDtoList(pointCategoryRepository.findByParentId(parentId));
@@ -74,8 +80,6 @@ public class PointCategoryServiceImpl implements PointCategoryService {
 
             existingCategory.setLevel(parentCategory.getLevel() + 1);
         }
-
-
 
         return pointCategoryDtoMapper.toInfoDto(pointCategoryRepository.save(existingCategory));
     }
