@@ -331,8 +331,6 @@ CREATE TABLE events
     male_quantity       INTEGER               DEFAULT 0,
     female_quantity     INTEGER               DEFAULT 0,
     banner_url          TEXT,
-    ai_screening_result TEXT,
-    ai_screening_score  NUMERIC(5, 2)         DEFAULT 0.00,
     status              VARCHAR(50)  NOT NULL DEFAULT 'DRAFT',--'DRAFT','PUBLISHED','CLOSED','CANCELLED'
     is_active           BOOLEAN      NOT NULL DEFAULT TRUE,
     event_type_id       BIGINT,

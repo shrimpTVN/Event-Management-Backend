@@ -18,8 +18,6 @@ public class Event extends BaseModel {
     private Integer maleQuantity;
     private Integer femaleQuantity;
     private String bannerUrl;
-    private String aiScreeningResult;
-    private BigDecimal aiScreeningScore;
     private String status;
     private Long eventTypeId;
     private Long criteriaId;

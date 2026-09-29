@@ -45,12 +45,6 @@ public class EventJpaEntity extends BaseEntityJpa {
     @Column(name = "banner_url", columnDefinition = "TEXT")
     private String bannerUrl;
 
-    @Column(name = "ai_screening_result", columnDefinition = "TEXT")
-    private String aiScreeningResult;
-
-    @Column(name = "ai_screening_score", precision = 5, scale = 2)
-    private BigDecimal aiScreeningScore = BigDecimal.ZERO;
-
     @Column(name = "status", nullable = false, length = 50)
     private String status = "DRAFT";
 
