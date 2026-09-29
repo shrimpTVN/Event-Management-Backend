@@ -16,7 +16,8 @@ public class SecurityConstant {
 
     public static final String[] ADMIN_ENDPOINTS = {
             "/api/semesters/admin/**",
-            "/api/users/admin/**"
+            "/api/users/admin/**",
+            "/api/fanpages/admin/**"
     };
 
     public static final String[] FANPAGE_ADMIN_ENDPOINTS = {

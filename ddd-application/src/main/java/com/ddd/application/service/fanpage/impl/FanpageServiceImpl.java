@@ -4,7 +4,9 @@ import com.ddd.application.dto.fanpage.FanpageRegisterDto;
 import com.ddd.application.mapper.FanpageDtoMapper;
 import com.ddd.application.service.fanpage.FanpageService;
 import com.ddd.domain.enums.FanpageRoleEnum;
+import com.ddd.domain.enums.FanpageStatusEnum;
 import com.ddd.domain.exception.DuplicateResourceException;
+import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.Fanpage;
 import com.ddd.domain.model.FanpageMember;
 import com.ddd.domain.model.User;
@@ -41,11 +43,28 @@ public class FanpageServiceImpl implements FanpageService {
         }
 
         Fanpage fanpage = fanpageDtoMapper.toFanpage(registerDto);
+        fanpage.setStatus(FanpageStatusEnum.PENDING.name());
         Fanpage savedFanpage = fanpageRepository.save(fanpage);
 
         FanpageMember fanpageMember = new FanpageMember(savedFanpage.getId(), user.getId(), FanpageRoleEnum.ADMIN.name());
         fanpageMemberRepository.save(fanpageMember);
 
         log.info("Fanpage created successfully: {}", savedFanpage.getName());
+    }
+
+    @Override
+    public void acceptFanpage(Long fanpageId) {
+        Fanpage fanpage = fanpageRepository.findById(fanpageId).orElseThrow(() -> new ResourceNotFoundException("Fanpage not found"));
+        fanpage.setStatus(FanpageStatusEnum.ACTIVE.name());
+        fanpageRepository.save(fanpage);
+        log.info("Fanpage accepted successfully: {}", fanpage.getName());
+    }
+
+    @Override
+    public void banFanpage(Long fanpageId) {
+        Fanpage fanpage = fanpageRepository.findById(fanpageId).orElseThrow(() -> new ResourceNotFoundException("Fanpage not found"));
+        fanpage.setStatus(FanpageStatusEnum.BANNED.name());
+        fanpageRepository.save(fanpage);
+        log.info("Fanpage banned successfully: {}", fanpage.getName());
     }
 }

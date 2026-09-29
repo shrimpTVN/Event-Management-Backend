@@ -206,6 +206,7 @@ CREATE TABLE fanpage_members
     fanpage_id BIGINT      NOT NULL,
     user_id    BIGINT      NOT NULL,
     role       VARCHAR(50) NOT NULL DEFAULT 'MEMBER',--'MEMBER','ADMIN'
+    is_active BOOLEAN     NOT NULL DEFAULT TRUE,
     -- audit
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by BIGINT,
