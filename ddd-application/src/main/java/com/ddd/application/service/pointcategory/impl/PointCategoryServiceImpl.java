@@ -21,23 +21,19 @@ public class PointCategoryServiceImpl implements PointCategoryService {
     @Override
     public PointCategoryInfoDto createPointCategory(PointCategoryCreateDto pointCategoryCreateDto) {
         PointCategory pointCategory = pointCategoryDtoMapper.toEntity(pointCategoryCreateDto);
-
         //calculate level
-        if (pointCategoryCreateDto.parentCategoryId() == null){
+        if (pointCategoryCreateDto.parentCategoryId() == null) {
             pointCategory.setLevel(0);
         } else {
             PointCategory parentCategory = pointCategoryRepository.findById(pointCategoryCreateDto.parentCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Parent category not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Parent category not found"));
             pointCategory.setLevel(parentCategory.getLevel() + 1);
         }
-
-
         return pointCategoryDtoMapper.toInfoDto(pointCategoryRepository.save(pointCategory));
     }
 
     @Override
     public List<PointCategoryInfoDto> getAllPointCategories() {
-
         return pointCategoryDtoMapper.toInfoDtoList(pointCategoryRepository.findAll());
     }
 
@@ -46,6 +42,16 @@ public class PointCategoryServiceImpl implements PointCategoryService {
         PointCategory category = pointCategoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Point category not found with id: " + id));
         return pointCategoryDtoMapper.toInfoDto(category);
+    }
+
+    @Override
+    public List<PointCategoryInfoDto> getPointCategoryByLevel(Integer level) {
+        return pointCategoryDtoMapper.toInfoDtoList(pointCategoryRepository.findByLevel(level));
+    }
+
+    @Override
+    public List<PointCategoryInfoDto> getPointCategoryByParentId(Long parentId) {
+        return pointCategoryDtoMapper.toInfoDtoList(pointCategoryRepository.findByParentId(parentId));
     }
 }
 

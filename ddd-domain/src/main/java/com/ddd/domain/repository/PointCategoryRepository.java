@@ -11,5 +11,9 @@ public interface PointCategoryRepository {
     PointCategory save(PointCategory pointCategory);
 
     List<PointCategory> findAll();
+
+    List<PointCategory> findByLevel(Integer level);
+
+    List<PointCategory> findByParentId(Long parentId);
 }
 

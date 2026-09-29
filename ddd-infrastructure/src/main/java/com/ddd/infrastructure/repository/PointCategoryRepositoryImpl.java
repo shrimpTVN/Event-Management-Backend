@@ -38,13 +38,37 @@ public class PointCategoryRepositoryImpl implements PointCategoryRepository {
         return pointCategoryMapper.toDomainModel(savedEntity);
     }
 
+    private Sort getDefaultSort() {
+        return Sort.by(Sort.Direction.ASC, "parentCategory.id")
+                .and(Sort.by(Sort.Direction.ASC, "childrenOrder"));
+    }
+
     @Override
     public List<PointCategory> findAll() {
-        // Query all point categories sorted by level ascending, then childrenOrder ascending
-        Sort sort = Sort.by(Sort.Direction.ASC, "level")
-                .and(Sort.by(Sort.Direction.ASC, "childrenOrder"));
-        return pointCategoryJpaRepository.findAll(sort)
+        return pointCategoryJpaRepository.findAll(getDefaultSort())
                 .stream()
+                .map(pointCategoryMapper::toDomainModel)
+                .toList();
+    }
+
+    @Override
+    public List<PointCategory> findByLevel(Integer level) {
+        return pointCategoryJpaRepository.findByLevel(level, getDefaultSort())
+                .stream()
+                .map(pointCategoryMapper::toDomainModel)
+                .toList();
+    }
+
+    @Override
+    public List<PointCategory> findByParentId(Long parentId) {
+        Sort sort = getDefaultSort();
+        List<PointCategoryJpaEntity> entities;
+        if (parentId == null || parentId == 0L) {
+            entities = pointCategoryJpaRepository.findByParentCategoryIsNull(sort);
+        } else {
+            entities = pointCategoryJpaRepository.findByParentCategoryId(parentId, sort);
+        }
+        return entities.stream()
                 .map(pointCategoryMapper::toDomainModel)
                 .toList();
     }

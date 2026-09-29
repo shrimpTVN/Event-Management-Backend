@@ -22,7 +22,6 @@ public class PointCategoryController {
 
     @GetMapping("")
     public BaseResponse<List<PointCategoryResponseDto>> getAllPointCategory() {
-
         List<PointCategoryInfoDto> categories = pointCategoryService.getAllPointCategories();
         return BaseResponse.of(pointCategoryApiMapper.toPointCategoryResponseDtoList(categories));
     }
@@ -35,13 +34,14 @@ public class PointCategoryController {
 
     @GetMapping("/level")
     public BaseResponse<List<PointCategoryResponseDto>> getPointCategoryByLevel(@RequestParam(defaultValue = "1") Integer level) {
-
-        return null;
+        List<PointCategoryInfoDto> categories = pointCategoryService.getPointCategoryByLevel(level);
+        return BaseResponse.of(pointCategoryApiMapper.toPointCategoryResponseDtoList(categories));
     }
 
-    @GetMapping("/parent")
+    @GetMapping("/parentId")
     public BaseResponse<List<PointCategoryResponseDto>> getPointCategoryByParentId(@RequestParam(defaultValue = "0") Long parentId) {
-        return null;
+        List<PointCategoryInfoDto> categories = pointCategoryService.getPointCategoryByParentId(parentId);
+        return BaseResponse.of(pointCategoryApiMapper.toPointCategoryResponseDtoList(categories));
     }
 
     @PostMapping("/admin")

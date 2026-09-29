@@ -11,5 +11,9 @@ public interface PointCategoryService {
     List<PointCategoryInfoDto> getAllPointCategories();
 
     PointCategoryInfoDto getPointCategoryById(Long id);
+
+    List<PointCategoryInfoDto> getPointCategoryByLevel(Integer level);
+
+    List<PointCategoryInfoDto> getPointCategoryByParentId(Long parentId);
 }
 
