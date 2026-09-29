@@ -352,15 +352,18 @@ CREATE TABLE events
 -- ============================================================
 CREATE TABLE event_points
 (
+    id                BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
     event_id          BIGINT      NOT NULL,
     point_category_id BIGINT      NOT NULL,
     point             INTEGER     NOT NULL DEFAULT 0,
+    isActive         BOOLEAN     NOT NULL DEFAULT TRUE,
     -- audit
     created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by        BIGINT,
     updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by        BIGINT,
-    CONSTRAINT pk_event_points PRIMARY KEY (event_id, point_category_id)
+    CONSTRAINT pk_event_points PRIMARY KEY (id),
+    UNIQUE (event_id, point_category_id)
 );
 
 -- ============================================================
