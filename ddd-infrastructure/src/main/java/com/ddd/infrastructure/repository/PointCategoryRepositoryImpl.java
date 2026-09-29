@@ -40,8 +40,10 @@ public class PointCategoryRepositoryImpl implements PointCategoryRepository {
 
     @Override
     public List<PointCategory> findAll() {
-        // Query all point categories sorted by level ascending
-        return pointCategoryJpaRepository.findAll(Sort.by(Sort.Direction.ASC, "level"))
+        // Query all point categories sorted by level ascending, then childrenOrder ascending
+        Sort sort = Sort.by(Sort.Direction.ASC, "level")
+                .and(Sort.by(Sort.Direction.ASC, "childrenOrder"));
+        return pointCategoryJpaRepository.findAll(sort)
                 .stream()
                 .map(pointCategoryMapper::toDomainModel)
                 .toList();

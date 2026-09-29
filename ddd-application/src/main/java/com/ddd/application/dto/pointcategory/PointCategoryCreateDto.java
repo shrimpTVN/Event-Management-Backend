@@ -11,5 +11,6 @@ public record PointCategoryCreateDto(
         @NotNull String note,
         @NotNull @Positive Integer maximum,
         @NotNull LocalDate dateApply,
-        @Positive Long parentCategoryId) {
+        @Positive Long parentCategoryId,
+        @NotNull @Positive Integer childrenOrder) {
 }

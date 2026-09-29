@@ -45,15 +45,18 @@ class PointCategoryServiceImplTest {
                                 "Academic activities",
                                 100,
                                 LocalDate.now(),
-                                null);
+                                null,
+                                1);
 
                 PointCategory entity = new PointCategory();
                 entity.setName("Academics");
+                entity.setChildrenOrder(1);
 
                 PointCategory savedEntity = new PointCategory();
                 savedEntity.setId(1L);
                 savedEntity.setName("Academics");
                 savedEntity.setLevel(0);
+                savedEntity.setChildrenOrder(1);
 
                 PointCategoryInfoDto expectedInfoDto = new PointCategoryInfoDto(
                                 1L,
@@ -63,7 +66,8 @@ class PointCategoryServiceImplTest {
                                 LocalDate.now(),
                                 0,
                                 null,
-                                true);
+                                true,
+                                1);
 
                 when(pointCategoryDtoMapper.toEntity(createDto)).thenReturn(entity);
                 when(pointCategoryRepository.save(entity)).thenReturn(savedEntity);
@@ -86,11 +90,13 @@ class PointCategoryServiceImplTest {
                                 "Research activities",
                                 50,
                                 LocalDate.now(),
-                                1L);
+                                1L,
+                                2);
 
                 PointCategory entity = new PointCategory();
                 entity.setName("Scientific Research");
                 entity.setParentCategoryId(1L);
+                entity.setChildrenOrder(2);
 
                 PointCategory parentEntity = new PointCategory();
                 parentEntity.setId(1L);
@@ -101,6 +107,7 @@ class PointCategoryServiceImplTest {
                 savedEntity.setName("Scientific Research");
                 savedEntity.setLevel(1);
                 savedEntity.setParentCategoryId(1L);
+                savedEntity.setChildrenOrder(2);
 
                 PointCategoryInfoDto expectedInfoDto = new PointCategoryInfoDto(
                                 2L,
@@ -110,7 +117,8 @@ class PointCategoryServiceImplTest {
                                 LocalDate.now(),
                                 1,
                                 1L,
-                                true);
+                                true,
+                                2);
 
                 when(pointCategoryDtoMapper.toEntity(createDto)).thenReturn(entity);
                 when(pointCategoryRepository.findById(1L)).thenReturn(Optional.of(parentEntity));
@@ -134,11 +142,13 @@ class PointCategoryServiceImplTest {
                                 "Research activities",
                                 50,
                                 LocalDate.now(),
-                                999L);
+                                999L,
+                                1);
 
                 PointCategory entity = new PointCategory();
                 entity.setName("Scientific Research");
                 entity.setParentCategoryId(999L);
+                entity.setChildrenOrder(1);
 
                 when(pointCategoryDtoMapper.toEntity(createDto)).thenReturn(entity);
                 when(pointCategoryRepository.findById(999L)).thenReturn(Optional.empty());
@@ -159,6 +169,7 @@ class PointCategoryServiceImplTest {
                 entity.setId(1L);
                 entity.setName("Academics");
                 entity.setLevel(0);
+                entity.setChildrenOrder(1);
 
                 PointCategoryInfoDto infoDto = new PointCategoryInfoDto(
                                 1L,
@@ -168,7 +179,8 @@ class PointCategoryServiceImplTest {
                                 LocalDate.now(),
                                 0,
                                 null,
-                                true);
+                                true,
+                                1);
 
                 List<PointCategory> entities = List.of(entity);
                 List<PointCategoryInfoDto> expectedDtos = List.of(infoDto);

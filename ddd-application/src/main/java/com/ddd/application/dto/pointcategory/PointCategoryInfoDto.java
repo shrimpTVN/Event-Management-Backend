@@ -10,6 +10,7 @@ public record PointCategoryInfoDto(
         LocalDate dateApply,
         Integer level,
         Long parentCategoryId,
-        boolean isActive
+        boolean isActive,
+        Integer childrenOrder
 ) {
 }

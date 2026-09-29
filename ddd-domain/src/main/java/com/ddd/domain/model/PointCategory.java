@@ -14,6 +14,7 @@ public class PointCategory extends BaseModel {
     private LocalDate dateApply;
     private Integer level;
     private Long parentCategoryId;
+    private Integer childrenOrder = 1;
 
     public void setLevel(Integer level) {
         if (level < 0) {
@@ -21,5 +22,13 @@ public class PointCategory extends BaseModel {
         }
 
         this.level = level;
+    }
+
+    public void setChildrenOrder(Integer childrenOrder) {
+        if (childrenOrder == null || childrenOrder < 0) {
+            throw new IllegalArgumentException("Children order must not be null and must be non-negative");
+        }
+
+        this.childrenOrder = childrenOrder;
     }
 }
