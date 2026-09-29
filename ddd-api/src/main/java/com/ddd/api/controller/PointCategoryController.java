@@ -8,10 +8,9 @@ import com.ddd.application.dto.pointcategory.PointCategoryInfoDto;
 import com.ddd.application.service.pointcategory.PointCategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/point-categories")
@@ -21,9 +20,34 @@ public class PointCategoryController {
     private final PointCategoryService pointCategoryService;
     private final PointCategoryApiMapper pointCategoryApiMapper;
 
+    @GetMapping("")
+    public BaseResponse<List<PointCategoryResponseDto>> getAllPointCategory() {
+
+        List<PointCategoryInfoDto> categories = pointCategoryService.getAllPointCategories();
+        return BaseResponse.of(pointCategoryApiMapper.toPointCategoryResponseDtoList(categories));
+    }
+
+    @GetMapping("/{id}")
+    public BaseResponse<PointCategoryResponseDto> getPointCategoryById(@PathVariable Long id) {
+        // TODO: Implement the logic to retrieve a point category by ID
+        return null;
+    }
+
+    @GetMapping("/level")
+    public BaseResponse<List<PointCategoryResponseDto>> getPointCategoryByLevel(@RequestParam(defaultValue = "1") Integer level) {
+
+        return null;
+    }
+
+    @GetMapping("/parent")
+    public BaseResponse<List<PointCategoryResponseDto>> getPointCategoryByParentId(@RequestParam(defaultValue = "0") Long parentId) {
+        return null;
+    }
+
     @PostMapping("/admin")
     public BaseResponse<PointCategoryResponseDto> createPointCategory(@RequestBody @Valid PointCategoryRequestDto request) {
         PointCategoryInfoDto response = pointCategoryService.createPointCategory(pointCategoryApiMapper.toPointCategoryCreateDto(request));
         return BaseResponse.of(pointCategoryApiMapper.toPointCategoryResponseDto(response));
     }
+
 }

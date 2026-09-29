@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -149,5 +150,38 @@ class PointCategoryServiceImplTest {
                 assertEquals("Parent category not found", exception.getMessage());
                 verify(pointCategoryRepository).findById(999L);
                 verify(pointCategoryRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Should return all point categories mapped to InfoDto")
+        void getAllPointCategories_shouldReturnAllCategories() {
+                PointCategory entity = new PointCategory();
+                entity.setId(1L);
+                entity.setName("Academics");
+                entity.setLevel(0);
+
+                PointCategoryInfoDto infoDto = new PointCategoryInfoDto(
+                                1L,
+                                "Academics",
+                                "Academic activities",
+                                100,
+                                LocalDate.now(),
+                                0,
+                                null,
+                                true);
+
+                List<PointCategory> entities = List.of(entity);
+                List<PointCategoryInfoDto> expectedDtos = List.of(infoDto);
+
+                when(pointCategoryRepository.findAll()).thenReturn(entities);
+                when(pointCategoryDtoMapper.toInfoDtoList(entities)).thenReturn(expectedDtos);
+
+                List<PointCategoryInfoDto> result = pointCategoryService.getAllPointCategories();
+
+                assertNotNull(result);
+                assertEquals(1, result.size());
+                assertEquals(expectedDtos, result);
+                verify(pointCategoryRepository).findAll();
+                verify(pointCategoryDtoMapper).toInfoDtoList(entities);
         }
 }

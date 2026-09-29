@@ -6,9 +6,14 @@ import com.ddd.application.dto.pointcategory.PointCategoryCreateDto;
 import com.ddd.application.dto.pointcategory.PointCategoryInfoDto;
 import org.mapstruct.Mapper;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface PointCategoryApiMapper {
     PointCategoryCreateDto toPointCategoryCreateDto(PointCategoryRequestDto pointCategoryRequestDto);
 
     PointCategoryResponseDto toPointCategoryResponseDto(PointCategoryInfoDto pointCategoryInfoDto);
+
+    List<PointCategoryResponseDto> toPointCategoryResponseDtoList(List<PointCategoryInfoDto> dtos);
 }
+

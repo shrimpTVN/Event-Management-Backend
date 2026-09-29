@@ -10,6 +10,8 @@ import com.ddd.domain.repository.PointCategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class PointCategoryServiceImpl implements PointCategoryService {
@@ -32,4 +34,11 @@ public class PointCategoryServiceImpl implements PointCategoryService {
 
         return pointCategoryDtoMapper.toInfoDto(pointCategoryRepository.save(pointCategory));
     }
+
+    @Override
+    public List<PointCategoryInfoDto> getAllPointCategories() {
+
+        return pointCategoryDtoMapper.toInfoDtoList(pointCategoryRepository.findAll());
+    }
 }
+

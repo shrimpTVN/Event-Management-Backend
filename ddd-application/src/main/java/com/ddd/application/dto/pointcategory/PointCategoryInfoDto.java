@@ -5,7 +5,7 @@ import java.time.LocalDate;
 public record PointCategoryInfoDto(
         Long id,
         String name,
-        String description,
+        String note,
         Integer maximum,
         LocalDate dateApply,
         Integer level,

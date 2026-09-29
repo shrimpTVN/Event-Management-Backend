@@ -6,8 +6,10 @@ import com.ddd.infrastructure.entity.PointCategoryJpaEntity;
 import com.ddd.infrastructure.mapper.PointCategoryMapper;
 import com.ddd.infrastructure.repository.jpaRepository.PointCategoryJpaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -35,4 +37,14 @@ public class PointCategoryRepositoryImpl implements PointCategoryRepository {
         PointCategoryJpaEntity savedEntity = pointCategoryJpaRepository.save(entity);
         return pointCategoryMapper.toDomainModel(savedEntity);
     }
+
+    @Override
+    public List<PointCategory> findAll() {
+        // Query all point categories sorted by level ascending
+        return pointCategoryJpaRepository.findAll(Sort.by(Sort.Direction.ASC, "level"))
+                .stream()
+                .map(pointCategoryMapper::toDomainModel)
+                .toList();
+    }
 }
+

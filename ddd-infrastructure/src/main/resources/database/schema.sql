@@ -222,7 +222,7 @@ CREATE TABLE point_categories
 (
     id                 BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
     name               VARCHAR(255) NOT NULL,
-    description        TEXT,
+    note        TEXT,
     maximum            INTEGER      NOT NULL DEFAULT 0,
     is_active          BOOLEAN      NOT NULL DEFAULT TRUE,
     date_apply         DATE,

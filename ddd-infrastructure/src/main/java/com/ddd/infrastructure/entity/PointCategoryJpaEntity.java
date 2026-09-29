@@ -20,8 +20,8 @@ public class PointCategoryJpaEntity extends BaseEntityJpa {
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "description", columnDefinition = "TEXT", nullable = false)
-    private String description;
+    @Column(name = "note", columnDefinition = "TEXT", nullable = false)
+    private String note="";
 
     @Column(name = "maximum", nullable = false)
     private Integer maximum = 0;

@@ -9,7 +9,7 @@ import java.time.LocalDate;
 @Setter
 public class PointCategory extends BaseModel {
     private String name;
-    private String description;
+    private String note="";
     private Integer maximum;
     private LocalDate dateApply;
     private Integer level;

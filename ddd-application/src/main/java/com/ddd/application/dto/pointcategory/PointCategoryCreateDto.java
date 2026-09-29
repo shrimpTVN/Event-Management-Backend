@@ -7,9 +7,9 @@ import jakarta.validation.constraints.Positive;
 import java.time.LocalDate;
 
 public record PointCategoryCreateDto(
-                @NotNull @NotBlank String name,
-                @NotNull @NotBlank String description,
-                @NotNull @Positive Integer maximum,
-                @NotNull LocalDate dateApply,
-                @Positive Long parentCategoryId) {
+        @NotNull @NotBlank String name,
+        @NotNull String note,
+        @NotNull @Positive Integer maximum,
+        @NotNull LocalDate dateApply,
+        @Positive Long parentCategoryId) {
 }
