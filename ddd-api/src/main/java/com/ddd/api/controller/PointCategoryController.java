@@ -29,8 +29,8 @@ public class PointCategoryController {
 
     @GetMapping("/{id}")
     public BaseResponse<PointCategoryResponseDto> getPointCategoryById(@PathVariable Long id) {
-        // TODO: Implement the logic to retrieve a point category by ID
-        return null;
+        PointCategoryInfoDto response = pointCategoryService.getPointCategoryById(id);
+        return BaseResponse.of(pointCategoryApiMapper.toPointCategoryResponseDto(response));
     }
 
     @GetMapping("/level")

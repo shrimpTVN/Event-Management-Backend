@@ -9,5 +9,7 @@ public interface PointCategoryService {
     PointCategoryInfoDto createPointCategory(PointCategoryCreateDto pointCategoryCreateDto);
 
     List<PointCategoryInfoDto> getAllPointCategories();
+
+    PointCategoryInfoDto getPointCategoryById(Long id);
 }
 

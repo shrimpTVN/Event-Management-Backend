@@ -40,5 +40,12 @@ public class PointCategoryServiceImpl implements PointCategoryService {
 
         return pointCategoryDtoMapper.toInfoDtoList(pointCategoryRepository.findAll());
     }
+
+    @Override
+    public PointCategoryInfoDto getPointCategoryById(Long id) {
+        PointCategory category = pointCategoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Point category not found with id: " + id));
+        return pointCategoryDtoMapper.toInfoDto(category);
+    }
 }
 
