@@ -226,6 +226,7 @@ CREATE TABLE point_categories
     maximum            INTEGER      NOT NULL DEFAULT 0,
     is_active          BOOLEAN      NOT NULL DEFAULT TRUE,
     date_apply         DATE,
+    level              INTEGER      NOT NULL DEFAULT 0,
     parent_category_id BIGINT,
     -- audit
     created_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
