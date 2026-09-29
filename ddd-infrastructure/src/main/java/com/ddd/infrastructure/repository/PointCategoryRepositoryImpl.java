@@ -72,5 +72,13 @@ public class PointCategoryRepositoryImpl implements PointCategoryRepository {
                 .map(pointCategoryMapper::toDomainModel)
                 .toList();
     }
+
+    @Override
+    public void delete(Long id) {
+        PointCategoryJpaEntity entity = pointCategoryJpaRepository.findById(id)
+                .orElseThrow(() -> new com.ddd.domain.exception.ResourceNotFoundException("Point category not found with id: " + id));
+        entity.setIsActive(false);
+        pointCategoryJpaRepository.save(entity);
+    }
 }
 

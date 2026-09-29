@@ -5,6 +5,8 @@ import com.ddd.application.dto.pointcategory.PointCategoryInfoDto;
 
 import java.util.List;
 
+import com.ddd.application.dto.pointcategory.PointCategoryUpdateDto;
+
 public interface PointCategoryService {
     PointCategoryInfoDto createPointCategory(PointCategoryCreateDto pointCategoryCreateDto);
 
@@ -15,5 +17,9 @@ public interface PointCategoryService {
     List<PointCategoryInfoDto> getPointCategoryByLevel(Integer level);
 
     List<PointCategoryInfoDto> getPointCategoryByParentId(Long parentId);
+
+    PointCategoryInfoDto updatePointCategory(Long id, PointCategoryUpdateDto pointCategoryUpdateDto);
+
+    void deletePointCategory(Long id);
 }
 

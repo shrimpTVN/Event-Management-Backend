@@ -2,6 +2,7 @@ package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
 import com.ddd.api.dto.pointcategory.req.PointCategoryRequestDto;
+import com.ddd.api.dto.pointcategory.req.UpdatePointCategoryRequestDto;
 import com.ddd.api.dto.pointcategory.res.PointCategoryResponseDto;
 import com.ddd.api.mapper.PointCategoryApiMapper;
 import com.ddd.application.dto.pointcategory.PointCategoryInfoDto;
@@ -48,6 +49,18 @@ public class PointCategoryController {
     public BaseResponse<PointCategoryResponseDto> createPointCategory(@RequestBody @Valid PointCategoryRequestDto request) {
         PointCategoryInfoDto response = pointCategoryService.createPointCategory(pointCategoryApiMapper.toPointCategoryCreateDto(request));
         return BaseResponse.of(pointCategoryApiMapper.toPointCategoryResponseDto(response));
+    }
+
+    @PatchMapping("/admin/{id}")
+    public BaseResponse<PointCategoryResponseDto> updatePointCategory(@PathVariable Long id, @RequestBody @Valid UpdatePointCategoryRequestDto request) {
+        PointCategoryInfoDto response = pointCategoryService.updatePointCategory(id, pointCategoryApiMapper.toPointCategoryUpdateDto(request));
+        return BaseResponse.of(pointCategoryApiMapper.toPointCategoryResponseDto(response));
+    }
+
+    @DeleteMapping("/admin/{id}")
+    public BaseResponse<Void> deletePointCategory(@PathVariable Long id) {
+        pointCategoryService.deletePointCategory(id);
+        return BaseResponse.ok();
     }
 
 }

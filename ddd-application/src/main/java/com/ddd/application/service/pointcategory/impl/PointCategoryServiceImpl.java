@@ -2,6 +2,7 @@ package com.ddd.application.service.pointcategory.impl;
 
 import com.ddd.application.dto.pointcategory.PointCategoryCreateDto;
 import com.ddd.application.dto.pointcategory.PointCategoryInfoDto;
+import com.ddd.application.dto.pointcategory.PointCategoryUpdateDto;
 import com.ddd.application.mapper.PointCategoryDtoMapper;
 import com.ddd.application.service.pointcategory.PointCategoryService;
 import com.ddd.domain.exception.ResourceNotFoundException;
@@ -52,6 +53,36 @@ public class PointCategoryServiceImpl implements PointCategoryService {
     @Override
     public List<PointCategoryInfoDto> getPointCategoryByParentId(Long parentId) {
         return pointCategoryDtoMapper.toInfoDtoList(pointCategoryRepository.findByParentId(parentId));
+    }
+
+    @Override
+    public PointCategoryInfoDto updatePointCategory(Long id, PointCategoryUpdateDto pointCategoryUpdateDto) {
+        PointCategory existingCategory = pointCategoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Point category not found with id: " + id));
+
+        pointCategoryDtoMapper.updateEntityFromDto(pointCategoryUpdateDto, existingCategory);
+
+        if (pointCategoryUpdateDto.parentCategoryId() == null) {
+            existingCategory.setLevel(0);
+        } else{
+            PointCategory parentCategory = pointCategoryRepository.findById(pointCategoryUpdateDto.parentCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Parent category not found"));
+
+            if ( parentCategory.getId().equals(id)) {
+                throw new IllegalArgumentException("A category cannot be its own parent");
+            }
+
+            existingCategory.setLevel(parentCategory.getLevel() + 1);
+        }
+
+
+
+        return pointCategoryDtoMapper.toInfoDto(pointCategoryRepository.save(existingCategory));
+    }
+
+    @Override
+    public void deletePointCategory(Long id) {
+        pointCategoryRepository.delete(id);
     }
 }
 
