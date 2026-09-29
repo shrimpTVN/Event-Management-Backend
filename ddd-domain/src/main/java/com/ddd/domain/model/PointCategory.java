@@ -12,5 +12,14 @@ public class PointCategory extends BaseModel {
     private String description;
     private Integer maximum;
     private LocalDate dateApply;
+    private Integer level;
     private Long parentCategoryId;
+
+    public void setLevel(Integer level) {
+        if (level < 0) {
+            throw new IllegalArgumentException("Level cannot be negative");
+        }
+
+        this.level = level;
+    }
 }

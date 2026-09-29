@@ -1,6 +1,12 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
+import com.ddd.api.dto.pointcategory.req.PointCategoryRequestDto;
+import com.ddd.api.dto.pointcategory.res.PointCategoryResponseDto;
+import com.ddd.api.mapper.PointCategoryApiMapper;
+import com.ddd.application.dto.pointcategory.PointCategoryInfoDto;
+import com.ddd.application.service.pointcategory.PointCategoryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,12 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class PointCategoryController {
 
     private final PointCategoryService pointCategoryService;
+    private final PointCategoryApiMapper pointCategoryApiMapper;
 
     @PostMapping("/admin")
-    public BaseResponse<PointCategoryResponse> createPointCategory(@RequestBody PointCategoryRequest request) {
-        // Implement the logic to create a new point category
-        // For example, call a service method to handle the creation
-        PointCategoryResponse response = pointCategoryService.createPointCategory(request);
-        return BaseResponse.ok();
+    public BaseResponse<PointCategoryResponseDto> createPointCategory(@RequestBody @Valid PointCategoryRequestDto request) {
+        PointCategoryInfoDto response = pointCategoryService.createPointCategory(pointCategoryApiMapper.toPointCategoryCreateDto(request));
+        return BaseResponse.of(pointCategoryApiMapper.toPointCategoryResponseDto(response));
     }
 }

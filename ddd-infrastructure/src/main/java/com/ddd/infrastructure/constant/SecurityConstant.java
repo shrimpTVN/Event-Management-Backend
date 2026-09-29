@@ -3,6 +3,17 @@ package com.ddd.infrastructure.constant;
 public class SecurityConstant {
     private SecurityConstant(){}
 
+    public static final String[] ADMIN_ENDPOINTS = {
+            "/api/semesters/admin/**",
+            "/api/users/admin/**",
+            "/api/fanpages/admin/**",
+            "/api/point-categories/admin/**"
+    };
+
+    public static final String[] FANPAGE_ADMIN_ENDPOINTS = {
+            "/api/fanpages/fanpage-admin/**"
+    };
+
     public static final String[] PUBLIC_ENDPOINTS = {
             "/",
             "/swagger-ui/**",
@@ -11,17 +22,8 @@ public class SecurityConstant {
             "/api/auth/login",
             "/api/auth/register/fanpage-admin",
             "/api/semesters/**",
-            "/api/fanpages/**"
-    };
-
-    public static final String[] ADMIN_ENDPOINTS = {
-            "/api/semesters/admin/**",
-            "/api/users/admin/**",
-            "/api/fanpages/admin/**"
-    };
-
-    public static final String[] FANPAGE_ADMIN_ENDPOINTS = {
-            "/api/fanpages/fanpage-admin/**"
+            "/api/fanpages/**",
+            "/api/point-categories/**"
     };
 
     public static final String[] SECURE_ENDPOINTS = {

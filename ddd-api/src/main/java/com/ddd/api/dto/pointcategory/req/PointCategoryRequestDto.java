@@ -11,6 +11,6 @@ public record PointCategoryRequestDto(
    @NotNull @NotBlank  String description,
    @NotNull @Positive Integer maximum,
    @NotNull LocalDate dateApply,
-   @NotNull @Positive  Long parentCategoryId
+   @Positive  Long parentCategoryId
 ) {
 }
