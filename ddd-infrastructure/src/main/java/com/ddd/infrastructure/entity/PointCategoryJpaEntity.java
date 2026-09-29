@@ -20,14 +20,20 @@ public class PointCategoryJpaEntity extends BaseEntityJpa {
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "description", columnDefinition = "TEXT")
-    private String description;
+    @Column(name = "note", columnDefinition = "TEXT", nullable = false)
+    private String note="";
 
     @Column(name = "maximum", nullable = false)
     private Integer maximum = 0;
 
-    @Column(name = "date_apply")
+    @Column(name = "date_apply", nullable = false)
     private LocalDate dateApply;
+
+    @Column(name = "level", nullable = false)
+    private Integer level = 0;
+
+    @Column(name = "children_order", nullable = false)
+    private Integer childrenOrder = 1;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_category_id")

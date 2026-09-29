@@ -222,10 +222,12 @@ CREATE TABLE point_categories
 (
     id                 BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
     name               VARCHAR(255) NOT NULL,
-    description        TEXT,
+    note        TEXT,
     maximum            INTEGER      NOT NULL DEFAULT 0,
     is_active          BOOLEAN      NOT NULL DEFAULT TRUE,
     date_apply         DATE,
+    level              INTEGER      NOT NULL DEFAULT 0,
+    children_order     INTEGER      NOT NULL DEFAULT 1,
     parent_category_id BIGINT,
     -- audit
     created_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW(),

@@ -6,6 +6,8 @@ target/
 !**/src/test/**/target/
 
 .env
+.codegraph/
+.agents/
 
 ### STS ###
 .apt_generated
