@@ -3,9 +3,12 @@ package com.ddd.infrastructure.entity;
 import com.ddd.domain.enums.EventStatusEnum;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "events")
@@ -53,6 +56,10 @@ public class EventJpaEntity extends BaseEntityJpa {
     @Column(name="status", nullable = false, length = 50)
     private EventStatusEnum status = EventStatusEnum.DRAFT;
 
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 10) // Instructs Hibernate to fetch eventPoints in batches of 10
+    private List<EventPointJpaEntity> eventPoints = new ArrayList<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_type_id")
     private EventTypeJpaEntity eventType;
@@ -64,4 +71,8 @@ public class EventJpaEntity extends BaseEntityJpa {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fanpage_id")
     private FanpageJpaEntity fanpage;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "semester_id")
+    private SemesterJpaEntity semester;
 }

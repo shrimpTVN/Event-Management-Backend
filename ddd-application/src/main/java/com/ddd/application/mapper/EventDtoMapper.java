@@ -1,10 +1,15 @@
 package com.ddd.application.mapper;
 
+import com.ddd.application.dto.SemesterDto;
 import com.ddd.application.dto.event.EventCreateDto;
 import com.ddd.application.dto.event.EventInfoDto;
 import com.ddd.application.dto.event.EventPointCreateDto;
+import com.ddd.application.dto.event.EventPointInfoDto;
 import com.ddd.domain.model.Event;
 import com.ddd.domain.model.EventPoint;
+import com.ddd.infrastructure.entity.EventJpaEntity;
+import com.ddd.infrastructure.entity.EventPointJpaEntity;
+import com.ddd.infrastructure.entity.SemesterJpaEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -16,11 +21,35 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface EventDtoMapper {
+    // Mapping for Semester
+    SemesterDto toSemesterDto(SemesterJpaEntity semester);
 
-    Event toEvent(EventCreateDto dto);
+
+    // Mapping for EventPoint
     List<EventPoint> toEventPoints(List<EventPointCreateDto> eventPointCreateDtos);
+    EventPointInfoDto toEventPointInfoDto(EventPoint eventPoint);
 
-    EventInfoDto toInfoDto(Event event, String eventTypeName, String criteriaName, String fanpageName);
+    @Mapping(target = "pointCategoryId", source = "pointCategory.id")
+    @Mapping(target = "eventId", source = "event.id")
+    EventPointInfoDto toEventPointInfoDto(EventPointJpaEntity eventPoint);
+
+
+
+    // Mapping for Event
+    Event toEvent(EventCreateDto dto);
+
+    @Mapping(target = "eventTypeName", source = "eventType.name")
+    @Mapping(target = "criteriaName", source = "criteria.name")
+    @Mapping(target = "fanpageName", source = "fanpage.name")
+    @Mapping(target = "fanpageId", source = "fanpage.id")
+    @Mapping(target = "semester", source = "semester")
+    @Mapping(target = "isActive", source = "isActive")
+    @Mapping(target = "dateOpen", source = "dateOpen", qualifiedByName = "instantToLocalDate")
+    @Mapping(target = "dateClose", source = "dateClose", qualifiedByName = "instantToLocalDate")
+    @Mapping(target = "dateHappen", source = "dateHappen", qualifiedByName = "instantToLocalDate")
+    @Mapping(target = "eventPoints", source = "eventPoints")
+    @Mapping(target = "status", source = "status")
+    EventInfoDto toInfoDto(EventJpaEntity entity);
 
     @Named("instantToLocalDate")
     default LocalDate mapInstantToLocalDate(Instant instant) {
