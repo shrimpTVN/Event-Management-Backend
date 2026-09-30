@@ -6,6 +6,7 @@ import com.ddd.infrastructure.entity.CriteriaJpaEntity;
 import com.ddd.infrastructure.entity.EventJpaEntity;
 import com.ddd.infrastructure.entity.EventTypeJpaEntity;
 import com.ddd.infrastructure.entity.FanpageJpaEntity;
+import com.ddd.infrastructure.entity.SemesterJpaEntity;
 import com.ddd.infrastructure.mapper.EventMapper;
 import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
 import jakarta.persistence.EntityManager;
@@ -43,6 +44,13 @@ public class EventRepositoryImpl implements EventRepository {
         if (event.getFanpageId() != null) {
             FanpageJpaEntity fanpageRef = entityManager.getReference(FanpageJpaEntity.class, event.getFanpageId());
             entity.setFanpage(fanpageRef);
+        }
+
+        if (event.getSemesterId() != null) {
+            SemesterJpaEntity semesterRef = entityManager.getReference(SemesterJpaEntity.class, event.getSemesterId());
+            entity.setSemester(semesterRef);
+        } else {
+            entity.setSemester(null);
         }
 
         EventJpaEntity savedEntity = eventJpaRepository.save(entity);

@@ -1,5 +1,7 @@
 package com.ddd.api.dto.event.res;
 
+import com.ddd.api.dto.semester.SemesterResponseDto;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -22,6 +24,7 @@ public record EventResponseDto(
                 String fanpageName,
                 Long fanpageId,
                 boolean isActive,
+                SemesterResponseDto semester,
                 List<EventPointResponseDto> eventPoints,
                 Instant updatedAt) {
 }

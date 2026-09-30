@@ -336,6 +336,7 @@ CREATE TABLE events
     event_type_id   BIGINT,
     criteria_id     BIGINT,
     fanpage_id      BIGINT,
+    semester_id     BIGINT,
     -- audit
     created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_by      BIGINT,
@@ -529,6 +530,10 @@ ALTER TABLE events
 ALTER TABLE events
     ADD CONSTRAINT fk_events_fanpages
         FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE RESTRICT;
+
+ALTER TABLE events
+    ADD CONSTRAINT fk_events_semesters
+        FOREIGN KEY (semester_id) REFERENCES semesters (id) ON DELETE RESTRICT;
 
 ALTER TABLE point_categories
     ADD CONSTRAINT fk_point_categories_parent

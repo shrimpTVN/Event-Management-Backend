@@ -30,6 +30,7 @@ public class EventCommandServiceImpl implements EventCommandService {
     private final CriteriaRepository criteriaRepository;
     private final EventDtoMapper eventDtoMapper;
     private final EventPointRepository eventPointRepository;
+    private final SemesterRepository semesterRepository;
 
     @Override
     @Transactional
@@ -61,6 +62,11 @@ public class EventCommandServiceImpl implements EventCommandService {
             if (criteria == null) {
                 throw new ResourceNotFoundException("Criteria not found with id: " + dto.criteriaId());
             }
+        }
+
+        if (dto.semesterId() != null) {
+            semesterRepository.findById(dto.semesterId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Semester not found with id: " + dto.semesterId()));
         }
 
         // Validate dates

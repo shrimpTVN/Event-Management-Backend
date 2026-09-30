@@ -14,9 +14,9 @@ import java.util.Optional;
 public interface EventJpaRepository extends JpaRepository<EventJpaEntity, Long> {
     Page<EventJpaEntity> findByFanpage_Id(Long fanpageId, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage"})
+    @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage", "semester"})
     Optional<EventJpaEntity> findWithDetailsById(Long id);
 
-    @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage"})
+    @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage", "semester"})
     Page<EventJpaEntity> findWithDetailsByFanpage_Id(Long fanpageId, Pageable pageable);
 }

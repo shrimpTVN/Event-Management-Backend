@@ -24,4 +24,5 @@ public class Event extends BaseModel {
     private Long eventTypeId;
     private Long criteriaId;
     private Long fanpageId;
+    private Long semesterId;
 }
