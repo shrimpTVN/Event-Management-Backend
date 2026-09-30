@@ -51,6 +51,7 @@ public class SecurityConfig {
                     request
                             .requestMatchers(SecurityConstant.ADMIN_ENDPOINTS).hasRole(RoleEnum.ADMIN.name())
                             .requestMatchers(SecurityConstant.FANPAGE_ADMIN_ENDPOINTS).hasRole(RoleEnum.FANPAGE_ADMIN.name())
+                            .requestMatchers(SecurityConstant.SECURE_ENDPOINTS).authenticated()
                             .requestMatchers(SecurityConstant.PUBLIC_ENDPOINTS).permitAll()
                             .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
