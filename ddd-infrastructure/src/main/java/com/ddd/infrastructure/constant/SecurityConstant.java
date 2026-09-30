@@ -23,11 +23,12 @@ public class SecurityConstant {
             "/api/auth/register/fanpage-admin",
             "/api/semesters/**",
             "/api/fanpages/**",
-            "/api/point-categories/**"
+            "/api/point-categories/**",
+            "/api/events/**"
     };
 
     public static final String[] SECURE_ENDPOINTS = {
-            "/api/**"
+           "/api/events/fanpage-member/**",
     };
 
     public static final String CORS_PATH_PATTERN = "/**";

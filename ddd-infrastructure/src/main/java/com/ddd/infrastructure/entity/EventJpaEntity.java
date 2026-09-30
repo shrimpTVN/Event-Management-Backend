@@ -1,5 +1,6 @@
 package com.ddd.infrastructure.entity;
 
+import com.ddd.domain.enums.EventStatusEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -48,8 +49,9 @@ public class EventJpaEntity extends BaseEntityJpa {
     @Column(name = "banner_url", nullable = false, columnDefinition = "TEXT")
     private String bannerUrl;
 
-    @Column(name = "status", nullable = false, length = 50)
-    private String status = "DRAFT";
+    @Enumerated(EnumType.STRING)
+    @Column(name="status", nullable = false, length = 50)
+    private EventStatusEnum status = EventStatusEnum.DRAFT;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_type_id")

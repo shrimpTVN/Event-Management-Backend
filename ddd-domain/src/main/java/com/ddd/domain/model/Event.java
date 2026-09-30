@@ -5,6 +5,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -12,9 +13,9 @@ public class Event extends BaseModel {
     private String name;
     private String description;
     private String location;
-    private Instant dateOpen;
-    private Instant dateClose;
-    private Instant dateHappen;
+    private LocalDate dateOpen;
+    private LocalDate dateClose;
+    private LocalDate dateHappen;
     private Integer capacity;
     private Integer maleQuantity;
     private Integer femaleQuantity;
