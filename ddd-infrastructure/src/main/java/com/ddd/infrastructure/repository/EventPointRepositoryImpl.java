@@ -49,4 +49,11 @@ public class EventPointRepositoryImpl implements EventPointRepository {
         // Persist all entities together in batch
         eventPointJpaRepository.saveAll(eventPointJpaEntities);
     }
+
+    @Override
+    public List<EventPoint> findByEventId(Long eventId) {
+        return eventPointJpaRepository.findByEvent_Id(eventId).stream()
+                .map(eventPointMapper::toDomainModel)
+                .toList();
+    }
 }

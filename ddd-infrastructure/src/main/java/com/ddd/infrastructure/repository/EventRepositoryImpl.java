@@ -10,6 +10,8 @@ import com.ddd.infrastructure.mapper.EventMapper;
 import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -50,5 +52,11 @@ public class EventRepositoryImpl implements EventRepository {
     @Override
     public Optional<Event> findById(Long id) {
         return eventJpaRepository.findById(id).map(eventMapper::toDomainModel);
+    }
+
+    @Override
+    public Page<Event> findByFanpageId(Long fanpageId, Pageable pageable) {
+        return eventJpaRepository.findByFanpage_Id(fanpageId, pageable)
+                .map(eventMapper::toDomainModel);
     }
 }
