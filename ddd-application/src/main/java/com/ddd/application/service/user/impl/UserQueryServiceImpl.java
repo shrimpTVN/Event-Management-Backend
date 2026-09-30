@@ -66,4 +66,11 @@ public class UserQueryServiceImpl implements UserQueryService {
                 Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         return PageRequest.of(page, size, sort);
     }
+
+    @Override
+    public UserSummaryDto findUserById(Long id){
+        return userDtoMapper.toUserSummaryDto(userJpaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Not found user")));
+    }
+
 }

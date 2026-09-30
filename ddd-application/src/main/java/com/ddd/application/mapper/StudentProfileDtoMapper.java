@@ -5,8 +5,10 @@ import com.ddd.application.dto.user.StudentProfileSummaryDto;
 import com.ddd.domain.model.StudentProfile;
 import com.ddd.infrastructure.entity.StudentProfileJpaEntity;
 import jakarta.validation.Valid;
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface StudentProfileDtoMapper {
@@ -15,6 +17,10 @@ public interface StudentProfileDtoMapper {
 
     @Mapping(source = "kNumber", target = "KNumber")
     StudentProfile toStudentProfile(StudentProfileDto studentProfileDto);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = org.mapstruct.NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(source = "kNumber", target = "KNumber")
+    void updateEntityFromDto(@MappingTarget StudentProfile studentProfile, StudentProfileDto studentProfileDto);
 
     @Mapping(source = "user.email", target = "email")
     @Mapping(source = "user.role.name", target = "role")

@@ -7,5 +7,6 @@ public interface StudentProfileRepository {
     boolean existsByStudentId(@NotBlank String studentId);
 
     void save(StudentProfile studentProfile, Long userId);
-    StudentProfile findById(Long id);
+    StudentProfile findByEmail(String email);
+    StudentProfile findByUserId(Long id);
 }

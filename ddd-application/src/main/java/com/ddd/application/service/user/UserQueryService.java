@@ -12,4 +12,6 @@ public interface UserQueryService {
     Page<UserSummaryDto> getAllUsers(boolean isActive, int page, int size, String sortBy, String sortDir);
 
     StudentProfileSummaryDto getProfileById(Long id);
+
+    UserSummaryDto findUserById(Long id);
 }

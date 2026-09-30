@@ -46,4 +46,11 @@ public class UserRepositoryImpl implements UserRepository {
         return userMapper.toDomain(userJpaRepository.save(userJpaEntity));
     }
 
+    @Override
+    public User findById(Long id){
+        UserJpaEntity userJpaEntity = userJpaRepository.findById(id)
+                .orElseThrow(() -> new ResourceAccessException("User not found"));
+        return userMapper.toDomain(userJpaEntity);
+    }
+
 }

@@ -47,9 +47,19 @@ public class StudentProfileRepositoryImpl implements StudentProfileRepository {
     }
 
     @Override
-    public StudentProfile findById(Long id){
-        StudentProfileJpaEntity studentProfileJpaEntity = studentProfileJpaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Not found studentProfile"));
-        return studentProfileMapper.toDomain(studentProfileJpaEntity);
+    public StudentProfile findByEmail(String email) {
+        StudentProfileJpaEntity entity = studentProfileJpaRepository.findByEmail(email);
+        if (entity == null) {
+            throw new ResourceNotFoundException("Student profile not found");
+        }
+        return studentProfileMapper.toDomain(entity);
     }
+
+    @Override
+    public StudentProfile findByUserId(Long id){
+        StudentProfileJpaEntity entity = studentProfileJpaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found"));
+        return studentProfileMapper.toDomain(entity);
+    }
+
 }

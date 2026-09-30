@@ -24,4 +24,26 @@ public class StudentProfileCommandServiceImpl implements StudentProfileCommandSe
        StudentProfile studentProfile = studentProfileDtoMapper.toStudentProfile(studentProfileDto);
        studentProfileRepository.save(studentProfile, userId);
     }
+
+    @Override
+    public void updateProfileByEmail(String email, StudentProfileDto studentProfileDto) {
+        StudentProfile studentProfile = studentProfileRepository.findByEmail(email);
+        studentProfileDtoMapper.updateEntityFromDto(studentProfile, studentProfileDto);
+        studentProfileRepository.save(studentProfile, studentProfile.getUserId());
+    }
+
+    @Override
+    public void updateAvatarByEmail(String email, String avatarUrl){
+        StudentProfile studentProfile = studentProfileRepository.findByEmail(email);
+        studentProfile.setAvatarUrl(avatarUrl);
+        studentProfileRepository.save(studentProfile, studentProfile.getUserId());
+    }
+
+    @Override
+    public void updateProfileById(Long id, StudentProfileDto studentProfileDto){
+        StudentProfile studentProfile = studentProfileRepository.findByUserId(id);
+        studentProfileDtoMapper.updateEntityFromDto(studentProfile, studentProfileDto);
+        studentProfileRepository.save(studentProfile, studentProfile.getUserId());
+    }
+
 }

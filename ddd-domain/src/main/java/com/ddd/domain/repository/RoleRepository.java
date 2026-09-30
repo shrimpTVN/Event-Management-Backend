@@ -16,4 +16,6 @@ public interface RoleRepository {
     Role findById(Long id);
 
     Role saveRole(Role role);
+
+    Role findByName(String name);
 }

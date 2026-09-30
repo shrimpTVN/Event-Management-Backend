@@ -60,4 +60,11 @@ public class RoleRepositoryImpl implements RoleRepository {
 
         return roleMapper.toDomainModel(savedEntity);
     }
+
+    @Override
+    public Role findByName(String name) {
+        RoleJpaEntity role = roleJpaRepository.findByName(name)
+                .orElseThrow(() -> new RuntimeException("Role not found with name: " + name));
+        return roleMapper.toDomainModel(role);
+    }
 }

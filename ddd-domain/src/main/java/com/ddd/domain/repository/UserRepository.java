@@ -9,5 +9,6 @@ public interface UserRepository {
     List<User> findAll();
     Boolean existsByEmail(String email);
     User save(User user, String roleName);
+    User findById(Long id);
 
 }
