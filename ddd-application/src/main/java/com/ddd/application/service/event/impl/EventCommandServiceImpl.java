@@ -29,14 +29,33 @@ public class EventCommandServiceImpl implements EventCommandService {
     private final EventTypeRepository eventTypeRepository;
     private final CriteriaRepository criteriaRepository;
     private final EventDtoMapper eventDtoMapper;
-    private final EventPointRepository eventPointRepository;
     private final SemesterRepository semesterRepository;
 
     @Override
     @Transactional
     public void createEvent(EventCreateDto dto, String email) {
         log.info("Creating event for fanpageId: {} by user email: {}", dto.fanpageId(), email);
+        validateReferences(dto, email);
 
+        // Map DTO to Event entity
+        Event event = eventDtoMapper.toEvent(dto);
+        event.setStatus(EventStatusEnum.DRAFT.name());
+
+        int male = dto.maleQuantity() != null ? dto.maleQuantity() : 0;
+        int female = dto.femaleQuantity() != null ? dto.femaleQuantity() : 0;
+        event.setMaleQuantity(male);
+        event.setFemaleQuantity(female);
+        event.setCapacity(dto.capacity());
+
+        // Validate dates and quantities
+        event.validateEventDates();
+        event.validateCapacityAndQuantities();
+
+        Event savedEvent = eventRepository.save(event);
+        log.info("Event created successfully with id: {} and status: {}", savedEvent.getId(), savedEvent.getStatus());
+    }
+
+    private void validateReferences(EventCreateDto dto, String email) {
         Fanpage fanpage = fanpageRepository.findById(dto.fanpageId())
                 .orElseThrow(() -> new ResourceNotFoundException("Fanpage not found with id: " + dto.fanpageId()));
 
@@ -67,53 +86,6 @@ public class EventCommandServiceImpl implements EventCommandService {
         if (dto.semesterId() != null) {
             semesterRepository.findById(dto.semesterId())
                     .orElseThrow(() -> new ResourceNotFoundException("Semester not found with id: " + dto.semesterId()));
-        }
-
-        // Validate dates
-        validateEventDates(dto.dateOpen(), dto.dateClose(), dto.dateHappen());
-
-        //Validate capacity & gender quotas
-        int male = dto.maleQuantity() != null ? dto.maleQuantity() : 0;
-        int female = dto.femaleQuantity() != null ? dto.femaleQuantity() : 0;
-        validateCapacityAndQuantities(dto.capacity(), male, female);
-
-        //Build domain Event with default DRAFT status
-        Event event = eventDtoMapper.toEvent(dto);
-        event.setMaleQuantity(male);
-        event.setFemaleQuantity(female);
-        event.setStatus(EventStatusEnum.DRAFT.name());
-
-        Event savedEvent = eventRepository.save(event);
-        log.info("Event created successfully with id: {} and status: {}", savedEvent.getId(), savedEvent.getStatus());
-
-        // Save event points
-        List<EventPoint> eventPoints = eventDtoMapper.toEventPoints(dto.eventPoints());
-       eventPoints =  eventPoints.stream().peek(ep -> ep.setEventId(savedEvent.getId())).toList();
-        eventPointRepository.saveAll(eventPoints);
-    }
-
-    private void validateEventDates(LocalDate dateOpen, LocalDate dateClose, LocalDate dateHappen) {
-        LocalDate today = LocalDate.now();
-        if (dateOpen.isBefore(today)) {
-            throw new IllegalArgumentException("Registration open date cannot be in the past");
-        }
-        if (dateOpen.isAfter(dateClose)) {
-            throw new IllegalArgumentException("Registration open date must be before or equal to registration close date");
-        }
-        if (dateClose.isAfter(dateHappen)) {
-            throw new IllegalArgumentException("Registration close date must be before or equal to event happen date");
-        }
-    }
-
-    private void validateCapacityAndQuantities(Integer capacity, int maleQuantity, int femaleQuantity) {
-        if (maleQuantity < 0 || femaleQuantity < 0) {
-            throw new IllegalArgumentException("Male and female quantities must be non-negative");
-        }
-        if (maleQuantity + femaleQuantity > capacity) {
-            throw new IllegalArgumentException(String.format(
-                    "Total male and female quantities (%d) cannot exceed event capacity (%d)",
-                    maleQuantity + femaleQuantity, capacity
-            ));
         }
     }
 }

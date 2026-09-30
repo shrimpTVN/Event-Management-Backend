@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {EventPointMapper.class})
 public interface EventMapper {
 
     @Mapping(target = "eventTypeId", source = "eventType.id")
@@ -29,6 +29,7 @@ public interface EventMapper {
     @Mapping(target = "criteria", ignore = true)
     @Mapping(target = "fanpage", ignore = true)
     @Mapping(target = "semester", ignore = true)
+    @Mapping(target = "eventPoints", ignore = true)
     @Mapping(target = "isActive", source = "active")
     @Mapping(target = "dateOpen", source = "dateOpen", qualifiedByName = "localDateToInstant")
     @Mapping(target = "dateClose", source = "dateClose", qualifiedByName = "localDateToInstant")

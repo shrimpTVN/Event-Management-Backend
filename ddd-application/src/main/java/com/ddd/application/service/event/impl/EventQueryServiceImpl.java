@@ -1,9 +1,7 @@
 package com.ddd.application.service.event.impl;
 
 import com.ddd.application.dto.event.EventInfoDto;
-import com.ddd.application.dto.event.EventPointInfoDto;
 import com.ddd.application.mapper.EventDtoMapper;
-import com.ddd.application.service.event.EventPointQueryService;
 import com.ddd.application.service.event.EventQueryService;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.infrastructure.entity.EventJpaEntity;
@@ -16,15 +14,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EventQueryServiceImpl implements EventQueryService {
 
     private final EventJpaRepository eventJpaRepository;
-    private final EventPointQueryService eventPointQueryService;
     private final EventDtoMapper eventDtoMapper;
 
     @Override
@@ -32,8 +27,7 @@ public class EventQueryServiceImpl implements EventQueryService {
         EventJpaEntity eventJpaEntity = eventJpaRepository.findWithDetailsById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + id));
 
-        List<EventPointInfoDto> eventPoints = eventPointQueryService.getEventPointsByEventId(eventJpaEntity.getId());
-        return eventDtoMapper.toInfoDto(eventJpaEntity, eventPoints);
+        return eventDtoMapper.toInfoDto(eventJpaEntity);
     }
 
     @Override
@@ -41,10 +35,7 @@ public class EventQueryServiceImpl implements EventQueryService {
         Pageable pageable = createPageable(page, size, sortBy, sortDir);
         
         return eventJpaRepository.findWithDetailsByFanpage_Id(fanpageId, pageable)
-                .map(eventJpaEntity -> {
-                    List<EventPointInfoDto> eventPoints = eventPointQueryService.getEventPointsByEventId(eventJpaEntity.getId());
-                    return eventDtoMapper.toInfoDto(eventJpaEntity, eventPoints);
-                });
+                .map(eventDtoMapper::toInfoDto);
     }
 
     private Pageable createPageable(int page, int size, String sortBy, String sortDir) {

@@ -1,11 +1,14 @@
 package com.ddd.infrastructure.repository;
 
 import com.ddd.domain.model.Event;
+import com.ddd.domain.model.EventPoint;
 import com.ddd.domain.repository.EventRepository;
 import com.ddd.infrastructure.entity.CriteriaJpaEntity;
 import com.ddd.infrastructure.entity.EventJpaEntity;
+import com.ddd.infrastructure.entity.EventPointJpaEntity;
 import com.ddd.infrastructure.entity.EventTypeJpaEntity;
 import com.ddd.infrastructure.entity.FanpageJpaEntity;
+import com.ddd.infrastructure.entity.PointCategoryJpaEntity;
 import com.ddd.infrastructure.entity.SemesterJpaEntity;
 import com.ddd.infrastructure.mapper.EventMapper;
 import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
@@ -51,6 +54,22 @@ public class EventRepositoryImpl implements EventRepository {
             entity.setSemester(semesterRef);
         } else {
             entity.setSemester(null);
+        }
+
+        if (event.getEventPoints() != null && !event.getEventPoints().isEmpty()) {
+            for (EventPoint ep : event.getEventPoints()) {
+                EventPointJpaEntity epEntity = new EventPointJpaEntity();
+                epEntity.setEvent(entity);
+
+                if (ep.getPointCategoryId() != null) {
+                    PointCategoryJpaEntity pointCategoryRef = entityManager
+                            .getReference(PointCategoryJpaEntity.class, ep.getPointCategoryId());
+
+                    epEntity.setPointCategory(pointCategoryRef);
+                }
+                epEntity.setPoint(ep.getPoint());
+                entity.getEventPoints().add(epEntity);
+            }
         }
 
         EventJpaEntity savedEntity = eventJpaRepository.save(entity);
