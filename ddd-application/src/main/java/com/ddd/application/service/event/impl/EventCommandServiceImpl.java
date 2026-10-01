@@ -2,6 +2,7 @@ package com.ddd.application.service.event.impl;
 
 import com.ddd.application.dto.event.EventCreateDto;
 import com.ddd.application.dto.event.EventInfoDto;
+import com.ddd.application.dto.event.EventUpdateDto;
 import com.ddd.application.mapper.EventDtoMapper;
 import com.ddd.application.service.event.EventCommandService;
 import com.ddd.domain.enums.EventStatusEnum;
@@ -55,25 +56,96 @@ public class EventCommandServiceImpl implements EventCommandService {
         log.info("Event created successfully with id: {} and status: {}", savedEvent.getId(), savedEvent.getStatus());
     }
 
+    @Override
+    @Transactional
+    public void updateEvent(Long id, EventUpdateDto dto, String email) {
+        log.info("Updating event id: {} by user email: {}", id, email);
+
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + id));
+
+        verifyUserFanpageMembership(event.getFanpageId(), email);
+        validateUpdateReferences(dto);
+
+        eventDtoMapper.updateEventFromDto(event, dto);
+        event.validateEventDates();
+        event.validateCapacityAndQuantities();
+
+        Event updatedEvent = eventRepository.save(event);
+        log.info("Event updated successfully with id: {}", updatedEvent.getId());
+    }
+
+    @Override
+    @Transactional
+    public void changeEventStatus(Long id, EventStatusEnum status, String email) {
+        log.info("Changing status of event id: {} to {} by user email: {}", id, status, email);
+
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + id));
+
+        verifyUserFanpageMembership(event.getFanpageId(), email);
+
+        event.setStatus(status.name());
+        eventRepository.save(event);
+        log.info("Event status changed successfully to {} for event id: {}", status, id);
+    }
+
+    @Override
+    @Transactional
+    public void deleteEvent(Long id, String email) {
+        log.info("Soft deleting event id: {} by user email: {}", id, email);
+
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + id));
+
+        verifyUserFanpageMembership(event.getFanpageId(), email);
+
+        event.setActive(false);
+        eventRepository.save(event);
+        log.info("Event soft deleted successfully for event id: {}", id);
+    }
+
+    private void verifyUserFanpageMembership(Long fanpageId, String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with email: " + email);
+        }
+
+        FanpageMember fanpageMember = fanpageMemberRepository.findById(fanpageId, user.getId())
+                .orElseThrow(() -> new AccessDeniedException("User is not a member of this fanpage"));
+        if (!fanpageMember.isActive()) {
+            throw new AccessDeniedException("User no longer has active membership in this fanpage");
+        }
+    }
+
     private void validateReferences(EventCreateDto dto, String email) {
         Fanpage fanpage = fanpageRepository.findById(dto.fanpageId())
                 .orElseThrow(() -> new ResourceNotFoundException("Fanpage not found with id: " + dto.fanpageId()));
+
+        verifyUserFanpageMembership(fanpage.getId(), email);
 
         EventType eventType = eventTypeRepository.findById(dto.eventTypeId());
         if (eventType == null) {
             throw new ResourceNotFoundException("EventType not found with id: " + dto.eventTypeId());
         }
 
-        User user = userRepository.findByEmail(email);
-        if (user == null) {
-            throw new ResourceNotFoundException("User not found with email: " + email);
+        if (dto.criteriaId() != null) {
+            Criteria criteria = criteriaRepository.findById(dto.criteriaId());
+            if (criteria == null) {
+                throw new ResourceNotFoundException("Criteria not found with id: " + dto.criteriaId());
+            }
         }
 
-        //Verify user is an active member of the target fanpage
-        FanpageMember fanpageMember = fanpageMemberRepository.findById(fanpage.getId(), user.getId())
-                .orElseThrow(() -> new AccessDeniedException("User is not a member of this fanpage"));
-        if (!fanpageMember.isActive()) {
-            throw new AccessDeniedException("User no longer has active membership in this fanpage");
+        if (dto.semesterId() != null) {
+            semesterRepository.findById(dto.semesterId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Semester not found with id: " + dto.semesterId()));
+        }
+    }
+
+    private void validateUpdateReferences(EventUpdateDto dto) {
+        EventType eventType = eventTypeRepository.findById(dto.eventTypeId());
+        if (eventType == null) {
+            throw new ResourceNotFoundException("EventType not found with id: " + dto.eventTypeId());
         }
 
         if (dto.criteriaId() != null) {
