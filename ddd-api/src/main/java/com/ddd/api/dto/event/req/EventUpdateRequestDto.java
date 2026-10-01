@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Positive;
 import java.time.LocalDate;
 import java.util.List;
 
-public record EventCreateRequestDto(
+public record EventUpdateRequestDto(
         @NotNull @NotBlank String name,
         @NotNull @NotBlank String description,
         @NotNull @NotBlank String location,
@@ -21,7 +21,6 @@ public record EventCreateRequestDto(
         @NotNull @NotBlank String bannerUrl,
         @NotNull @Positive Long eventTypeId,
         @Positive Long criteriaId,
-        @NotNull @Positive Long fanpageId,
         @NotNull @Positive Long semesterId,
         @NotNull List<EventPointRequestDto> eventPoints
 ) {
