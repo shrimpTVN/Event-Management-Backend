@@ -3,13 +3,7 @@ package com.ddd.infrastructure.repository;
 import com.ddd.domain.model.Event;
 import com.ddd.domain.model.EventPoint;
 import com.ddd.domain.repository.EventRepository;
-import com.ddd.infrastructure.entity.CriteriaJpaEntity;
-import com.ddd.infrastructure.entity.EventJpaEntity;
-import com.ddd.infrastructure.entity.EventPointJpaEntity;
-import com.ddd.infrastructure.entity.EventTypeJpaEntity;
-import com.ddd.infrastructure.entity.FanpageJpaEntity;
-import com.ddd.infrastructure.entity.PointCategoryJpaEntity;
-import com.ddd.infrastructure.entity.SemesterJpaEntity;
+import com.ddd.infrastructure.entity.*;
 import com.ddd.infrastructure.mapper.EventMapper;
 import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
 import jakarta.persistence.EntityManager;
@@ -30,47 +24,14 @@ public class EventRepositoryImpl implements EventRepository {
 
     @Override
     public Event save(Event event) {
-        EventJpaEntity entity = eventMapper.toJpaEntity(event);
+        // Initialize or update the base entity
+        EventJpaEntity entity = prepareEntityForSave(event);
 
-        if (event.getEventTypeId() != null) {
-            EventTypeJpaEntity eventTypeRef = entityManager.getReference(EventTypeJpaEntity.class, event.getEventTypeId());
-            entity.setEventType(eventTypeRef);
-        }
+        // Resolve and set JPA proxies for related aggregates
+        setAssociationReferences(event, entity);
 
-        if (event.getCriteriaId() != null) {
-            CriteriaJpaEntity criteriaRef = entityManager.getReference(CriteriaJpaEntity.class, event.getCriteriaId());
-            entity.setCriteria(criteriaRef);
-        } else {
-            entity.setCriteria(null);
-        }
-
-        if (event.getFanpageId() != null) {
-            FanpageJpaEntity fanpageRef = entityManager.getReference(FanpageJpaEntity.class, event.getFanpageId());
-            entity.setFanpage(fanpageRef);
-        }
-
-        if (event.getSemesterId() != null) {
-            SemesterJpaEntity semesterRef = entityManager.getReference(SemesterJpaEntity.class, event.getSemesterId());
-            entity.setSemester(semesterRef);
-        } else {
-            entity.setSemester(null);
-        }
-
-        if (event.getEventPoints() != null && !event.getEventPoints().isEmpty()) {
-            for (EventPoint ep : event.getEventPoints()) {
-                EventPointJpaEntity epEntity = new EventPointJpaEntity();
-                epEntity.setEvent(entity);
-
-                if (ep.getPointCategoryId() != null) {
-                    PointCategoryJpaEntity pointCategoryRef = entityManager
-                            .getReference(PointCategoryJpaEntity.class, ep.getPointCategoryId());
-
-                    epEntity.setPointCategory(pointCategoryRef);
-                }
-                epEntity.setPoint(ep.getPoint());
-                entity.getEventPoints().add(epEntity);
-            }
-        }
+        //Synchronize the EventPoints collection
+        syncEventPoints(event, entity);
 
         EventJpaEntity savedEntity = eventJpaRepository.save(entity);
         return eventMapper.toDomainModel(savedEntity);
@@ -85,5 +46,56 @@ public class EventRepositoryImpl implements EventRepository {
     public Page<Event> findByFanpageId(Long fanpageId, Pageable pageable) {
         return eventJpaRepository.findByFanpage_Id(fanpageId, pageable)
                 .map(eventMapper::toDomainModel);
+    }
+
+    private EventJpaEntity prepareEntityForSave(Event event) {
+        if (event.getId() == null) {
+            return eventMapper.toJpaEntity(event);
+        }
+
+        EventJpaEntity entity = eventJpaRepository.findById(event.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Event with ID " + event.getId() + " not found"));
+
+        entity.getEventPoints().clear();
+        entityManager.flush(); // Execute DELETE statements immediately to free unique keys
+        eventMapper.updateJpaEntity(event, entity);
+
+        return entity;
+    }
+
+    private void setAssociationReferences(Event event, EventJpaEntity entity) {
+        if (event.getEventTypeId() == null || event.getSemesterId() == null || event.getFanpageId() == null) {
+            throw new IllegalArgumentException("EventTypeId, SemesterId, and FanpageId must not be null");
+        }
+
+        entity.setEventType(entityManager.getReference(EventTypeJpaEntity.class, event.getEventTypeId()));
+        entity.setFanpage(entityManager.getReference(FanpageJpaEntity.class, event.getFanpageId()));
+        entity.setSemester(entityManager.getReference(SemesterJpaEntity.class, event.getSemesterId()));
+
+        if (event.getCriteriaId() != null) {
+            entity.setCriteria(entityManager.getReference(CriteriaJpaEntity.class, event.getCriteriaId()));
+        } else {
+            entity.setCriteria(null);
+        }
+    }
+
+    private void syncEventPoints(Event event, EventJpaEntity entity) {
+        if (event.getEventPoints() == null || event.getEventPoints().isEmpty()) {
+            return;
+        }
+
+        for (EventPoint ep : event.getEventPoints()) {
+            EventPointJpaEntity epEntity = new EventPointJpaEntity();
+            epEntity.setEvent(entity);
+            epEntity.setPoint(ep.getPoint());
+
+            if (ep.getPointCategoryId() != null) {
+                epEntity.setPointCategory(
+                        entityManager.getReference(PointCategoryJpaEntity.class, ep.getPointCategoryId())
+                );
+            }
+
+            entity.getEventPoints().add(epEntity);
+        }
     }
 }

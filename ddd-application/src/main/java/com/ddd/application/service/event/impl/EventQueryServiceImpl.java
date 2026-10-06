@@ -24,7 +24,7 @@ public class EventQueryServiceImpl implements EventQueryService {
 
     @Override
     public EventInfoDto getEventById(Long id) {
-        EventJpaEntity eventJpaEntity = eventJpaRepository.findWithDetailsById(id)
+        EventJpaEntity eventJpaEntity = eventJpaRepository.findWithDetailsByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + id));
 
         return eventDtoMapper.toInfoDto(eventJpaEntity);
@@ -34,7 +34,7 @@ public class EventQueryServiceImpl implements EventQueryService {
     public Page<EventInfoDto> getAllEventsByFanpageId(Long fanpageId, int page, int size, String sortBy, String sortDir) {
         Pageable pageable = createPageable(page, size, sortBy, sortDir);
         
-        return eventJpaRepository.findWithDetailsByFanpage_Id(fanpageId, pageable)
+        return eventJpaRepository.findWithDetailsByFanpage_IdAndIsActiveTrue(fanpageId, pageable)
                 .map(eventDtoMapper::toInfoDto);
     }
 
