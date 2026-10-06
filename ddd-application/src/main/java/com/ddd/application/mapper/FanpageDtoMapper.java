@@ -6,6 +6,7 @@ import com.ddd.application.dto.fanpage.FanpageRegisterDto;
 import com.ddd.domain.model.Fanpage;
 import com.ddd.domain.model.FanpageMember;
 import com.ddd.infrastructure.entity.FanpageMemberJpaEntity;
+import com.ddd.infrastructure.repository.projection.FanpageMemberProjection;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -18,4 +19,6 @@ public interface FanpageDtoMapper {
     @Mapping(target = "userId", source = "fanpageMemberJpaEntity.user.id")
     @Mapping(target = "email", source = "fanpageMemberJpaEntity.user.email")
     FanpageMemberDto toMemberDto(FanpageMemberJpaEntity fanpageMemberJpaEntity);
+
+    FanpageMemberDto toMemberDto(FanpageMemberProjection projection);
 }
