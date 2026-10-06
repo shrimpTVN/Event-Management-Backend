@@ -8,4 +8,8 @@ public interface FanpageService {
     void acceptFanpage(Long fanpageId);
 
     void banFanpage(Long fanpageId);
+
+    void addMemberToFanpage(Long fanpageId, Long userId, String email);
+
+    void removeMemberFromFanpage(Long fanpageId, Long userId, String email);
 }

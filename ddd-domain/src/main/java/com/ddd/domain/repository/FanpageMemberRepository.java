@@ -10,4 +10,8 @@ public interface FanpageMemberRepository {
     FanpageMember save(FanpageMember fanpageMember);
 
     boolean isAlreadyHasFanpage(Long userId);
+
+    boolean isAdminOfFanpage(Long fanpageId, Long userId);
+
+    void removeFanpageMember(Long fanpageId, Long userId);
 }

@@ -264,6 +264,7 @@ CREATE TABLE semesters
 -- ============================================================
 CREATE TABLE student_semester_points
 (
+    id                BIGINT         NOT NULL GENERATED ALWAYS AS IDENTITY,
     user_id           BIGINT         NOT NULL,
     semester_id       BIGINT         NOT NULL,
     point_category_id BIGINT         NOT NULL,
@@ -273,8 +274,8 @@ CREATE TABLE student_semester_points
     created_at        TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
     created_by        BIGINT,
     updated_at        TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
-    updated_by        BIGINT,
-    CONSTRAINT pk_student_semester_points PRIMARY KEY (user_id, semester_id, point_category_id)
+    updated_by        BIGINT
+--     CONSTRAINT pk_student_semester_points PRIMARY KEY (user_id, semester_id, point_category_id)
 );
 
 -- ============================================================
@@ -283,16 +284,19 @@ CREATE TABLE student_semester_points
 -- ============================================================
 CREATE TABLE criterias
 (
-    id          BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
-    name        VARCHAR(255) NOT NULL,
-    description TEXT,
-    scope       TEXT,
-    is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
+    id             BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
+    name           VARCHAR(255) NOT NULL,
+    note           TEXT,
+    scope          TEXT,
+    level          INTEGER      NOT NULL DEFAULT 0,
+    children_order INTEGER      NOT NULL DEFAULT 1,
+    parent_id      BIGINT,
+    is_active      BOOLEAN      NOT NULL DEFAULT TRUE,
     -- audit
-    created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    created_by  BIGINT,
-    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_by  BIGINT,
+    created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_by     BIGINT,
+    updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_by     BIGINT,
     CONSTRAINT pk_criterias PRIMARY KEY (id)
 );
 
@@ -401,7 +405,8 @@ CREATE TABLE conversations
     created_by BIGINT,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by BIGINT,
-    CONSTRAINT pk_conversations PRIMARY KEY (id)
+    CONSTRAINT pk_conversations PRIMARY KEY (id),
+    UNIQUE (user_id, fanpage_id)
 );
 
 -- ============================================================
@@ -538,6 +543,10 @@ ALTER TABLE events
 ALTER TABLE point_categories
     ADD CONSTRAINT fk_point_categories_parent
         FOREIGN KEY (parent_category_id) REFERENCES point_categories (id) ON DELETE SET NULL;
+
+ALTER TABLE criterias
+    ADD CONSTRAINT fk_criterias_parent
+        FOREIGN KEY (parent_id) REFERENCES criterias (id) ON DELETE SET NULL;
 
 ALTER TABLE event_points
     ADD CONSTRAINT fk_event_points_events

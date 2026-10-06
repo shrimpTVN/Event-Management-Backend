@@ -8,6 +8,7 @@ target/
 .env
 .codegraph/
 .agents/
+.gemini/
 
 ### STS ###
 .apt_generated

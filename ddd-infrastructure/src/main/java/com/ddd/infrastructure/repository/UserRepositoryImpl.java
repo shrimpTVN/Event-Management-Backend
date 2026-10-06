@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -44,6 +45,11 @@ public class UserRepositoryImpl implements UserRepository {
         UserJpaEntity userJpaEntity = userMapper.toEntity(user);
         userJpaEntity.setRole(roleJpaEntity);
         return userMapper.toDomain(userJpaRepository.save(userJpaEntity));
+    }
+
+    @Override
+    public Optional<User> findById(Long userId) {
+        return userJpaRepository.findById(userId).map(userMapper::toDomain);
     }
 
 }
