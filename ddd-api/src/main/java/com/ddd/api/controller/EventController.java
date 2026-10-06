@@ -85,7 +85,7 @@ public class EventController {
         return BaseResponse.ok();
     }
 
-    @DeleteMapping({"/{id}", "/fanpage-member/{id}"})
+    @DeleteMapping({"/admin/{id}", "/fanpage-member/{id}"})
     public BaseResponse<Void> deleteEvent(
             @PathVariable Long id,
             Authentication authentication) {

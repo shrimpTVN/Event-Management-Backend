@@ -1,8 +1,8 @@
 package com.ddd.domain.repository;
 
 import com.ddd.domain.model.User;
-
 import java.util.List;
+import java.util.Optional;
 
 public interface UserRepository {
     User findByEmail(String email);
@@ -10,4 +10,5 @@ public interface UserRepository {
     Boolean existsByEmail(String email);
     User save(User user, String roleName);
 
+    Optional<User> findById(Long userId);
 }
