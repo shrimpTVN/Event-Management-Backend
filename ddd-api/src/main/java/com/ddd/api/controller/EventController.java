@@ -57,5 +57,16 @@ public class EventController {
         Page<EventInfoDto> eventInfoPage = eventQueryService.getAllEventsByFanpageId(fanpageId, page, size, sortBy, sortDir);
         return BaseResponse.of(eventInfoPage.map(eventApiMapper::toResponseDto));
     }
+
+    @GetMapping("/admin")
+    public BaseResponse<Page<EventResponseDto>> getAllEvent(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+
+        Page<EventInfoDto> eventInfoPage = eventQueryService.getAllEvents(page, size, sortBy, sortDir);
+        return BaseResponse.of(eventInfoPage.map(eventApiMapper::toResponseDto));
+    }
 }
 
