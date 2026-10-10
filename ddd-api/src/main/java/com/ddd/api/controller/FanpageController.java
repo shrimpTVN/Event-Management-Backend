@@ -10,12 +10,15 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import com.ddd.application.service.registration.RegistrationCommandService;
+
 @RestController
 @RequestMapping("/fanpages")
 @RequiredArgsConstructor
 public class FanpageController {
     private final FanpageService fanpageService;
     private final FanpageApiMapper fanpageApiMapper;
+    private final RegistrationCommandService registrationCommandService;
 
     @PostMapping("/fanpage-admin/register")
     public BaseResponse<?> registerFanpage(@RequestBody @Valid FanpageRegisterRequestDto request,
@@ -34,6 +37,24 @@ public class FanpageController {
     @PostMapping("/admin/ban-fanpage/{fanpageId}")
     public BaseResponse<?> banFanpage(@PathVariable Long fanpageId) {
         fanpageService.banFanpage(fanpageId);
+        return BaseResponse.ok();
+    }
+
+    @PatchMapping("/events/{eventId}/users/{studentUserId}/check-in")
+    public BaseResponse<Void> adminCheckIn(Authentication authentication, 
+                                           @PathVariable Long eventId, 
+                                           @PathVariable Long studentUserId) {
+        String adminEmail = authentication.getName();
+        registrationCommandService.adminCheckIn(adminEmail, eventId, studentUserId);
+        return BaseResponse.ok();
+    }
+
+    @PatchMapping("/events/{eventId}/users/{studentUserId}/check-out")
+    public BaseResponse<Void> adminCheckOut(Authentication authentication, 
+                                            @PathVariable Long eventId, 
+                                            @PathVariable Long studentUserId) {
+        String adminEmail = authentication.getName();
+        registrationCommandService.adminCheckOut(adminEmail, eventId, studentUserId);
         return BaseResponse.ok();
     }
 }
