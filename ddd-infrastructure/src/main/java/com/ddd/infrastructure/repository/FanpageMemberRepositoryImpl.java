@@ -10,7 +10,6 @@ import com.ddd.infrastructure.entity.FanpageMemberJpaEntityId;
 import com.ddd.infrastructure.entity.UserJpaEntity;
 import com.ddd.infrastructure.mapper.FanpageMemberMapper;
 import com.ddd.infrastructure.repository.jpaRepository.FanpageMemberJpaRepository;
-import com.ddd.infrastructure.repository.jpaRepository.UserJpaRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -27,9 +26,7 @@ public class FanpageMemberRepositoryImpl implements FanpageMemberRepository {
     public Optional<FanpageMember> findById(Long fanpageId, Long userId) {
 
         FanpageMemberJpaEntityId id = new FanpageMemberJpaEntityId(fanpageId, userId);
-
         Optional<FanpageMemberJpaEntity> entity = fanpageMemberJpaRepository.findById(id);
-
 
         return entity.map(fanpageMemberMapper::toDomain);
     }
@@ -48,7 +45,6 @@ public class FanpageMemberRepositoryImpl implements FanpageMemberRepository {
         fanpageMemberJpaEntity.setFanpage(fanpageRef);
         fanpageMemberJpaEntity.setUser(userRef);
 
-
         FanpageMemberJpaEntity savedEntity = fanpageMemberJpaRepository.save(fanpageMemberJpaEntity);
 
         return fanpageMemberMapper.toDomain(savedEntity);
@@ -57,5 +53,20 @@ public class FanpageMemberRepositoryImpl implements FanpageMemberRepository {
     @Override
     public boolean isAlreadyHasFanpage(Long userId) {
         return fanpageMemberJpaRepository.existsByUserIdAndRoleAndIsActive(userId, FanpageRoleEnum.ADMIN.name(), true);
+    }
+
+    @Override
+    public boolean isAdminOfFanpage(Long fanpageId, Long userId) {
+        return fanpageMemberJpaRepository
+                .existsByFanpageIdAndUserIdAndRoleAndIsActive(fanpageId, userId, FanpageRoleEnum.ADMIN.name(), true);
+    }
+
+    @Override
+    public void removeFanpageMember(Long fanpageId, Long userId) {
+        FanpageMemberJpaEntityId id = new FanpageMemberJpaEntityId(fanpageId, userId);
+        FanpageMemberJpaEntity fanpageMemberJpaEntity = fanpageMemberJpaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User is not a member of the fanpage or does not exist"));
+
+        fanpageMemberJpaRepository.delete(fanpageMemberJpaEntity);
     }
 }

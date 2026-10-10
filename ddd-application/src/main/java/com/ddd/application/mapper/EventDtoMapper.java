@@ -9,10 +9,9 @@ import com.ddd.domain.model.Event;
 import com.ddd.domain.model.EventPoint;
 import com.ddd.infrastructure.entity.EventJpaEntity;
 import com.ddd.infrastructure.entity.EventPointJpaEntity;
+import com.ddd.application.dto.event.EventUpdateDto;
 import com.ddd.infrastructure.entity.SemesterJpaEntity;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
+import org.mapstruct.*;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -37,6 +36,16 @@ public interface EventDtoMapper {
 
     // Mapping for Event
     Event toEvent(EventCreateDto dto);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "fanpageId", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "active", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    void updateEventFromDto(@MappingTarget Event event, EventUpdateDto dto);
 
     @Mapping(target = "eventTypeName", source = "eventType.name")
     @Mapping(target = "criteriaName", source = "criteria.name")

@@ -5,6 +5,7 @@ import com.ddd.application.mapper.FanpageDtoMapper;
 import com.ddd.application.service.fanpage.FanpageService;
 import com.ddd.domain.enums.FanpageRoleEnum;
 import com.ddd.domain.enums.FanpageStatusEnum;
+import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.DuplicateResourceException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.Fanpage;
@@ -21,13 +22,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class FanpageServiceImpl implements FanpageService {
     private final FanpageRepository fanpageRepository;
     private final FanpageMemberRepository fanpageMemberRepository;
     private final FanpageDtoMapper fanpageDtoMapper;
     private final UserRepository userRepository;
 
-    @Transactional
+
     @Override
     public void createFanpage(FanpageRegisterDto registerDto, String email) {
         //check duplicate  fanpage name
@@ -66,5 +68,34 @@ public class FanpageServiceImpl implements FanpageService {
         fanpage.setStatus(FanpageStatusEnum.BANNED.name());
         fanpageRepository.save(fanpage);
         log.info("Fanpage banned successfully: {}", fanpage.getName());
+    }
+
+    @Override
+    public void addMemberToFanpage(Long fanpageId, Long userId, String email) {
+        User member = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        User fanpageAdmin = userRepository.findByEmail(email);
+
+        if (fanpageMemberRepository.isAdminOfFanpage(fanpageAdmin.getId(), userId)) {
+            throw new BusinessException("User email: " + email + " is not an admin of the fanpage");
+        }
+
+        FanpageMember fanpageMember = new FanpageMember(fanpageId, member.getId(), FanpageRoleEnum.MEMBER.name());
+        fanpageMemberRepository.save(fanpageMember);
+        log.info("Member added to fanpage successfully: {}", member.getEmail());
+    }
+
+    @Override
+    public void removeMemberFromFanpage(Long fanpageId, Long userId, String email) {
+        User member = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        User fanpageAdmin = userRepository.findByEmail(email);
+
+        if (fanpageMemberRepository.isAdminOfFanpage(fanpageAdmin.getId(), userId)) {
+            throw new BusinessException("User email: " + email + " is not an admin of the fanpage");
+        }
+
+        fanpageMemberRepository.removeFanpageMember(fanpageId, userId);
+        log.info("Member removed from fanpage successfully: {}", member.getEmail());
     }
 }

@@ -3,9 +3,8 @@ package com.ddd.infrastructure.mapper;
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.model.Event;
 import com.ddd.infrastructure.entity.EventJpaEntity;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
+import org.mapstruct.*;
+import org.springframework.context.annotation.Bean;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -36,6 +35,13 @@ public interface EventMapper {
     @Mapping(target = "dateHappen", source = "dateHappen", qualifiedByName = "localDateToInstant")
     @Mapping(target = "status", source = "status", qualifiedByName = "stringToEventStatusEnum")
     EventJpaEntity toJpaEntity(Event domain);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "eventPoints", ignore = true)
+    @Mapping(target = "dateOpen", source = "dateOpen", qualifiedByName = "localDateToInstant")
+    @Mapping(target = "dateClose", source = "dateClose", qualifiedByName = "localDateToInstant")
+    @Mapping(target = "dateHappen", source = "dateHappen", qualifiedByName = "localDateToInstant")
+    void updateJpaEntity(Event domain, @MappingTarget EventJpaEntity entity);
 
     @Named("instantToLocalDate")
     default LocalDate mapInstantToLocalDate(Instant instant) {
