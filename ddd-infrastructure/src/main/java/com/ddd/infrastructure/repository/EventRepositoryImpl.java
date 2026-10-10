@@ -1,5 +1,6 @@
 package com.ddd.infrastructure.repository;
 
+import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.Event;
 import com.ddd.domain.model.EventPoint;
 import com.ddd.domain.repository.EventRepository;
@@ -38,8 +39,11 @@ public class EventRepositoryImpl implements EventRepository {
     }
 
     @Override
-    public Optional<Event> findById(Long id) {
-        return eventJpaRepository.findById(id).map(eventMapper::toDomainModel);
+    public Event findById(Long id) {
+        EventJpaEntity eventJpaEntity = eventJpaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Not found event"));
+
+        return eventMapper.toDomainModel(eventJpaEntity);
     }
 
     @Override

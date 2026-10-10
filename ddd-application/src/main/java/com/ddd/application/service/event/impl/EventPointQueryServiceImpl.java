@@ -24,4 +24,6 @@ public class EventPointQueryServiceImpl implements EventPointQueryService {
                 .map(eventDtoMapper::toEventPointInfoDto)
                 .toList();
     }
+
+
 }
