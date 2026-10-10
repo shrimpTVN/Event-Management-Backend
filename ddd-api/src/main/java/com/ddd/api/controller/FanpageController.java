@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import com.ddd.application.service.registration.RegistrationCommandService;
 import java.util.List;
 
 @RestController
@@ -21,6 +22,7 @@ import java.util.List;
 public class FanpageController {
     private final FanpageService fanpageService;
     private final FanpageApiMapper fanpageApiMapper;
+    private final RegistrationCommandService registrationCommandService;
     private final FanpageQueryService fanpageQueryService;
 
     @PostMapping("/fanpage-admin/register")
@@ -43,6 +45,23 @@ public class FanpageController {
         return BaseResponse.ok();
     }
 
+    @PatchMapping("/events/{eventId}/users/{studentUserId}/check-in")
+    public BaseResponse<Void> adminCheckIn(Authentication authentication, 
+                                           @PathVariable Long eventId, 
+                                           @PathVariable Long studentUserId) {
+        String adminEmail = authentication.getName();
+        registrationCommandService.adminCheckIn(adminEmail, eventId, studentUserId);
+        return BaseResponse.ok();
+    }
+
+    @PatchMapping("/events/{eventId}/users/{studentUserId}/check-out")
+    public BaseResponse<Void> adminCheckOut(Authentication authentication, 
+                                            @PathVariable Long eventId, 
+                                            @PathVariable Long studentUserId) {
+        String adminEmail = authentication.getName();
+        registrationCommandService.adminCheckOut(adminEmail, eventId, studentUserId);
+        return BaseResponse.ok();
+    }
     @GetMapping("/{fanpageId}/members")
     public BaseResponse<List<FanpageMemberResponseDto>> getMembersOfFanpage(@PathVariable Long fanpageId) {
 

@@ -1,6 +1,8 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
+import com.ddd.api.dto.registration.req.CheckInRequestDto;
+import com.ddd.api.dto.registration.req.CheckOutRequestDto;
 import com.ddd.api.dto.registration.res.RegistrationResponseDto;
 import com.ddd.api.mapper.RegistrationApiMapper;
 import com.ddd.application.service.registration.RegistrationCommandService;
@@ -65,4 +67,25 @@ public class RegistrationController {
 
         return BaseResponse.of(responseList);
     }
+
+    @PatchMapping("/events/{eventId}/check-in")
+    public BaseResponse<Void> checkIn(Authentication authentication,
+                                      @PathVariable Long eventId
+                                      ) {
+        String email = authentication.getName();
+        registrationCommandService.checkIn(email, eventId);
+        return BaseResponse.ok();
+
+    }
+
+
+    @PatchMapping("/events/{eventId}/check-out")
+    public BaseResponse<Void> checkOut(Authentication authentication,
+                                       @PathVariable Long eventId,
+                                       @RequestBody CheckOutRequestDto checkOutRequestDto) {
+        String email = authentication.getName();
+        registrationCommandService.checkOut(email, eventId, checkOutRequestDto.proofUrl());
+        return BaseResponse.ok();
+    }
+
 }
