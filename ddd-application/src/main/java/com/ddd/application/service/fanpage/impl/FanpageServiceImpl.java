@@ -98,4 +98,12 @@ public class FanpageServiceImpl implements FanpageService {
         fanpageMemberRepository.removeFanpageMember(fanpageId, userId);
         log.info("Member removed from fanpage successfully: {}", member.getEmail());
     }
+
+    @Override
+    public void unbanFanpage(Long fanpageId) {
+        Fanpage fanpage = fanpageRepository.findById(fanpageId).orElseThrow(() -> new ResourceNotFoundException("Fanpage not found"));
+        fanpage.setStatus(FanpageStatusEnum.ACTIVE.name());
+        fanpageRepository.save(fanpage);
+        log.info("Fanpage unbanned successfully: {}", fanpage.getName());
+    }
 }

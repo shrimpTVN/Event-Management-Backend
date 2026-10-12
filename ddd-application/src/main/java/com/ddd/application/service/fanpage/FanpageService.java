@@ -12,4 +12,6 @@ public interface FanpageService {
     void addMemberToFanpage(Long fanpageId, Long userId, String email);
 
     void removeMemberFromFanpage(Long fanpageId, Long userId, String email);
+
+    void unbanFanpage(Long fanpageId);
 }

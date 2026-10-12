@@ -43,6 +43,13 @@ public class FanpageController {
         return BaseResponse.ok();
     }
 
+
+    @PostMapping("/admin/unban-fanpage/{fanpageId}")
+    public BaseResponse<?> unbanFanpage(@PathVariable Long fanpageId) {
+        fanpageService.unbanFanpage(fanpageId);
+        return BaseResponse.ok();
+    }
+
     @GetMapping("/{fanpageId}/members")
     public BaseResponse<List<FanpageMemberResponseDto>> getMembersOfFanpage(@PathVariable Long fanpageId) {
 
