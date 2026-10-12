@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface CriteriaApiMapper {
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "isActive", ignore = true)
+    @Mapping(target = "isActive", constant = "true")
     CriteriaDto toCriteriaDto(CriteriaRequestDto requestDto);
     
     CriteriaResponseDto toCriteriaResponseDto(CriteriaDto criteriaDto);

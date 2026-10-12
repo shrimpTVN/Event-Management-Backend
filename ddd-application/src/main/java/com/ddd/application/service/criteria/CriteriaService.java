@@ -9,5 +9,8 @@ public interface CriteriaService {
     void deleteCriteria(Long id);
     CriteriaDto getCriteriaById(Long id);
     List<CriteriaDto> getAllCriterias(boolean isActive);
+    List<CriteriaDto> getCriteriasByParentId(Long parentId);
+    List<CriteriaDto> getCriteriasByLevel(Integer level);
     void changeStatus(Long id);
 }
+
