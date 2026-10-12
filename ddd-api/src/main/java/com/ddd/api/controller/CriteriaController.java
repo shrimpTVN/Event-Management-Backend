@@ -35,11 +35,40 @@ public class CriteriaController {
 
     @GetMapping
     public BaseResponse<List<CriteriaResponseDto>> getAllCriterias(
-            @RequestParam(defaultValue = "true") boolean isActive) {
-        List<CriteriaDto> criteriaList = criteriaService.getAllCriterias(isActive);
+            @RequestParam(defaultValue = "true") boolean isActive,
+            @RequestParam(required = false) Long parentId,
+            @RequestParam(required = false) Integer level) {
+        List<CriteriaDto> criteriaList;
+        if (parentId != null) {
+            criteriaList = criteriaService.getCriteriasByParentId(parentId);
+        } else if (level != null) {
+            criteriaList = criteriaService.getCriteriasByLevel(level);
+        } else {
+            criteriaList = criteriaService.getAllCriterias(isActive);
+        }
         List<CriteriaResponseDto> responseList = criteriaList.stream()
                 .map(criteriaApiMapper::toCriteriaResponseDto)
-                .collect(Collectors.toList());
+                .toList();
+        return BaseResponse.of(responseList);
+    }
+
+    @GetMapping("/parentId")
+    public BaseResponse<List<CriteriaResponseDto>> getCriteriasByParentId(
+            @RequestParam(defaultValue = "0") Long parentId) {
+        List<CriteriaDto> criteriaList = criteriaService.getCriteriasByParentId(parentId);
+        List<CriteriaResponseDto> responseList = criteriaList.stream()
+                .map(criteriaApiMapper::toCriteriaResponseDto)
+                .toList();
+        return BaseResponse.of(responseList);
+    }
+
+    @GetMapping("/level")
+    public BaseResponse<List<CriteriaResponseDto>> getCriteriasByLevel(
+            @RequestParam(defaultValue = "0") Integer level) {
+        List<CriteriaDto> criteriaList = criteriaService.getCriteriasByLevel(level);
+        List<CriteriaResponseDto> responseList = criteriaList.stream()
+                .map(criteriaApiMapper::toCriteriaResponseDto)
+                .toList();
         return BaseResponse.of(responseList);
     }
 
