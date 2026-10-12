@@ -19,7 +19,7 @@ public class CriteriaRepositoryImpl implements CriteriaRepository {
     private final CriteriaMapper criteriaMapper;
 
     private Sort getDefaultSort() {
-        return Sort.by(Sort.Direction.ASC, "parent.id")
+        return Sort.by(Sort.Direction.ASC, "level")
                 .and(Sort.by(Sort.Direction.ASC, "childrenOrder"));
     }
 

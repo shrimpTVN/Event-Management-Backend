@@ -3,6 +3,7 @@ package com.ddd.application.service.criteria.impl;
 import com.ddd.application.dto.criteria.CriteriaDto;
 import com.ddd.application.mapper.CriteriaDtoMapper;
 import com.ddd.application.service.criteria.CriteriaService;
+import com.ddd.domain.enums.CriteriaScopeEnum;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.Criteria;
 import com.ddd.domain.repository.CriteriaRepository;
@@ -22,6 +23,15 @@ public class CriteriaServiceImpl implements CriteriaService {
     @Override
     public CriteriaDto createCriteria(CriteriaDto criteriaDto) {
         Criteria criteria = criteriaDtoMapper.toCriteria(criteriaDto);
+        if (criteria.getParentId() != null) {
+            Criteria parent = criteriaRepository.findById(criteria.getParentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Parent criteria not found with id: " + criteria.getParentId()));
+            criteria.setLevel(parent.getLevel() + 1);
+            criteria.setScope(parent.getScope());
+        } else {
+            criteria.setLevel(0);
+            criteria.setScope(criteriaDto.scope() != null ? criteriaDto.scope() : CriteriaScopeEnum.UNIVERSITY.name());
+        }
         return criteriaDtoMapper.toDto(criteriaRepository.save(criteria));
     }
 
