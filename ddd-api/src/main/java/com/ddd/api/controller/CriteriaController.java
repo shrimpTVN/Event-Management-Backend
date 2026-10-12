@@ -33,7 +33,7 @@ public class CriteriaController {
         return BaseResponse.of(criteriaApiMapper.toCriteriaResponseDto(result));
     }
 
-    @GetMapping
+    @GetMapping({"/",""})
     public BaseResponse<List<CriteriaResponseDto>> getAllCriterias(
             @RequestParam(defaultValue = "true") boolean isActive,
             @RequestParam(required = false) Long parentId,
