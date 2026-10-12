@@ -1,5 +1,6 @@
 package com.ddd.domain.model;
 
+import com.ddd.domain.enums.RegistrationStatusEnum;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,7 +15,7 @@ public class Registration {
     private Instant checkInAt;
     private Instant checkOutAt;
     private String evidenceUrl;
-    private String status;
+    private RegistrationStatusEnum status;
     private String reason;
     private Instant createdAt;
     private Long createdBy;

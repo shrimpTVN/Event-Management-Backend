@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import com.ddd.domain.enums.RegistrationStatusEnum;
 
 @Entity
 @Table(name = "registrations")
@@ -42,8 +43,9 @@ public class RegistrationJpaEntity {
     @Column(name = "evidence_url", columnDefinition = "TEXT")
     private String evidenceUrl;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 50)
-    private String status = "REGISTERED";
+    private RegistrationStatusEnum status = RegistrationStatusEnum.REGISTERED;
 
     @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;

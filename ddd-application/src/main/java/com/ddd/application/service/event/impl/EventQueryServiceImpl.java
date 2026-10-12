@@ -43,4 +43,11 @@ public class EventQueryServiceImpl implements EventQueryService {
                 Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         return PageRequest.of(page, size, sort);
     }
-}
+
+    @Override
+    public Page<EventInfoDto> getAllEvents(int page, int size, String sortBy, String sortDir) {
+        Pageable pageable = createPageable(page, size, sortBy, sortDir);
+
+        return eventJpaRepository.findAll(pageable)
+                .map(eventDtoMapper::toInfoDto);
+    }}
