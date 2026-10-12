@@ -4,3 +4,5 @@ VALUES ('Đạo đức tốt', 'Tiêu chí đánh giá rèn luyện đạo đứ
        ('Thể lực tốt', 'Tiêu chí đánh giá sức khoẻ, thể dục thể thao', 'Trường/Khoa', 1),
        ('Tình nguyện tốt', 'Tiêu chí đánh giá hoạt động tình nguyện', 'Trường/Khoa', 1),
        ('Hội nhập tốt', 'Tiêu chí đánh giá kỹ năng ngoại ngữ, hội nhập', 'Trường/Khoa', 1);
+
+DROP TABLE IF EXISTS criterias CASCADE;

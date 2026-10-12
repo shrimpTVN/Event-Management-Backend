@@ -61,8 +61,7 @@ public class EventCommandServiceImpl implements EventCommandService {
     public void updateEvent(Long id, EventUpdateDto dto, String email) {
         log.info("Updating event id: {} by user email: {}", id, email);
 
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + id));
+        Event event = eventRepository.findById(id);
 
         verifyUserFanpageMembership(event.getFanpageId(), email);
         validateUpdateReferences(dto);
@@ -80,8 +79,8 @@ public class EventCommandServiceImpl implements EventCommandService {
     public void changeEventStatus(Long id, EventStatusEnum status, String email) {
         log.info("Changing status of event id: {} to {} by user email: {}", id, status, email);
 
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + id));
+        Event event = eventRepository.findById(id);
+
 
         verifyUserFanpageMembership(event.getFanpageId(), email);
 
@@ -95,9 +94,7 @@ public class EventCommandServiceImpl implements EventCommandService {
     public void deleteEvent(Long id, String email) {
         log.info("Soft deleting event id: {} by user email: {}", id, email);
 
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + id));
-
+        Event event = eventRepository.findById(id);
         verifyUserFanpageMembership(event.getFanpageId(), email);
 
         event.setActive(false);
