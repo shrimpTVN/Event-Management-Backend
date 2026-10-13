@@ -22,11 +22,14 @@ public interface StudentProfileDtoMapper {
     StudentProfile toStudentProfile(StudentProfileDto studentProfileDto);
 
     @Mapping(source = "user.email", target = "email")
+    @Mapping(source ="user.firstName", target = "firstName")
+    @Mapping(source = "user.lastName", target = "lastName")
+    @Mapping(source ="user.gender", target = "gender")
+    @Mapping(source="user.avatarUrl", target = "avatarUrl")
     @Mapping(target = "roles", expression = "java(mapRoleNames(studentProfileJpaEntity.getUser() != null ? studentProfileJpaEntity.getUser().getRoles() : null))")
     @Mapping(target = "role", expression = "java(mapPrimaryRole(studentProfileJpaEntity.getUser() != null ? studentProfileJpaEntity.getUser().getRoles() : null))")
     @Mapping(source = "user.isActive", target = "isActive")
     @Mapping(source = "KNumber", target = "kNumber")
-    @Mapping(source = "association.name", target = "associationName")
     @Mapping(source = "major.name", target = "majorName")
     @Mapping(source = "major.code", target = "majorCode")
     @Mapping(source = "major.school.name", target = "schoolName")

@@ -10,37 +10,12 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StudentProfile extends BaseModel {
-    private String firstName;
-    private String lastName;
-    private String studentId;
-    private String gender;
-    private Integer kNumber;
-    private String avatarUrl;
 
-    private Long associationId;
+    private String studentId;
+    private Integer kNumber;
     private Long majorId;
     private Long userId;
 
-    public void updateInfo(String firstName, String lastName, String gender, Integer kNumber,
-                           String avatarUrl, Long associationId, Long majorId) {
-        if (firstName != null && !firstName.isBlank()) {
-            this.firstName = firstName.trim();
-        }
-        if (lastName != null && !lastName.isBlank()) {
-            this.lastName = lastName.trim();
-        }
-        if (gender != null) {
-            this.gender = gender;
-        }
-        if (kNumber != null) {
-            this.kNumber = kNumber;
-        }
-        if (avatarUrl != null) {
-            this.avatarUrl = avatarUrl;
-        }
-        this.associationId = associationId;
-        this.majorId = majorId;
-    }
 
     public void assignUser(Long userId) {
         if (userId == null) {

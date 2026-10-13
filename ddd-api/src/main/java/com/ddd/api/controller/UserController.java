@@ -31,7 +31,7 @@ public class UserController {
     @GetMapping("/me/profile")
     public BaseResponse<StudentProfileResponseDto> getUserProfile(Authentication authentication) {
         String email = authentication.getName();
-        StudentProfileSummaryDto profileSummaryDto = userQueryService.getProfileByEmail(email);
+        StudentProfileSummaryDto profileSummaryDto = userQueryService.getProfileStudentByEmail(email);
         return BaseResponse.of(studentProfileApiMapper.toStudentProfileResponseDto(profileSummaryDto));
     }
 
