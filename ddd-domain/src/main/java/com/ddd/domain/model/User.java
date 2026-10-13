@@ -15,6 +15,11 @@ public class User extends BaseModel {
     private String email;
     private String password;
     private String provider;
+    private String firstName;
+    private String lastName;
+    private String gender;
+    private String avatarUrl;
+
     private Set<Role> roles = new HashSet<>();
 
     public void addRole(Role role) {
