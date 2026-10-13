@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/users")
@@ -88,9 +89,16 @@ public class UserController {
     }
 
     @PatchMapping("/admin/{id}/change-role")
-    public BaseResponse<UserResponseDto> updateAdminProfileRole(@PathVariable Long id,
-                                                                          @RequestParam String role) {
-        //userCommandService.updateProfileRoleById(id, role);
+    public BaseResponse<Void> updateAdminProfileRole(@PathVariable Long id,
+                                                     @RequestParam String role) {
+        userCommandService.assignRolesToUser(id, Set.of(role));
+        return BaseResponse.ok();
+    }
+
+    @PatchMapping("/admin/{id}/change-roles")
+    public BaseResponse<Void> updateAdminProfileRoles(@PathVariable Long id,
+                                                      @RequestBody Set<String> roles) {
+        userCommandService.assignRolesToUser(id, roles);
         return BaseResponse.ok();
     }
 

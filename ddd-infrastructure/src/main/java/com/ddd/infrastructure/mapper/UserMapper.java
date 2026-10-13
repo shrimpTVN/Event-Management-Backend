@@ -5,14 +5,12 @@ import com.ddd.infrastructure.entity.UserJpaEntity;
 import org.mapstruct.*;
 
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {RoleMapper.class})
 public interface UserMapper {
 
-    @Mapping(target = "role", ignore = true)
+    @Mapping(target = "roles", ignore = true)
     UserJpaEntity toEntity(User user);
 
-    @Mapping(target = "roleId", source = "role.id")
     User toDomain(UserJpaEntity entity);
-
 
 }
