@@ -63,4 +63,12 @@ public class User extends BaseModel {
         }
         return this.roles.iterator().next().getId();
     }
+
+    public String getProviderId() {
+        return provider;
+    }
+
+    public void setProviderId(String providerId) {
+        this.provider = providerId;
+    }
 }

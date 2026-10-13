@@ -6,6 +6,7 @@ import com.ddd.application.mapper.StudentProfileDtoMapper;
 import com.ddd.application.mapper.UserDtoMapper;
 import com.ddd.application.service.user.UserQueryService;
 import com.ddd.domain.exception.ResourceNotFoundException;
+import com.ddd.domain.model.StudentProfile;
 import com.ddd.domain.model.User;
 import com.ddd.domain.repository.UserRepository;
 import com.ddd.infrastructure.entity.StudentProfileJpaEntity;
@@ -18,6 +19,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @Transactional(readOnly = true)

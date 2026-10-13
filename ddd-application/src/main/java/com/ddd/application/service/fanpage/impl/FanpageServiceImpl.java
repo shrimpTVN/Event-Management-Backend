@@ -76,7 +76,7 @@ public class FanpageServiceImpl implements FanpageService {
 
         User fanpageAdmin = userRepository.findByEmail(email);
 
-        if (fanpageMemberRepository.isAdminOfFanpage(fanpageAdmin.getId(), userId)) {
+        if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, fanpageAdmin.getId())) {
             throw new BusinessException("User email: " + email + " is not an admin of the fanpage");
         }
 
@@ -91,7 +91,7 @@ public class FanpageServiceImpl implements FanpageService {
 
         User fanpageAdmin = userRepository.findByEmail(email);
 
-        if (fanpageMemberRepository.isAdminOfFanpage(fanpageAdmin.getId(), userId)) {
+        if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, fanpageAdmin.getId())) {
             throw new BusinessException("User email: " + email + " is not an admin of the fanpage");
         }
 
