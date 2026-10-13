@@ -83,6 +83,23 @@ CREATE TABLE associations
 );
 
 -- ============================================================
+--  USER_ROLE
+--  Thực thể tài khoản người dùng
+-- ============================================================
+CREATE TABLE user_roles
+(
+    user_id    BIGINT      NOT NULL,
+    role_id    BIGINT      NOT NULL,
+    -- audit
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by BIGINT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by BIGINT,
+    CONSTRAINT pk_user_roles PRIMARY KEY (user_id, role_id)
+);
+
+
+-- ============================================================
 --  USER
 --  Thực thể tài khoản người dùng
 -- ============================================================
@@ -90,10 +107,14 @@ CREATE TABLE users
 (
     id          BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
     email       VARCHAR(255) NOT NULL UNIQUE,
-    password    VARCHAR(255),
+    password    VARCHAR(255) NOT NULL,
     provider_id VARCHAR(255),
+    first_name  VARCHAR(100) NOT NULL,
+    last_name   VARCHAR(100) NOT NULL,
+    gender      VARCHAR(10)  NOT NULL DEFAULT 'OTHER',
+    avatar_url  TEXT,
     is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
-    role_id     BIGINT       NOT NULL,
+
     -- audit
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_by  BIGINT,
@@ -102,50 +123,52 @@ CREATE TABLE users
     CONSTRAINT pk_users PRIMARY KEY (id)
 );
 
+ALTER TABLE users
+    add column  first_name  VARCHAR(100) NOT NULL default 'Nathan',
+    add column last_name   VARCHAR(100) NOT NULL default 'Tran',
+    add column gender      VARCHAR(10)  NOT NULL DEFAULT 'OTHER',
+    add column  avatar_url  TEXT;
 -- ============================================================
 --  STUDENT_PROFILE
 --  Hồ sơ thông tin sinh viên
 -- ============================================================
 CREATE TABLE student_profiles
 (
-    id             BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
-    first_name     VARCHAR(100),
-    last_name      VARCHAR(100),
-    student_id     VARCHAR(50) UNIQUE,
-    gender         VARCHAR(10),
-    k_number       INTEGER,
-    avatar_url     TEXT,
-    association_id BIGINT,
-    major_id       BIGINT,
-    user_id        BIGINT      NOT NULL UNIQUE,
-    is_active      BOOLEAN     NOT NULL DEFAULT TRUE,
+    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    student_id VARCHAR(50) UNIQUE,
+    k_number   INTEGER,
+    major_id   BIGINT,
+    user_id    BIGINT      NOT NULL UNIQUE,
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
     --audit
-    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by     BIGINT,
-    updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_by     BIGINT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by BIGINT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by BIGINT,
     CONSTRAINT pk_student_profiles PRIMARY KEY (id)
 );
 
+alter table student_profiles
+    drop column first_name,
+    drop column last_name,
+    drop column gender,
+    drop column avatar_url,
+    drop column association_id;
 -- ============================================================
 --  FANPAGE_ADMIN_PROFILE
 --  Hồ sơ thông tin ban tổ chức sự kiện / fanpage admin
 -- ============================================================
+
 CREATE TABLE fanpage_admin_profiles
 (
     id           BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
-    first_name   VARCHAR(100),
-    last_name    VARCHAR(100),
     staff_id     VARCHAR(20) NOT NULL UNIQUE,
     org_name     VARCHAR(20),
     title        VARCHAR(100),
     DoB          DATE,
-    gender       VARCHAR(10),
     phone_number VARCHAR(20),
-    avatar_url   TEXT,
     user_id      BIGINT      NOT NULL UNIQUE,
     is_active    BOOLEAN     NOT NULL DEFAULT TRUE,
-
     --audit
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by   BIGINT,
@@ -153,6 +176,12 @@ CREATE TABLE fanpage_admin_profiles
     updated_by   BIGINT,
     CONSTRAINT pk_fanpage_admin_profiles PRIMARY KEY (id)
 );
+
+alter table fanpage_admin_profiles
+    drop column first_name,
+    drop column last_name,
+    drop column gender,
+    drop column avatar_url;
 
 -- ============================================================
 --  NOTIFICATION
@@ -496,8 +525,17 @@ ALTER TABLE majors
         FOREIGN KEY (school_id) REFERENCES schools (id) ON DELETE SET NULL;
 
 ALTER TABLE users
-    ADD CONSTRAINT fk_users_roles
+    ADD CONSTRAINT fk_user_role;
+
+
+ALTER TABLE user_roles
+    ADD CONSTRAINT fk_user_roles_roles
         FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE RESTRICT;
+
+ALTER TABLE user_roles
+    ADD CONSTRAINT fk_user_roles_roles
+        FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE RESTRICT;
+
 
 ALTER TABLE fanpage_admin_profiles
     ADD CONSTRAINT fk_fanpage_admin_profiles_users
@@ -644,6 +682,12 @@ EXECUTE FUNCTION fn_set_updated_at();
 CREATE TRIGGER trg_users_updated_at
     BEFORE UPDATE
     ON users
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE TRIGGER trg_user_roles_updated_at
+    BEFORE UPDATE
+    ON user_roles
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
 

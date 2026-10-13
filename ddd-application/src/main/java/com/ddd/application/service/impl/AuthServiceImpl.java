@@ -50,7 +50,7 @@ public class AuthServiceImpl implements AuthService {
         LoginDto loginDto = new LoginDto(
                 fetchedUser.getUserId(),
                 fetchedUser.getUsername(),
-                fetchedUser.getRole()
+                fetchedUser.getRoles()
         );
 
         return new LoginResult(loginDto, jwtToken);

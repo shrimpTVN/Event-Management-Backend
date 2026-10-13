@@ -43,9 +43,18 @@ public class JwtTokenValidatorFilter extends OncePerRequestFilter {
                 // Safe cast: JWT library may parse small numbers as Integer
                 Number userIdNum = (Number) claims.get("userId");
                 Long userId = userIdNum != null ? userIdNum.longValue() : null;
-                String authoritiesClaim = claims.get("roles").toString();
+                Object rolesObj = claims.get("roles");
+                String authoritiesClaim = rolesObj != null ? rolesObj.toString() : "";
 
-                UserDetailsCustom statelessPrincipal = new UserDetailsCustom(userId, username, authoritiesClaim,"",
+                java.util.Set<String> roleSet = Arrays.stream(authoritiesClaim.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .collect(java.util.stream.Collectors.toSet());
+
+                UserDetailsCustom statelessPrincipal = new UserDetailsCustom(
+                        userId,
+                        username,
+                        roleSet,
                         AuthorityUtils.commaSeparatedStringToAuthorityList(authoritiesClaim));
 
                 Authentication authentication = new UsernamePasswordAuthenticationToken(
