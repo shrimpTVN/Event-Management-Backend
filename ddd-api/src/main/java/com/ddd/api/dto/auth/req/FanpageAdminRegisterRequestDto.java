@@ -10,7 +10,6 @@ public record FanpageAdminRegisterRequestDto(
         @NotNull @Size(min = 6) String email,
         @NotNull @Size(min = 6) String password,
         @NotNull @NotBlank String providerId,
-
         @NotNull @NotBlank String firstName,
         @NotNull @NotBlank String lastName,
         @NotNull @NotBlank String staffId,

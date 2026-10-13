@@ -7,13 +7,12 @@ public record UserResponseDto(
         String email,
         Set<String> roles,
         String role,
-        Boolean isActive
+        String firstName,
+        String lastName,
+        String gender,
+        Boolean isActive,
+        String providerId,
+        String avatarUrl
 ) {
-    public UserResponseDto( Long userId, String email, Set<String> roles, Boolean isActive) {
-        this(userId, email, roles, (roles != null && !roles.isEmpty()) ? roles.iterator().next() : null, isActive);
-    }
 
-    public UserResponseDto(String email, String role, Boolean isActive) {
-        this(null, email, role != null ? Set.of(role) : Set.of(), role, isActive);
-    }
 }

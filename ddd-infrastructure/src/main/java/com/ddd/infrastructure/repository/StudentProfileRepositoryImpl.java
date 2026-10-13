@@ -31,15 +31,12 @@ public class StudentProfileRepositoryImpl implements StudentProfileRepository {
 
     @Override
     public void save(StudentProfile studentProfile, Long userId) {
-        AssociationJpaEntity associationJpaEntity = associationJpaRepository.findById(studentProfile.getAssociationId())
-                .orElseThrow(() -> new ResourceNotFoundException("Association not found with id: " + studentProfile.getAssociationId()));
         MajorJpaEntity majorJpaEntity = majorJpaRepository.findById(studentProfile.getMajorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Major not found with id: " + studentProfile.getMajorId()));
         UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         StudentProfileJpaEntity studentProfileJpaEntity = studentProfileMapper.toEntity(studentProfile);
-        studentProfileJpaEntity.setAssociation(associationJpaEntity);
         studentProfileJpaEntity.setMajor(majorJpaEntity);
         studentProfileJpaEntity.setUser(userJpaEntity);
 

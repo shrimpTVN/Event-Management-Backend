@@ -29,11 +29,9 @@ public class UserQueryServiceImpl implements UserQueryService {
     private final UserDtoMapper userDtoMapper;
 
     @Override
-    public StudentProfileSummaryDto getProfileByEmail(String email) {
-        StudentProfileJpaEntity studentProfileJpaEntity = studentProfileJpaRepository.findByEmail(email);
-        if (studentProfileJpaEntity == null) {
-            throw new ResourceNotFoundException("Student profile not found for email: " + email);
-        }
+    public StudentProfileSummaryDto getProfileStudentByEmail(String email) {
+        StudentProfileJpaEntity studentProfileJpaEntity = studentProfileJpaRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found for email: " + email));
         return studentProfileDtoMapper.toStudentProfileSummaryDto(studentProfileJpaEntity);
     }
 
