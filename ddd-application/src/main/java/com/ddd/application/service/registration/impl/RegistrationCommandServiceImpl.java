@@ -2,12 +2,16 @@ package com.ddd.application.service.registration.impl;
 
 import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.domain.enums.RegistrationStatusEnum;
+import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.DuplicateResourceException;
+import com.ddd.domain.exception.EventAttendanceException;
+import com.ddd.domain.exception.EventRegistrationException;
 import com.ddd.domain.model.Event;
 import com.ddd.domain.model.FanpageMember;
 import com.ddd.domain.model.Registration;
 import com.ddd.domain.model.User;
 import com.ddd.domain.repository.EventRepository;
+import com.ddd.domain.repository.FanpageMemberRepository;
 import com.ddd.domain.repository.RegistrationRepository;
 import com.ddd.domain.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -25,7 +29,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final RegistrationRepository registrationRepository;
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
-    private final com.ddd.domain.repository.FanpageMemberRepository fanpageMemberRepository;
+    private final FanpageMemberRepository fanpageMemberRepository;
 
     @Override
     public void registerEvent(String email, Long eventId) {
@@ -33,7 +37,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
 
         Event event = eventRepository.findById(eventId);
         if (!"PUBLISHED".equalsIgnoreCase(event.getStatus())) {
-            throw new IllegalArgumentException("The event registration is not open yet or has already closed!");
+            throw new EventRegistrationException("The event registration is not open yet or has already closed!");
         }
 
         if(registrationRepository.isRegistered(user.getId(), eventId)){
@@ -56,7 +60,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         Event event = eventRepository.findById(eventId);
         if(event.getDateHappen() != null &&
                 LocalDate.now().isAfter(event.getDateHappen())){
-            throw  new IllegalArgumentException("Can not CANCEl");
+            throw  new EventRegistrationException("Can not CANCEl registration after event date");
         }
 
         reg.setStatus(RegistrationStatusEnum.CANCELLED);
@@ -72,11 +76,11 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         Event event = eventRepository.findById(eventId);
 
         if(!LocalDate.now().isEqual(event.getDateHappen())){
-            throw new IllegalArgumentException("This event has not started yet");
+            throw new EventAttendanceException("This event has not started yet");
         }
 
         if(registration.getStatus() != RegistrationStatusEnum.REGISTERED){
-            throw new IllegalArgumentException("You not registered");
+            throw new EventAttendanceException("You not registered");
         }
 
         registration.setCheckInAt(Instant.now());
@@ -91,10 +95,11 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         Event event = eventRepository.findById(eventId);
 
         if(registration.getStatus() != RegistrationStatusEnum.CHECKED_IN){
-            throw new IllegalArgumentException("You not check in");
+            throw new EventAttendanceException("You have not checked in");
         }
         registration.setCheckOutAt(Instant.now());
-        registration.setEvidenceUrl(proofUrl);
+        registration.setCheckOutEvidenceUrl(proofUrl);
+        registration.setCheckOutBy(user.getId());
         registration.setStatus(RegistrationStatusEnum.COMPLETED);
         registrationRepository.save(registration, user.getId(), eventId);
     }
@@ -105,20 +110,20 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         Event event = eventRepository.findById(eventId);
 
         FanpageMember fanpageMember = fanpageMemberRepository.findById(event.getFanpageId(), adminUser.getId())
-                .orElseThrow(() -> new RuntimeException("You not have permission to manage this event"));
+                .orElseThrow(() -> new EventAttendanceException("You not have permission to manage this event"));
         
         if (!fanpageMember.isActive()) {
-            throw new RuntimeException("Your account has been suspended");
+            throw new EventRegistrationException("Your account has been suspended");
         }
 
         Registration registration = registrationRepository.findByUserAndEvent(studentUserId, eventId);
 
         if(!LocalDate.now().isEqual(event.getDateHappen())){
-            throw new RuntimeException("This event has not started yet");
+            throw new EventAttendanceException("This event has not started yet");
         }
 
         if(registration.getStatus() != RegistrationStatusEnum.REGISTERED){
-            throw new RuntimeException("This student has not registered for the event!");
+            throw new EventAttendanceException("This student has not registered for the event!");
         }
 
         registration.setCheckInAt(Instant.now());
@@ -132,19 +137,21 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         Event event = eventRepository.findById(eventId);
 
         FanpageMember fanpageMember = fanpageMemberRepository.findById(event.getFanpageId(), adminUser.getId())
-                .orElseThrow(() -> new RuntimeException("You not have permission to manage this event"));
+                .orElseThrow(() -> new EventAttendanceException("You not have permission to manage this event"));
         
         if (!fanpageMember.isActive()) {
-            throw new RuntimeException("Your account has been suspended");
+            throw new BusinessException("Your account has been suspended");
         }
         
         Registration registration = registrationRepository.findByUserAndEvent(studentUserId, eventId);
 
         if(registration.getStatus() != RegistrationStatusEnum.CHECKED_IN){
-            throw new RuntimeException("This student has not check in");
+            throw new EventAttendanceException("This student has not check in");
         }
 
         registration.setCheckOutAt(Instant.now());
+//        registration.setCheckOutEvidenceUrl(proofUrl);
+        registration.setCheckOutBy(adminUser.getId());
         registration.setStatus(RegistrationStatusEnum.COMPLETED);
         registrationRepository.save(registration, studentUserId, eventId);
     }

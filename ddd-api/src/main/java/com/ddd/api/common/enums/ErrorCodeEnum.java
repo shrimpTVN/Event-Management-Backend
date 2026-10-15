@@ -31,6 +31,10 @@ public enum ErrorCodeEnum {
     ROLES_NOT_FOUND("ROLE.001", HttpStatus.NOT_FOUND, "One or more roles could not be found"),
     ROLE_NOT_FOUND("ROLE.002", HttpStatus.NOT_FOUND, "The role could not be found"),
 
+    EVENT_NOT_FOUND("EVENT.001", HttpStatus.NOT_FOUND, "Event not found"),
+    EVENT_REGISTRATION_ERROR("EVENT.002", HttpStatus.BAD_REQUEST, "The event registration is not open yet or has already closed!"),
+    EVENT_ATTENDANCE_ERROR("EVENT.003", HttpStatus.BAD_REQUEST, "The event attendance is not open yet or has already closed!"),
+
     // AUTH
     AUTH_LOGIN_FAILED("AUTH.001", HttpStatus.UNAUTHORIZED, "Login failed"),
     AUTH_EMAIL_EXISTS("AUTH.003", HttpStatus.BAD_REQUEST, "Email already exists"),

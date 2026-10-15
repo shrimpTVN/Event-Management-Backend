@@ -3,10 +3,7 @@ package com.ddd.api.exception;
 
 import com.ddd.api.common.BaseResponse;
 import com.ddd.api.common.enums.ErrorCodeEnum;
-import com.ddd.domain.exception.AuthException;
-import com.ddd.domain.exception.DuplicateResourceException;
-import com.ddd.domain.exception.ResourceNotFoundException;
-import com.ddd.domain.exception.UnauthorizedException;
+import com.ddd.domain.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpStatus;
@@ -168,6 +165,15 @@ public class GlobalExceptionHandler {
     // ─────────────────────────────────────────────────────────────────────────
     // 409 Conflict
     // ─────────────────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(EventRegistrationException.class)
+    public  ResponseEntity<Object> handleEventRegistrationException(EventRegistrationException exception,
+                                                                   WebRequest webRequest){
+        log.warn("Event registration exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(ErrorCodeEnum.EVENT_REGISTRATION_ERROR.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.EVENT_REGISTRATION_ERROR.getDefaultMessage(),
+                ErrorCodeEnum.EVENT_REGISTRATION_ERROR.getStatus());
+    }
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<Object> handleDuplicateResource(
