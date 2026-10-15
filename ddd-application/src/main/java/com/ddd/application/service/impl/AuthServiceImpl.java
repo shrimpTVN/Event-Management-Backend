@@ -2,6 +2,7 @@ package com.ddd.application.service.impl;
 
 import com.ddd.application.dto.auth.LoginDto;
 import com.ddd.application.dto.auth.LoginResult;
+import com.ddd.application.dto.auth.TokenRefreshResultDto;
 import com.ddd.application.dto.user.FanpageAdminProfileDto;
 import com.ddd.application.dto.user.StudentProfileDto;
 import com.ddd.application.dto.user.UserDto;
@@ -10,9 +11,15 @@ import com.ddd.application.service.userprofile.StudentProfileCommandService;
 import com.ddd.application.service.user.UserCommandService;
 import com.ddd.application.service.AuthService;
 import com.ddd.domain.enums.RoleEnum;
+import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ResourceNotFoundException;
+import com.ddd.domain.model.RefreshToken;
 import com.ddd.domain.model.User;
+import com.ddd.domain.repository.RefreshTokenRepository;
+import com.ddd.domain.repository.UserRepository;
 import com.ddd.infrastructure.config.security.custom.UserDetailsCustom;
 import com.ddd.infrastructure.utils.JwtUtil;
+import com.ddd.infrastructure.utils.TokenHashUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseCookie;
@@ -21,6 +28,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -32,12 +42,32 @@ public class AuthServiceImpl implements AuthService {
     private final StudentProfileCommandService studentProfileCommandService;
     private final FanpageAdminProfileCommandService fanpageAdminProfileCommandService;
     private final JwtUtil jwtUtil;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final TokenHashUtil tokenHashUtil;
+    private final UserRepository userRepository;
 
+    private String createAndSaveRefreshToken(Long userId) {
+        String rawToken = UUID.randomUUID().toString();
+        // Hash the token before saving it to the database for security and use it as refresh token
+        String hashed = tokenHashUtil.hash(rawToken);
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .token(hashed)
+                .userId(userId)
+                .expiresAt(Instant.now().plusMillis(jwtUtil.getRefreshExpirationMs()))
+                .revoked(false)
+                .build();
+        refreshTokenRepository.save(refreshToken);
+
+        return rawToken;
+    }
 
     @Override
+    @Transactional
     public LoginResult login(String email, String password) {
         var resultAuthentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email, password));
+
         String jwtToken = jwtUtil.generateJwtToken(resultAuthentication);
 
         var fetchedUser = (UserDetailsCustom) resultAuthentication.getPrincipal();
@@ -54,7 +84,10 @@ public class AuthServiceImpl implements AuthService {
                 fetchedUser.getRoles()
         );
 
-        return new LoginResult(loginDto, jwtToken);
+        //generate refresh token and save to database
+        String rawRefreshToken = createAndSaveRefreshToken(fetchedUser.getUserId());
+
+        return new LoginResult(loginDto, jwtToken, rawRefreshToken);
     }
 
     @Transactional
@@ -74,9 +107,53 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void changePassword(String oldpPassword, String newPassword, String email) {
-        userCommandService.changePassword(oldpPassword, newPassword, email);
+    @Transactional
+    public void changePassword(String oldPassword, String newPassword, String email) {
+        userCommandService.changePassword(oldPassword, newPassword, email);
+        User user = userRepository.findByEmail(email);
+        if (user != null) {
+            refreshTokenRepository.revokeAllByUserId(user.getId());
+        }
         log.info("User:{} changed password successfully", email);
+    }
+
+    @Override
+    @Transactional
+    public TokenRefreshResultDto refreshToken(String rawRefreshToken) {
+        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+            throw new AuthException("Refresh token is missing or empty");
+        }
+
+        String hashed = tokenHashUtil.hash(rawRefreshToken);
+        RefreshToken stored = refreshTokenRepository.findByToken(hashed)
+                .orElseThrow(() -> new AuthException("Invalid refresh token"));
+
+        if (!stored.isValid()) {
+            // Compromise detection: if an invalid or expired token is submitted, revoke all sessions
+            refreshTokenRepository.revokeAllByUserId(stored.getUserId());
+            throw new AuthException("Expired or revoked refresh token");
+        }
+
+        // Token Rotation: invalidate current token, issue fresh one
+        refreshTokenRepository.deleteByToken(hashed);
+        String newRawToken = createAndSaveRefreshToken(stored.getUserId());
+
+        // Reconstruct user to generate new access token
+        User user = userRepository.findById(stored.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + stored.getUserId()));
+
+        String newAccessToken = jwtUtil.generateJwtTokenFromUser(user);
+
+        return new TokenRefreshResultDto(newAccessToken, newRawToken);
+    }
+
+    @Override
+    @Transactional
+    public void logout(String rawRefreshToken) {
+        if (rawRefreshToken != null && !rawRefreshToken.isBlank()) {
+            String hashed = tokenHashUtil.hash(rawRefreshToken);
+            refreshTokenRepository.deleteByToken(hashed);
+        }
     }
 
     @Override
@@ -99,5 +176,20 @@ public class AuthServiceImpl implements AuthService {
                 .path("/")
                 .maxAge(0)
                 .build();
+    }
+
+    @Override
+    public ResponseCookie getRefreshCookie(String rawRefreshToken) {
+        return jwtUtil.buildRefreshCookie(rawRefreshToken, jwtUtil.getRefreshExpirationMs() / 1000);
+    }
+
+    @Override
+    public ResponseCookie getClearRefreshCookie() {
+        return jwtUtil.buildClearRefreshCookie();
+    }
+
+    @Override
+    public String extractRefreshToken(jakarta.servlet.http.HttpServletRequest request) {
+        return jwtUtil.extractRefreshToken(request);
     }
 }

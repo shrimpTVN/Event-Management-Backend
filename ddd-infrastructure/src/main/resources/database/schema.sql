@@ -549,9 +549,9 @@ ALTER TABLE student_profiles
     ADD CONSTRAINT fk_student_profiles_majors
         FOREIGN KEY (major_id) REFERENCES majors (id) ON DELETE SET NULL;
 
-ALTER TABLE student_profiles
-    ADD CONSTRAINT fk_student_profiles_associations
-        FOREIGN KEY (association_id) REFERENCES associations (id) ON DELETE SET NULL;
+-- ALTER TABLE student_profiles
+--     ADD CONSTRAINT fk_student_profiles_associations
+--         FOREIGN KEY (association_id) REFERENCES associations (id) ON DELETE SET NULL;
 
 ALTER TABLE fanpage_members
     ADD CONSTRAINT fk_fanpage_members_users

@@ -5,7 +5,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
+//@EnableScheduling
 @EnableJpaRepositories(basePackages = "com.ddd")
 @EntityScan(basePackages = "com.ddd")
 @ConfigurationPropertiesScan(basePackages = "com.ddd")
