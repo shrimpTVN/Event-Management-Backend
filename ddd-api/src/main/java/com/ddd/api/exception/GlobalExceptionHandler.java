@@ -3,6 +3,7 @@ package com.ddd.api.exception;
 
 import com.ddd.api.common.BaseResponse;
 import com.ddd.api.common.enums.ErrorCodeEnum;
+import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.DuplicateResourceException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.exception.UnauthorizedException;
@@ -118,6 +119,16 @@ public class GlobalExceptionHandler {
         return wrapWithResponse(ErrorCodeEnum.UNAUTHORIZED_ERROR.getCode(),
                 ErrorCodeEnum.UNAUTHORIZED_ERROR.getDefaultMessage(),
                 ErrorCodeEnum.UNAUTHORIZED_ERROR.getStatus());
+    }
+
+    @ExceptionHandler(AuthException.class)
+    public ResponseEntity<Object> handleAuthException(
+            AuthException exception, WebRequest webRequest) {
+        log.warn("Auth exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.AUTH_EXPIRED_REVOKED_TOKEN.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.AUTH_EXPIRED_REVOKED_TOKEN.getDefaultMessage(),
+                ErrorCodeEnum.AUTH_EXPIRED_REVOKED_TOKEN.getStatus());
     }
 
     // 403 Forbidden
