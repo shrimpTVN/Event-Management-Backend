@@ -1,6 +1,7 @@
 package com.ddd.infrastructure.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Positive;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -24,8 +25,6 @@ public class RegistrationJpaEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserJpaEntity user;
 
-
-
     @MapsId("eventId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id", nullable = false)
@@ -37,11 +36,22 @@ public class RegistrationJpaEntity {
     @Column(name = "check_in_at")
     private Instant checkInAt;
 
+    @Column(name = "check_in_evidence_url", columnDefinition = "TEXT")
+    private String checkInEvidenceUrl;
+
+    @Positive
+    @Column(name = "check_in_by")
+    private Long checkInBy;
+
     @Column(name = "check_out_at")
     private Instant checkOutAt;
 
-    @Column(name = "evidence_url", columnDefinition = "TEXT")
-    private String evidenceUrl;
+    @Column(name = "check_out_evidence_url", columnDefinition = "TEXT")
+    private String checkOutEvidenceUrl;
+
+    @Positive
+    @Column(name = "check_out_by")
+    private Long checkOutBy;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 50)
