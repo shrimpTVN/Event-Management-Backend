@@ -409,7 +409,10 @@ CREATE TABLE registrations
     reg_date     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     check_in_at  TIMESTAMPTZ,
     check_out_at TIMESTAMPTZ,
-    evidence_url TEXT,
+    check_in_evidence_url TEXT,
+    check_out_evidence_url TEXT,
+    check_in_by  BIGINT,
+    check_out_by BIGINT,
     status       VARCHAR(50) NOT NULL DEFAULT 'REGISTERED',--'REGISTERED','CHECKED_IN','CHECKED_OUT','CANCELLED','ABSENTED'
     reason       TEXT,
     -- audit
@@ -419,6 +422,13 @@ CREATE TABLE registrations
     updated_by   BIGINT,
     CONSTRAINT pk_registrations PRIMARY KEY (user_id, event_id)
 );
+
+ALTER TABLE registrations
+    DROP COLUMN evidence_url,
+    ADD COLUMN check_in_evidence_url TEXT,
+    ADD COLUMN check_out_evidence_url TEXT,
+    ADD COLUMN check_in_by BIGINT,
+    ADD COLUMN check_out_by BIGINT;
 
 -- ============================================================
 --  CONVERSATION
