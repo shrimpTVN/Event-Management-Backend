@@ -45,4 +45,16 @@ public class UserCommandServiceImpl implements UserCommandService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         userRepository.save(user, roleNames);
     }
+
+    @Override
+    public void changePassword(String oldpPassword, String newPassword, String email) {
+        User user = userRepository.findByEmail(email);
+
+        if (!passwordEncoder.matches(oldpPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Old password is incorrect.");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
 }

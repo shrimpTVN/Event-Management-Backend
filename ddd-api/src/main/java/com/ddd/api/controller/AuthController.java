@@ -1,6 +1,7 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
+import com.ddd.api.dto.auth.req.ChangePasswordRequestDto;
 import com.ddd.api.dto.auth.req.FanpageAdminRegisterRequestDto;
 import com.ddd.api.dto.auth.req.LoginRequestDto;
 import com.ddd.api.dto.auth.req.RegisterRequestDto;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -64,8 +66,10 @@ public class AuthController {
 
 
     @PostMapping("/change-password")
-    public BaseResponse<Void> changePassword() {
-        System.out.println("change password");
+    public BaseResponse<Void> changePassword(@RequestBody ChangePasswordRequestDto changePasswordRequestDto, Authentication authentication) {
+        String email = authentication.getName();
+        authService.changePassword(changePasswordRequestDto.oldPassword(), changePasswordRequestDto.newPassword(), email);
+
         return BaseResponse.ok();
     }
 

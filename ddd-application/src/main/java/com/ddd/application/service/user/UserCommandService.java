@@ -8,4 +8,6 @@ public interface UserCommandService {
     Long createUser(UserDto userDto, String name);
     Long createUser(UserDto userDto, Set<String> roleNames);
     void assignRolesToUser(Long userId, Set<String> roleNames);
+
+    void changePassword(String oldpPassword, String newPassword, String email);
 }

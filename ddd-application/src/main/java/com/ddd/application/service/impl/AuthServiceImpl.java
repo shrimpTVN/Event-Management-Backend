@@ -10,6 +10,7 @@ import com.ddd.application.service.userprofile.StudentProfileCommandService;
 import com.ddd.application.service.user.UserCommandService;
 import com.ddd.application.service.AuthService;
 import com.ddd.domain.enums.RoleEnum;
+import com.ddd.domain.model.User;
 import com.ddd.infrastructure.config.security.custom.UserDetailsCustom;
 import com.ddd.infrastructure.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -70,6 +71,12 @@ public class AuthServiceImpl implements AuthService {
         Long userId = userCommandService.createUser(userDto, RoleEnum.FANPAGE_ADMIN.name());
         fanpageAdminProfileCommandService.createFanpageAdminProfile(fanpageAdminProfileDto, userId);
         log.info("Fanpage Admin:{} created successfully", userDto.email());
+    }
+
+    @Override
+    public void changePassword(String oldpPassword, String newPassword, String email) {
+        userCommandService.changePassword(oldpPassword, newPassword, email);
+        log.info("User:{} changed password successfully", email);
     }
 
     @Override
