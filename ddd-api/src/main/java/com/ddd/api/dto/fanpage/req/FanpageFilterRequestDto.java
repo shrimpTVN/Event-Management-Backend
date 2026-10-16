@@ -23,5 +23,11 @@ public record FanpageFilterRequestDto(
         if (sortDir == null || sortDir.isBlank()) {
             sortDir = "desc";
         }
+        if (status == null || status.isBlank()) {
+            status = "ACTIVE";
+        }
+        if (isActive == null) {
+                isActive = true;
+        }
     }
 }

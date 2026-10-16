@@ -33,9 +33,9 @@ public class FanpageController {
             @ModelAttribute FanpageFilterRequestDto request) {
         FanpageFilterRequestDto effectiveFilter = new FanpageFilterRequestDto(
                 request.keyword(),
-                request.status() != null ? request.status() : "ACTIVE",
+                request.status(),
                 request.orgType(),
-                request.isActive() != null ? request.isActive() : true,
+                request.isActive(),
                 request.page(),
                 request.size(),
                 request.sortBy(),

@@ -20,7 +20,8 @@ public final class FanpageSpecification {
      * @param isActive Soft-delete active flag
      * @return Specification instance for JPA query execution
      */
-    public static Specification<FanpageJpaEntity> withFilter(String keyword, String status, String orgType, Boolean isActive) {
+    public static Specification<FanpageJpaEntity> withFilter(String keyword, String status,
+                                                             String orgType, Boolean isActive) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 

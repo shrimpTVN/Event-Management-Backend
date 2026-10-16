@@ -1,6 +1,4 @@
 package com.ddd.application.service.fanpage.impl;
-
-import com.ddd.application.dto.fanpage.AttendeeInfoDto;
 import com.ddd.application.dto.fanpage.FanpageInfoDto;
 import com.ddd.application.dto.fanpage.FanpageMemberDto;
 import com.ddd.application.dto.fanpage.FanpageSearchCriteriaDto;
@@ -10,7 +8,6 @@ import com.ddd.application.mapper.RegistrationDtoMapper;
 import com.ddd.application.service.fanpage.FanpageQueryService;
 import com.ddd.infrastructure.entity.FanpageJpaEntity;
 import com.ddd.infrastructure.entity.FanpageMemberJpaEntity;
-import com.ddd.infrastructure.entity.RegistrationJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.FanpageJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.FanpageMemberJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.RegistrationJpaRepository;
@@ -25,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
