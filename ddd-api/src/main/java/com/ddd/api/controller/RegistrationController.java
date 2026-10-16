@@ -31,7 +31,6 @@ public class RegistrationController {
         return BaseResponse.ok();
     }
 
-
     @PatchMapping("/me/events/{eventId}/cancel")
     public BaseResponse<Void> cancelRegistration(Authentication authentication,
                                                  @PathVariable Long eventId,
@@ -42,6 +41,7 @@ public class RegistrationController {
         registrationCommandService.cancelRegistration(email, eventId, reason);
         return BaseResponse.ok();
     }
+
 
 
     @GetMapping("/me/history")
@@ -69,22 +69,21 @@ public class RegistrationController {
 
     @PatchMapping("/me/events/{eventId}/check-in")
     public BaseResponse<Void> checkIn(Authentication authentication,
-                                      @RequestBody AttendanceRequestDto checkInRequestDto,
-                                      @PathVariable Long eventId
-
-                                      ) {
+                                      @RequestBody(required = false) AttendanceRequestDto checkInRequestDto,
+                                      @PathVariable Long eventId) {
         String email = authentication.getName();
-        registrationCommandService.checkIn(email, eventId, checkInRequestDto.proofUrl());
+        String proofUrl = checkInRequestDto != null ? checkInRequestDto.proofUrl() : null;
+        registrationCommandService.checkIn(email, eventId, proofUrl);
         return BaseResponse.ok();
-
     }
 
     @PatchMapping("/me/events/{eventId}/check-out")
     public BaseResponse<Void> checkOut(Authentication authentication,
                                        @PathVariable Long eventId,
-                                       @RequestBody AttendanceRequestDto checkOutRequestDto) {
+                                       @RequestBody(required = false) AttendanceRequestDto checkOutRequestDto) {
         String email = authentication.getName();
-        registrationCommandService.checkOut(email, eventId, checkOutRequestDto.proofUrl());
+        String proofUrl = checkOutRequestDto != null ? checkOutRequestDto.proofUrl() : null;
+        registrationCommandService.checkOut(email, eventId, proofUrl);
         return BaseResponse.ok();
     }
 
