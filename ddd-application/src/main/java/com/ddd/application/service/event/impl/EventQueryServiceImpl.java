@@ -1,16 +1,19 @@
 package com.ddd.application.service.event.impl;
 
 import com.ddd.application.dto.event.EventInfoDto;
+import com.ddd.application.dto.event.EventSearchCriteriaDto;
 import com.ddd.application.mapper.EventDtoMapper;
 import com.ddd.application.service.event.EventQueryService;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.infrastructure.entity.EventJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
+import com.ddd.infrastructure.repository.specification.EventSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,4 +53,25 @@ public class EventQueryServiceImpl implements EventQueryService {
 
         return eventJpaRepository.findAll(pageable)
                 .map(eventDtoMapper::toInfoDto);
-    }}
+    }
+
+    @Override
+    public Page<EventInfoDto> searchAndFilterEvents(EventSearchCriteriaDto criteria) {
+        Pageable pageable = createPageable(criteria.page(), criteria.size(),
+                criteria.sortBy(), criteria.sortDir());
+        Specification<EventJpaEntity> spec = EventSpecification.withFilter(
+                criteria.keyword(),
+                criteria.status(),
+                criteria.eventTypeId(),
+                criteria.semesterId(),
+                criteria.criteriaId(),
+                criteria.pointCategoryId(),
+                criteria.dateHappenFrom(),
+                criteria.dateHappenTo(),
+                criteria.isActive()
+        );
+        return eventJpaRepository.findAll(spec, pageable).map(eventDtoMapper::toInfoDto);
+    }
+
+
+}

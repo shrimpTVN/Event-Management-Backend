@@ -2,6 +2,7 @@ package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
 import com.ddd.api.dto.event.req.EventCreateRequestDto;
+import com.ddd.api.dto.event.req.EventFilterRequestDto;
 import com.ddd.api.dto.event.req.EventUpdateRequestDto;
 import com.ddd.api.dto.event.res.EventResponseDto;
 import com.ddd.api.mapper.EventApiMapper;
@@ -16,16 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/events")
@@ -46,6 +38,29 @@ public class EventController {
         return BaseResponse.ok();
     }
 
+    @GetMapping({"", "/"})
+    public BaseResponse<Page<EventResponseDto>> searchEvents(
+            @ModelAttribute EventFilterRequestDto request) {
+        //User can only search for ACTIVE events
+        EventFilterRequestDto effectiveFilter = new EventFilterRequestDto(request);
+
+        Page<EventInfoDto> eventInfoPage = eventQueryService.searchAndFilterEvents(
+                eventApiMapper.toEventSearchCriteriaDto(effectiveFilter)
+        );
+
+        return BaseResponse.of(eventInfoPage.map(eventApiMapper::toResponseDto));
+    }
+
+    @GetMapping("/admin")
+    public BaseResponse<Page<EventResponseDto>> searchEventsForAdmin(
+            @ModelAttribute EventFilterRequestDto request) {
+
+        Page<EventInfoDto> eventInfoPage = eventQueryService.searchAndFilterEvents(
+                eventApiMapper.toEventSearchCriteriaDto(request)
+        );
+        return BaseResponse.of(eventInfoPage.map(eventApiMapper::toResponseDto));
+    }
+
     @GetMapping("/{id}")
     public BaseResponse<EventResponseDto> getEventById(@PathVariable Long id) {
         EventInfoDto eventInfoDto = eventQueryService.getEventById(id);
@@ -64,16 +79,8 @@ public class EventController {
         return BaseResponse.of(eventInfoPage.map(eventApiMapper::toResponseDto));
     }
 
-    @GetMapping("/admin")
-    public BaseResponse<Page<EventResponseDto>> getAllEvent(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
 
-        Page<EventInfoDto> eventInfoPage = eventQueryService.getAllEvents(page, size, sortBy, sortDir);
-        return BaseResponse.of(eventInfoPage.map(eventApiMapper::toResponseDto));
-    }
+
     @PutMapping({"/fanpage-member/{id}"})
     public BaseResponse<Void> updateEvent(
             @PathVariable Long id,
