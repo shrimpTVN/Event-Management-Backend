@@ -1,18 +1,22 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
+import com.ddd.api.dto.fanpage.req.FanpageFilterRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageRegisterRequestDto;
 import com.ddd.api.dto.fanpage.res.FanpageMemberResponseDto;
+import com.ddd.api.dto.fanpage.res.FanpageResponseDto;
 import com.ddd.api.mapper.FanpageApiMapper;
+import com.ddd.application.dto.fanpage.FanpageInfoDto;
 import com.ddd.application.dto.fanpage.FanpageMemberDto;
 import com.ddd.application.service.fanpage.FanpageQueryService;
 import com.ddd.application.service.fanpage.FanpageService;
+import com.ddd.application.service.registration.RegistrationCommandService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import com.ddd.application.service.registration.RegistrationCommandService;
 import java.util.List;
 
 @RestController
@@ -23,6 +27,34 @@ public class FanpageController {
     private final FanpageApiMapper fanpageApiMapper;
     private final RegistrationCommandService registrationCommandService;
     private final FanpageQueryService fanpageQueryService;
+
+    @GetMapping({"", "/"})
+    public BaseResponse<Page<FanpageResponseDto>> searchFanpages(
+            @ModelAttribute FanpageFilterRequestDto request) {
+        FanpageFilterRequestDto effectiveFilter = new FanpageFilterRequestDto(
+                request.keyword(),
+                request.status() != null ? request.status() : "ACTIVE",
+                request.orgType(),
+                request.isActive() != null ? request.isActive() : true,
+                request.page(),
+                request.size(),
+                request.sortBy(),
+                request.sortDir()
+        );
+        Page<FanpageInfoDto> fanpages = fanpageQueryService.searchAndFilterFanpages(
+                fanpageApiMapper.toSearchCriteriaDto(effectiveFilter)
+        );
+        return BaseResponse.of(fanpages.map(fanpageApiMapper::toResponseDto));
+    }
+
+    @GetMapping({"/admin", "/admin/"})
+    public BaseResponse<Page<FanpageResponseDto>> searchFanpagesForAdmin(
+            @ModelAttribute FanpageFilterRequestDto request) {
+        Page<FanpageInfoDto> fanpages = fanpageQueryService.searchAndFilterFanpages(
+                fanpageApiMapper.toSearchCriteriaDto(request)
+        );
+        return BaseResponse.of(fanpages.map(fanpageApiMapper::toResponseDto));
+    }
 
     @PostMapping("/fanpage-admin/register")
     public BaseResponse<?> registerFanpage(@RequestBody @Valid FanpageRegisterRequestDto request,
