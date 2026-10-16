@@ -1,6 +1,8 @@
 package com.ddd.api.mapper;
 
+import com.ddd.api.dto.registration.res.AttendeeResponseDto;
 import com.ddd.api.dto.registration.res.RegistrationResponseDto;
+import com.ddd.application.dto.fanpage.AttendeeInfoDto;
 import com.ddd.application.dto.registration.RegistrationDto;
 import org.mapstruct.Mapper;
 
@@ -8,4 +10,6 @@ import org.mapstruct.Mapper;
 public interface RegistrationApiMapper {
     RegistrationDto toDto(RegistrationResponseDto registrationResponseDto);
     RegistrationResponseDto toResponseDto(RegistrationDto registrationDto);
+
+    AttendeeResponseDto toAttendeeResponseDto(AttendeeInfoDto attendeeInfoDto);
 }

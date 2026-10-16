@@ -1,5 +1,7 @@
 package com.ddd.application.service.registration;
 
+import java.util.List;
+
 public interface RegistrationCommandService {
     void registerEvent(String email, Long eventId);
 
@@ -9,7 +11,11 @@ public interface RegistrationCommandService {
 
     void checkOut(String email, Long eventId, String proofUrl);
 
-    void adminCheckIn(String adminEmail, Long eventId, Long studentUserId);
+    void fanpageMemberCheckIn(String adminEmail, Long eventId, Long studentUserId);
 
-    void adminCheckOut(String adminEmail, Long eventId, Long studentUserId);
+    void fanpageMemberCheckIn(String adminEmail, Long eventId, List<Long> studentUserIds);
+
+    void fanpageMemberCheckOut(String adminEmail, Long eventId, Long studentUserId);
+
+    void fanpageMemberCheckOut(String adminEmail, Long eventId, List<Long> studentUserIds);
 }

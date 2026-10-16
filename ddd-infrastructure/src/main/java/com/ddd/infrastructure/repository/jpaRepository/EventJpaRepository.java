@@ -25,4 +25,6 @@ public interface EventJpaRepository extends JpaRepository<EventJpaEntity, Long> 
 
     @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage", "semester"})
     Page<EventJpaEntity> findWithDetailsByFanpage_IdAndIsActiveTrue(Long fanpageId, Pageable pageable);
+
+    boolean existsByIdAndFanpageId(Long eventId, Long fanpageId);
 }

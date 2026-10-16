@@ -18,6 +18,10 @@ public enum ErrorCodeEnum {
     DUPLICATE_RESOURCE("006", HttpStatus.CONFLICT, "Resource already exists"),
     RESOURCE_NOT_FOUND("007", HttpStatus.NOT_FOUND, "Resource not found"),
 
+    //BUSINESS
+    BUSINESS_ERROR("100", HttpStatus.BAD_REQUEST, "Business error"),
+    BUSINESS_RULE_VIOLATION("101", HttpStatus.BAD_REQUEST, "Business rule violation"),
+
     // SEMESTER
     SEMESTER_NOT_FOUND("SEMESTER.001", HttpStatus.NOT_FOUND, "Semester not found"),
     SEMESTER_DUPLICATE("SEMESTER.002", HttpStatus.CONFLICT, "Semester already exists"),

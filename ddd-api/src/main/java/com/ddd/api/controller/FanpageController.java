@@ -9,7 +9,6 @@ import com.ddd.application.service.fanpage.FanpageQueryService;
 import com.ddd.application.service.fanpage.FanpageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,24 +41,6 @@ public class FanpageController {
     @PostMapping("/admin/ban-fanpage/{fanpageId}")
     public BaseResponse<?> banFanpage(@PathVariable Long fanpageId) {
         fanpageService.banFanpage(fanpageId);
-        return BaseResponse.ok();
-    }
-
-    @PatchMapping("/events/{eventId}/users/{studentUserId}/check-in")
-    public BaseResponse<Void> adminCheckIn(Authentication authentication,
-                                           @PathVariable Long eventId,
-                                           @PathVariable Long studentUserId) {
-        String adminEmail = authentication.getName();
-        registrationCommandService.adminCheckIn(adminEmail, eventId, studentUserId);
-        return BaseResponse.ok();
-    }
-
-    @PatchMapping("/events/{eventId}/users/{studentUserId}/check-out")
-    public BaseResponse<Void> adminCheckOut(Authentication authentication,
-                                            @PathVariable Long eventId,
-                                            @PathVariable Long studentUserId) {
-        String adminEmail = authentication.getName();
-        registrationCommandService.adminCheckOut(adminEmail, eventId, studentUserId);
         return BaseResponse.ok();
     }
 
