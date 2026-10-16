@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,12 +26,12 @@ public class RegistrationQueryServiceImpl implements RegistrationQueryService {
     private final RegistrationJpaRepository registrationJpaRepository;
     private final UserRepository userRepository;
     private final RegistrationDtoMapper registrationDtoMapper;
-    // Inject thêm Mapper của bạn vào đây (Ví dụ: registrationApiMapper)
 
     @Override
     public Page<RegistrationDto> getHistory(String email, int page, int size) {
         User user = userRepository.findByEmail(email);
-        Pageable pageable = PageRequest.of(page, size);
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+        Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<RegistrationJpaEntity> entityPage = registrationJpaRepository.findAllByUserId(user.getId(), pageable);
 

@@ -5,7 +5,7 @@ public interface RegistrationCommandService {
 
     void cancelRegistration(String email, Long eventId, String reason);
 
-    void checkIn(String email, Long eventId);
+    void checkIn(String email, Long eventId, String proofUrl);
 
     void checkOut(String email, Long eventId, String proofUrl);
 

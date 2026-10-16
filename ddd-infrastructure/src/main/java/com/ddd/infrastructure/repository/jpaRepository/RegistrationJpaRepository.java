@@ -22,7 +22,7 @@ public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpa
 
     @Query("SELECT r FROM RegistrationJpaEntity r JOIN FETCH r.event e " +
             "WHERE r.user.id = :userId " +
-            "AND r.status = com.ddd.domain.enums.RegistrationStatusEnum.REGISTERED " +
+            "AND r.status = RegistrationStatusEnum.REGISTERED " +
             "AND e.dateHappen > CURRENT_TIMESTAMP")
     List<RegistrationJpaEntity> findUpcomingRegisteredEvents(@Param("userId") Long userId);
 }
