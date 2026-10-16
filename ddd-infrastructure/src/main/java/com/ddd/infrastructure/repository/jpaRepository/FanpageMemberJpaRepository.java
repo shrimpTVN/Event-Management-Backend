@@ -15,6 +15,8 @@ public interface FanpageMemberJpaRepository extends JpaRepository<FanpageMemberJ
 
     boolean existsByFanpageIdAndUserIdAndRoleAndIsActive(Long fanpageId, Long userId, String name, boolean b);
 
+    boolean existsByFanpageIdAndUserIdAndIsActive(Long fanpageId, Long userId, boolean isActive);
+
     @EntityGraph(attributePaths = {"user"})
     List<FanpageMemberJpaEntity> findAllByFanpageIdAndIsActive(Long fanpageId, boolean isActive);
 

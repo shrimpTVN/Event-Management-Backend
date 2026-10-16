@@ -121,6 +121,15 @@ public class GlobalExceptionHandler {
                 ErrorCodeEnum.AUTH_INVALID_CREDENTIALS.getStatus());
     }
 
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<Object> handleBusinessException(BusinessException exception, WebRequest webRequest){
+        log.warn("Business exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getDefaultMessage(),
+                ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getStatus());
+    }
+
     //     401 Unauthorized
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<Object> handleUnauthorized(

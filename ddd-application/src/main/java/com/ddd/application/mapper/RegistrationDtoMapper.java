@@ -1,5 +1,6 @@
 package com.ddd.application.mapper;
 
+import com.ddd.application.dto.fanpage.AttendeeInfoDto;
 import com.ddd.application.dto.registration.RegistrationDto;
 import com.ddd.infrastructure.entity.RegistrationJpaEntity;
 import org.mapstruct.Mapper;
@@ -16,4 +17,12 @@ public interface RegistrationDtoMapper {
     @Mapping(target = "dateHappen", source = "event.dateHappen")
     @Mapping(target = "bannerUrl", source = "event.bannerUrl")
     RegistrationDto toDto(RegistrationJpaEntity entity);
+
+    @Mapping(target = "userId", source = "user.id")
+    @Mapping(target="firstName", source="user.firstName")
+    @Mapping(target="lastName", source="user.lastName")
+    @Mapping(target="email", source="user.email")
+    @Mapping(target="gender", source="user.gender")
+    @Mapping(target="avatarUrl", source="user.avatarUrl")
+    AttendeeInfoDto toAttendeeInfoDto(RegistrationJpaEntity entity);
 }

@@ -2,6 +2,7 @@ package com.ddd.infrastructure.repository.jpaRepository;
 
 import com.ddd.infrastructure.entity.RegistrationJpaEntity;
 import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,4 +32,7 @@ public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpa
             "AND r.status = RegistrationStatusEnum.REGISTERED " +
             "AND e.dateHappen > CURRENT_TIMESTAMP")
     List<RegistrationJpaEntity> findUpcomingRegisteredEvents(@Param("userId") Long userId);
+
+    @EntityGraph(attributePaths = {"user"})
+    Page<RegistrationJpaEntity> findAllByEventId(Long eventId, Pageable pageable);
 }
