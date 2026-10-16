@@ -21,6 +21,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -30,7 +33,6 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
     private final FanpageMemberRepository fanpageMemberRepository;
-
     private Registration isRegistered(User user, Long userId, Long eventId) {
         if (registrationRepository.isRegistered(user.getId(), eventId)) {
             Registration registration = registrationRepository.findByUserAndEvent(user.getId(), eventId);
@@ -122,50 +124,88 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         registrationRepository.save(registration, user.getId(), eventId);
     }
 
-    private Registration getRegistrationForFanpageMember(User adminUser, Long eventId, Long studentUserId) {
-        Event event = eventRepository.findById(eventId);
-
+    private void validateFanpageMemberPermission(User adminUser, Event event) {
         if (!LocalDate.now().isEqual(event.getDateHappen())) {
             throw new EventAttendanceException("This event has not started yet");
         }
-
         FanpageMember fanpageMember = fanpageMemberRepository.findById(event.getFanpageId(), adminUser.getId())
                 .orElseThrow(() -> new EventAttendanceException("You not have permission to manage this event"));
-
         if (!fanpageMember.isActive()) {
             throw new BusinessException("Your account has been suspended");
         }
-
-        return registrationRepository.findByUserAndEvent(studentUserId, eventId);
     }
 
     @Override
-    public void adminCheckIn(String adminEmail, Long eventId, Long studentUserId) {
-        User adminUser = userRepository.findByEmail(adminEmail);
-        Registration registration = getRegistrationForFanpageMember(adminUser, eventId, studentUserId);
-
-        if (registration.getStatus() != RegistrationStatusEnum.REGISTERED) {
-            throw new EventAttendanceException("This student has not registered for the event!");
-        }
-
-        registration.setCheckInAt(Instant.now());
-        registration.setCheckInBy(adminUser.getId());
-        registration.setStatus(RegistrationStatusEnum.CHECKED_IN);
-        registrationRepository.save(registration, studentUserId, eventId);
+    public void fanpageMemberCheckIn(String fanpageMemberEmail, Long eventId, Long studentUserId) {
+        fanpageMemberCheckIn(fanpageMemberEmail, eventId, List.of(studentUserId));
     }
 
     @Override
-    public void adminCheckOut(String adminEmail, Long eventId, Long studentUserId) {
-        User adminUser = userRepository.findByEmail(adminEmail);
-        Registration registration = getRegistrationForFanpageMember(adminUser, eventId, studentUserId);
+    public void fanpageMemberCheckOut(String fanpageMemberEmail, Long eventId, Long studentUserId) {
+        fanpageMemberCheckOut(fanpageMemberEmail, eventId, List.of(studentUserId));
+    }
 
-        if (registration.getStatus() != RegistrationStatusEnum.CHECKED_IN) {
-            throw new EventAttendanceException("This student has not check in");
+    @Override
+    public void fanpageMemberCheckIn(String fanpageMemberEmail, Long eventId, List<Long> studentUserIds) {
+        if (studentUserIds == null || studentUserIds.isEmpty()) {
+            return;
         }
 
-        registration.setCheckOutAt(Instant.now());
-        registration.setCheckOutBy(adminUser.getId());
-        registration.setStatus(RegistrationStatusEnum.COMPLETED);
-        registrationRepository.save(registration, studentUserId, eventId);
+        User fanpageMember = userRepository.findByEmail(fanpageMemberEmail);
+        Event event = eventRepository.findById(eventId);
+        validateFanpageMemberPermission(fanpageMember, event);
+
+        List<Registration> registrations = registrationRepository.findAllByUserIdsAndEvent(studentUserIds, eventId);
+        Map<Long, Registration> registrationMap = registrations.stream()
+                .collect(Collectors.toMap(Registration::getUserId, r -> r));
+
+        Instant now = Instant.now();
+        for (Long studentUserId : studentUserIds) {
+            Registration registration = registrationMap.get(studentUserId);
+            if (registration == null) {
+                throw new EventAttendanceException("Student ID " + studentUserId + " has not registered for the event!");
+            }
+            if (registration.getStatus() != RegistrationStatusEnum.REGISTERED) {
+                throw new EventAttendanceException("Student ID " + studentUserId + " is not in REGISTERED status!");
+            }
+            registration.setCheckInAt(now);
+            registration.setCheckInBy(fanpageMember.getId());
+            registration.setStatus(RegistrationStatusEnum.CHECKED_IN);
+        }
+
+        registrationRepository.saveAll(registrations, eventId);
+    }
+
+
+
+    @Override
+    public void fanpageMemberCheckOut(String fanpageMemberEmail, Long eventId, List<Long> studentUserIds) {
+        if (studentUserIds == null || studentUserIds.isEmpty()) {
+            return;
+        }
+
+        User fanpageMember = userRepository.findByEmail(fanpageMemberEmail);
+        Event event = eventRepository.findById(eventId);
+        validateFanpageMemberPermission(fanpageMember, event);
+
+        List<Registration> registrations = registrationRepository.findAllByUserIdsAndEvent(studentUserIds, eventId);
+        Map<Long, Registration> registrationMap = registrations.stream()
+                .collect(Collectors.toMap(Registration::getUserId, r -> r));
+
+        Instant now = Instant.now();
+        for (Long studentUserId : studentUserIds) {
+            Registration registration = registrationMap.get(studentUserId);
+            if (registration == null) {
+                throw new EventAttendanceException("Student ID " + studentUserId + " has not registered for the event!");
+            }
+            if (registration.getStatus() != RegistrationStatusEnum.CHECKED_IN) {
+                throw new EventAttendanceException("Student ID " + studentUserId + " has not checked in!");
+            }
+            registration.setCheckOutAt(now);
+            registration.setCheckOutBy(fanpageMember.getId());
+            registration.setStatus(RegistrationStatusEnum.COMPLETED);
+        }
+
+        registrationRepository.saveAll(registrations, eventId);
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import org.springframework.data.domain.Pageable;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +18,11 @@ public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpa
     boolean existsByUserIdAndEventId(Long userId, Long eventId);
 
     Optional<RegistrationJpaEntity> findByUserIdAndEventId(Long userId, Long eventId);
+
+    @Query("SELECT r FROM RegistrationJpaEntity r " +
+            "WHERE r.event.id = :eventId " +
+            "AND r.user.id IN :userIds")
+    List<RegistrationJpaEntity> findByEventIdAndUserIdIn(@Param("eventId") Long eventId, @Param("userIds") Collection<Long> userIds);
 
     Page<RegistrationJpaEntity> findAllByUserId(Long userId, Pageable pageable);
 

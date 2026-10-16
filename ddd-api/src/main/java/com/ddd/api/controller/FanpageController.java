@@ -1,6 +1,7 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
+import com.ddd.api.dto.fanpage.req.BatchAttendanceRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageRegisterRequestDto;
 import com.ddd.api.dto.fanpage.res.FanpageMemberResponseDto;
 import com.ddd.api.mapper.FanpageApiMapper;
@@ -45,21 +46,39 @@ public class FanpageController {
         return BaseResponse.ok();
     }
 
-    @PatchMapping("/events/{eventId}/users/{studentUserId}/check-in")
-    public BaseResponse<Void> adminCheckIn(Authentication authentication,
-                                           @PathVariable Long eventId,
-                                           @PathVariable Long studentUserId) {
+    @PatchMapping("/fanpage-member/events/{eventId}/check-in")
+    public BaseResponse<Void> fanpageMemberBatchCheckIn(Authentication authentication,
+                                                @PathVariable Long eventId,
+                                                @RequestBody @Valid BatchAttendanceRequestDto request) {
         String adminEmail = authentication.getName();
-        registrationCommandService.adminCheckIn(adminEmail, eventId, studentUserId);
+        registrationCommandService.fanpageMemberCheckIn(adminEmail, eventId, request.studentUserIds());
         return BaseResponse.ok();
     }
 
-    @PatchMapping("/events/{eventId}/users/{studentUserId}/check-out")
-    public BaseResponse<Void> adminCheckOut(Authentication authentication,
+    @PatchMapping("/fanpage-member/events/{eventId}/check-out")
+    public BaseResponse<Void> fanpageMemberBatchCheckOut(Authentication authentication,
+                                                 @PathVariable Long eventId,
+                                                 @RequestBody @Valid BatchAttendanceRequestDto request) {
+        String adminEmail = authentication.getName();
+        registrationCommandService.fanpageMemberCheckOut(adminEmail, eventId, request.studentUserIds());
+        return BaseResponse.ok();
+    }
+
+    @PatchMapping("/fanpage-member/events/{eventId}/users/{studentUserId}/check-in")
+    public BaseResponse<Void> fanpageMemberCheckIn(Authentication authentication,
+                                           @PathVariable Long eventId,
+                                           @PathVariable Long studentUserId) {
+        String adminEmail = authentication.getName();
+        registrationCommandService.fanpageMemberCheckIn(adminEmail, eventId, studentUserId);
+        return BaseResponse.ok();
+    }
+
+    @PatchMapping("/fanpage-member/events/{eventId}/users/{studentUserId}/check-out")
+    public BaseResponse<Void> fanpageMemberCheckOut(Authentication authentication,
                                             @PathVariable Long eventId,
                                             @PathVariable Long studentUserId) {
         String adminEmail = authentication.getName();
-        registrationCommandService.adminCheckOut(adminEmail, eventId, studentUserId);
+        registrationCommandService.fanpageMemberCheckOut(adminEmail, eventId, studentUserId);
         return BaseResponse.ok();
     }
 
