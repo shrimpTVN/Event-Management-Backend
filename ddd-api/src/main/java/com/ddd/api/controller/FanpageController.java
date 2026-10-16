@@ -31,11 +31,14 @@ public class FanpageController {
     @GetMapping({"", "/"})
     public BaseResponse<Page<FanpageResponseDto>> searchFanpages(
             @ModelAttribute FanpageFilterRequestDto request) {
+
+        //set status to ACTIVE  and isActive to true for normal users,
+        // only admin can see PENDING or BANNED fanpages
         FanpageFilterRequestDto effectiveFilter = new FanpageFilterRequestDto(
                 request.keyword(),
-                request.status(),
+                "ACTIVE",
                 request.orgType(),
-                request.isActive(),
+                true,
                 request.page(),
                 request.size(),
                 request.sortBy(),
