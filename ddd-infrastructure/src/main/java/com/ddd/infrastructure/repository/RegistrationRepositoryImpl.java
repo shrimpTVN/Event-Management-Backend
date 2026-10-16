@@ -4,6 +4,7 @@ import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.Registration;
 import com.ddd.domain.repository.RegistrationRepository;
 import com.ddd.infrastructure.entity.EventJpaEntity;
+import com.ddd.infrastructure.entity.RegistrationId;
 import com.ddd.infrastructure.entity.RegistrationJpaEntity;
 import com.ddd.infrastructure.entity.UserJpaEntity;
 import com.ddd.infrastructure.mapper.RegistrationMapper;
@@ -36,9 +37,10 @@ public class RegistrationRepositoryImpl implements RegistrationRepository {
         RegistrationJpaEntity registrationJpaEntity = registrationJpaRepository.findByUserIdAndEventId(userId, eventId)
                 .orElseGet(() -> {
                     RegistrationJpaEntity newEntity = new RegistrationJpaEntity();
-                    com.ddd.infrastructure.entity.RegistrationId regId = new com.ddd.infrastructure.entity.RegistrationId();
+                    RegistrationId regId = new RegistrationId();
                     regId.setUserId(userId);
                     regId.setEventId(eventId);
+
                     newEntity.setId(regId);
                     newEntity.setUser(userJpaEntity);
                     newEntity.setEvent(eventJpaEntity);
@@ -53,7 +55,7 @@ public class RegistrationRepositoryImpl implements RegistrationRepository {
     @Override
     public Registration findByUserAndEvent(Long userId, Long eventId) {
         RegistrationJpaEntity registrationJpaEntity = registrationJpaRepository.findByUserIdAndEventId(userId, eventId)
-                .orElseThrow(() -> new ResourceNotFoundException("Not found Registration"));
+                .orElseThrow(() -> new ResourceNotFoundException("Not found Registration with userId: " + userId + " and eventId: " + eventId));
 
         return registrationMapper.toDomain(registrationJpaEntity);
 

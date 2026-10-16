@@ -1,8 +1,7 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
-import com.ddd.api.dto.registration.req.CheckInRequestDto;
-import com.ddd.api.dto.registration.req.CheckOutRequestDto;
+import com.ddd.api.dto.registration.req.AttendanceRequestDto;
 import com.ddd.api.dto.registration.res.RegistrationResponseDto;
 import com.ddd.api.mapper.RegistrationApiMapper;
 import com.ddd.application.service.registration.RegistrationCommandService;
@@ -16,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/me/registrations")
+@RequestMapping("/registrations")
 @RequiredArgsConstructor
 public class RegistrationController {
 
@@ -24,7 +23,7 @@ public class RegistrationController {
     private final RegistrationQueryService registrationQueryService;
     private final RegistrationApiMapper registrationApiMapper;
 
-    @PostMapping("/events/{eventId}")
+    @PostMapping("/me/events/{eventId}")
     public BaseResponse<Void> registerEvent(Authentication authentication,
                                             @PathVariable Long eventId) {
         String email = authentication.getName();
@@ -33,7 +32,7 @@ public class RegistrationController {
     }
 
 
-    @PatchMapping("/events/{eventId}/cancel")
+    @PatchMapping("/me/events/{eventId}/cancel")
     public BaseResponse<Void> cancelRegistration(Authentication authentication,
                                                  @PathVariable Long eventId,
                                                  @RequestBody Map<String, String> body) {
@@ -45,7 +44,7 @@ public class RegistrationController {
     }
 
 
-    @GetMapping("/history")
+    @GetMapping("/me/history")
     public BaseResponse<Page<RegistrationResponseDto>> getHistory(Authentication authentication,
                                                                   @RequestParam(defaultValue = "0") int page,
                                                                   @RequestParam(defaultValue = "10") int size) {
@@ -56,7 +55,7 @@ public class RegistrationController {
     }
 
 
-    @GetMapping("/upcoming")
+    @GetMapping("/me/upcoming")
     public BaseResponse<List<RegistrationResponseDto>> getUpcoming(Authentication authentication) {
         String email = authentication.getName();
         var summaryList = registrationQueryService.getUpcoming(email);
@@ -68,21 +67,22 @@ public class RegistrationController {
         return BaseResponse.of(responseList);
     }
 
-    @PatchMapping("/events/{eventId}/check-in")
+    @PatchMapping("/me/events/{eventId}/check-in")
     public BaseResponse<Void> checkIn(Authentication authentication,
+                                      @RequestBody AttendanceRequestDto checkInRequestDto,
                                       @PathVariable Long eventId
+
                                       ) {
         String email = authentication.getName();
-        registrationCommandService.checkIn(email, eventId);
+        registrationCommandService.checkIn(email, eventId, checkInRequestDto.proofUrl());
         return BaseResponse.ok();
 
     }
 
-
-    @PatchMapping("/events/{eventId}/check-out")
+    @PatchMapping("/me/events/{eventId}/check-out")
     public BaseResponse<Void> checkOut(Authentication authentication,
                                        @PathVariable Long eventId,
-                                       @RequestBody CheckOutRequestDto checkOutRequestDto) {
+                                       @RequestBody AttendanceRequestDto checkOutRequestDto) {
         String email = authentication.getName();
         registrationCommandService.checkOut(email, eventId, checkOutRequestDto.proofUrl());
         return BaseResponse.ok();
