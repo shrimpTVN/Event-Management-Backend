@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class RegistrationCommandServiceImpl implements RegistrationCommandService {
+public class  RegistrationCommandServiceImpl implements RegistrationCommandService {
     private final RegistrationRepository registrationRepository;
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
@@ -61,7 +61,6 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         reg.setStatus(RegistrationStatusEnum.REGISTERED);
         registrationRepository.save(reg, user.getId(), eventId);
     }
-
 
     @Override
     public void cancelRegistration(String email, Long eventId, String reason) {
@@ -175,8 +174,6 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
 
         registrationRepository.saveAll(registrations, eventId);
     }
-
-
 
     @Override
     public void fanpageMemberCheckOut(String fanpageMemberEmail, Long eventId, List<Long> studentUserIds) {
