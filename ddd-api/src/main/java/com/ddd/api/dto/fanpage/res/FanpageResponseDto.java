@@ -1,5 +1,7 @@
 package com.ddd.api.dto.fanpage.res;
 
+import java.time.Instant;
+
 public record FanpageResponseDto(
         Long id,
         String name,
@@ -10,7 +12,7 @@ public record FanpageResponseDto(
         String parentOrg,
         String helpContact,
         String helpPhone,
-        String createdAt,
+        Instant createdAt,
         String status,
         Boolean isActive
 ) {
