@@ -5,6 +5,7 @@ import java.time.Instant;
 public record PointTransactionResponseDto(
         Long id,
         Long pointCategoryId,
+        Long semesterId,
         Long eventId,
         String eventName,
         Integer points,

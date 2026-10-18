@@ -50,6 +50,13 @@ public class StudentSemesterPointRepositoryImpl implements StudentSemesterPointR
         jpaRepository.saveAll(entities);
     }
 
+    @Override
+    public void save(StudentSemesterPoint studentSemesterPoint) {
+        StudentSemesterPointJpaEntity entity = mapper.toJpaEntity(studentSemesterPoint);
+        setAssociationReferences(studentSemesterPoint, entity);
+        jpaRepository.save(entity);
+    }
+
     private void setAssociationReferences(StudentSemesterPoint studentSemesterPoint, StudentSemesterPointJpaEntity entity) {
         if (studentSemesterPoint.getUserId() != null) {
             entity.setUser(entityManager.getReference(com.ddd.infrastructure.entity.UserJpaEntity.class,

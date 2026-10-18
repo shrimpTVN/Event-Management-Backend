@@ -1,16 +1,17 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
+import com.ddd.api.dto.semesterpoint.req.PointTransactionRequestDto;
 import com.ddd.api.dto.semesterpoint.res.PointTransactionResponseDto;
 import com.ddd.api.mapper.PointTransactionApiMapper;
 import com.ddd.application.dto.semesterpoint.PointTransactionInfoDto;
+import com.ddd.application.dto.semesterpoint.PointTransactionRequestInfoDto;
+import com.ddd.application.service.semesterpoint.PointTransactionCommandService;
 import com.ddd.application.service.semesterpoint.PointTransactionQueryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PointTransactionController {
     private final PointTransactionQueryService pointTransactionQueryService;
+    private final PointTransactionCommandService pointTransactionCommandService;
     private final PointTransactionApiMapper pointTransactionApiMapper;
 
     @GetMapping("/me/semesters/{semesterId}/point-categories/{pointCategoryId}")
@@ -31,6 +33,16 @@ public class PointTransactionController {
                 .getPointTransactionsForStudent(email, semesterId, pointCategoryId);
         return BaseResponse.of(pointTransactions.stream().map(pointTransactionApiMapper::toResponseDto)
                 .collect(Collectors.toList()));
+    }
+
+    @PostMapping("/me")
+    public BaseResponse<Void> createPointTransactionForStudent(Authentication authentication,
+                                                                                      @RequestBody @Valid PointTransactionRequestDto requestDto) {
+        String email = authentication.getName();
+        PointTransactionRequestInfoDto requestInfoDto = pointTransactionApiMapper.toRequestInfoDto(requestDto);
+        pointTransactionCommandService
+                .createPointTransactionForStudent(email, requestInfoDto);
+        return BaseResponse.ok();
     }
 
 }

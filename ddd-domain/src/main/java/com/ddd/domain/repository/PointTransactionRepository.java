@@ -6,4 +6,8 @@ import java.util.List;
 
 public interface PointTransactionRepository {
     void saveAll(List<PointTransaction> pointTransactions);
+
+    void save(PointTransaction pointTransaction);
+
+
 }
