@@ -11,6 +11,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 
 @Getter
@@ -50,17 +51,17 @@ public class PointTransactionJpaEntity {
     @Column(name = "points", nullable = false)
     private Integer points;
 
-    @Size(max = 50)
+
     @NotNull
     @Column(name = "type", nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
     private PointTransactionTypeEnum type=PointTransactionTypeEnum.MANUAL;
 
-    @Enumerated(EnumType.STRING)
-    @Size(max = 50)
+
     @NotNull
     @ColumnDefault("'CONFIRMED'")
     @Column(name = "status", nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
     private PointTransactionStatusEnum status=PointTransactionStatusEnum.CONFIRMED;
 
     @Column(name = "description", length = Integer.MAX_VALUE)
@@ -68,19 +69,28 @@ public class PointTransactionJpaEntity {
 
     @NotNull
     @ColumnDefault("now()")
-    @Column(name = "created_at", nullable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at")
+    private Instant createdAt = Instant.now();
 
     @Column(name = "created_by")
     private Long createdBy;
 
     @NotNull
     @ColumnDefault("now()")
-    @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    @Column(name = "updated_at")
+    private Instant updatedAt = Instant.now();
 
     @Column(name = "updated_by")
     private Long updatedBy;
 
+    @PrePersist
+    protected void onPrePersist() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+        if (updatedAt == null) {
+            updatedAt = Instant.now();
+        }
+    }
 
 }

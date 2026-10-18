@@ -56,4 +56,6 @@ public class EventPointRepositoryImpl implements EventPointRepository {
                 .map(eventPointMapper::toDomainModel)
                 .toList();
     }
+
+
 }

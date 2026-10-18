@@ -293,23 +293,25 @@ CREATE TABLE semesters
 -- ============================================================
 CREATE TABLE student_semester_points
 (
-    id                BIGINT         NOT NULL GENERATED ALWAYS AS IDENTITY,
-    user_id           BIGINT         NOT NULL,
-    semester_id       BIGINT         NOT NULL,
-    point_category_id BIGINT         NOT NULL,
-    total_point       NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    id                BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    user_id           BIGINT      NOT NULL,
+    semester_id       BIGINT      NOT NULL,
+    point_category_id BIGINT      NOT NULL,
+    total_point       INTEGER     NOT NULL DEFAULT 0,
     finalized_at      TIMESTAMPTZ,
     -- audit
-    created_at        TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by        BIGINT,
-    updated_at        TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by        BIGINT,
-    UNIQUE (user_id, semester_id, point_category_id)
---     CONSTRAINT pk_student_semester_points PRIMARY KEY (user_id, semester_id, point_category_id)
+    UNIQUE (user_id, semester_id, point_category_id),
+    CONSTRAINT pk_student_semester_points PRIMARY KEY (id)
 );
 
 ALTER TABLE student_semester_points
+    ADD CONSTRAINT pk_student_semester_points PRIMARY KEY (id),
     ADD UNIQUE (user_id, semester_id, point_category_id);
+
 
 -- ============================================================
 --  point_transactions
@@ -317,8 +319,7 @@ ALTER TABLE student_semester_points
 -- ============================================================
 CREATE TABLE point_transactions
 (
-    id                BIGINT      NOT NULL GENERATED
-        ALWAYS AS IDENTITY,
+    id                BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
     user_id           BIGINT      NOT NULL,
     semester_id       BIGINT      NOT NULL,
     point_category_id BIGINT      NOT NULL,
@@ -339,7 +340,7 @@ CREATE TABLE point_transactions
 );
 -- partial unique index to ensure that a user can only have one confirmed CHECKOUT_REWARD transaction per event and point category
 CREATE UNIQUE INDEX uq_pt_checkout_reward ON point_transactions (user_id, event_id, point_category_id)
-    WHERE type ='CHECKOUT_REWARD' AND status ='CONFIRMED';
+    WHERE type = 'CHECKOUT_REWARD' AND status = 'CONFIRMED';
 
 CREATE INDEX idx_pt_user_semester ON point_transactions (user_id, semester_id);
 
@@ -810,6 +811,7 @@ CREATE TRIGGER trg_semesters_updated_at
     ON semesters
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+
 CREATE TRIGGER trg_ssp_updated_at
     BEFORE UPDATE
     ON student_semester_points

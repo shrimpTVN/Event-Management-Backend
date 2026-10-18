@@ -1,7 +1,14 @@
 package com.ddd.domain.model;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.Instant;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class PointTransaction {
     private Long id;
     private Long userId;
