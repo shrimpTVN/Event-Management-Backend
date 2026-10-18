@@ -23,6 +23,17 @@ spring:
       enabled: ${DOCKER_COMPOSE_ENABLED:true}
       file: ${DOCKER_COMPOSE_FILE:compose.yaml}
       lifecycle-management: ${DOCKER_COMPOSE_LIFECYCLE:start-only}
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 logging:
   pattern:
@@ -33,3 +44,7 @@ jwt:
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   cookie-name: ${JWT_COOKIE_NAME:ddd_jwt}
   header: ${JWT_HEADER:Authorization}
+
+google:
+  client-id: ${GOOGLE_CLIENT_ID:160718561900-cjq1bkd7krtp2snvk12mi5mplrki9gff.apps.googleusercontent.com}
+

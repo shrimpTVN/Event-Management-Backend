@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface StudentProfileJpaRepository extends JpaRepository<StudentProfileJpaEntity, Long> {
     boolean existsByStudentId(String studentId);
+    boolean existsByUserId(Long userId);
 
     @Query("SELECT s FROM StudentProfileJpaEntity s " +
             "JOIN FETCH s.user u JOIN FETCH s.major m JOIN FETCH s.association a JOIN FETCH m.school " +

@@ -89,6 +89,7 @@ class EventCommandServiceImplTest {
                 1L,
                 criteriaId,
                 1L,
+                1L,
                 pointDtos
         );
     }
@@ -378,6 +379,7 @@ class EventCommandServiceImplTest {
                 1L,
                 null,
                 1L,
+                1L,
                 Collections.emptyList()
         );
 
@@ -428,6 +430,7 @@ class EventCommandServiceImplTest {
                 1L,
                 null,
                 1L,
+                1L,
                 Collections.emptyList()
         );
 
@@ -477,6 +480,7 @@ class EventCommandServiceImplTest {
                 "banner",
                 1L,
                 null,
+                1L,
                 1L,
                 Collections.emptyList()
         );

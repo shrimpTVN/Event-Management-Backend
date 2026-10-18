@@ -21,10 +21,15 @@ public class SecurityConstant {
             "/api/auth/register",
             "/api/auth/login",
             "/api/auth/register/fanpage-admin",
+            "/api/auth/send-otp",
+            "/api/auth/verify-otp",
+            "/auth/**",
             "/api/semesters/**",
             "/api/fanpages/**",
             "/api/point-categories/**",
-            "/api/events/**"
+            "/api/events/**",
+            "/api/auth/google",
+            "/google-test.html"
     };
 
     public static final String[] SECURE_ENDPOINTS = {

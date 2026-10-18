@@ -1,9 +1,7 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
-import com.ddd.api.dto.auth.req.FanpageAdminRegisterRequestDto;
-import com.ddd.api.dto.auth.req.LoginRequestDto;
-import com.ddd.api.dto.auth.req.RegisterRequestDto;
+import com.ddd.api.dto.auth.req.*;
 import com.ddd.api.dto.auth.res.LoginResponseDto;
 import com.ddd.api.mapper.AuthApiMapper;
 import com.ddd.application.dto.auth.LoginResult;
@@ -11,6 +9,7 @@ import com.ddd.application.dto.user.FanpageAdminProfileDto;
 import com.ddd.application.dto.user.StudentProfileDto;
 import com.ddd.application.dto.user.UserDto;
 import com.ddd.application.service.AuthService;
+import com.ddd.application.service.otp.OtpCommandService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +27,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final AuthApiMapper authApiMapper;
+    private final OtpCommandService otpCommandService;
 
     @PostMapping("/login")
     public ResponseEntity<BaseResponse<LoginResponseDto>> login(@RequestBody LoginRequestDto loginRequestDto) {
@@ -63,10 +63,31 @@ public class AuthController {
     }
 
 
+    @PostMapping("/send-otp")
+    public BaseResponse<Void> sendOtp(@RequestBody @Valid SendOtpRequestDto requestDto) {
+        otpCommandService.sendOtp(requestDto.email());
+        return BaseResponse.ok();
+    }
+
+    @PostMapping("/verify-otp")
+    public BaseResponse<Void> verifyOtp(@RequestBody @Valid VerifyOtpRequestDto requestDto) {
+        otpCommandService.verifyOtp(requestDto.email(), requestDto.otpCode());
+        return BaseResponse.ok();
+    }
+
     @PostMapping("/change-password")
     public BaseResponse<Void> changePassword() {
         System.out.println("change password");
         return BaseResponse.ok();
     }
 
+    @PostMapping("/google")
+    public ResponseEntity<BaseResponse<LoginResponseDto>> loginWithGoogle(
+            @RequestBody @Valid GoogleLoginRequestDto requestDto) {
+        LoginResult loginResult = authService.loginWithGoogle(requestDto.idToken());
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .header(HttpHeaders.SET_COOKIE, authService.getUserCookie(loginResult.jwtToken()).toString())
+                .body(BaseResponse.of(authApiMapper.toLoginResponse(loginResult.loginDto())));
+    }
 }

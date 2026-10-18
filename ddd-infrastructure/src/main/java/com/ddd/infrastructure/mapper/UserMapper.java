@@ -12,7 +12,10 @@ public interface UserMapper {
     UserJpaEntity toEntity(User user);
 
     @Mapping(target = "roleId", source = "role.id")
+    @Mapping(target = "providerId", source = "providerId")
     User toDomain(UserJpaEntity entity);
 
-
 }
+
+
+

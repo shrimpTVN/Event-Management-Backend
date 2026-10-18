@@ -46,6 +46,9 @@ class AuthControllerTest {
     @Mock
     private AuthApiMapper authApiMapper;
 
+    @Mock
+    private com.ddd.application.service.otp.OtpCommandService otpCommandService;
+
     @InjectMocks
     private AuthController authController;
 

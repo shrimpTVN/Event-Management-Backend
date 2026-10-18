@@ -27,9 +27,9 @@ public class UserDetailsCustom implements UserDetails {
      * Lightweight constructor for stateless principal reconstruction from JWT claims.
      * Used in JwtTokenValidatorFilter where name/email/role are not needed.
      */
-    public UserDetailsCustom(Long userId, String email,  String role,
+    public UserDetailsCustom(Long userId, String email, String role,
                              Collection<? extends GrantedAuthority> authorities) {
-        this(userId, email, role,"", authorities);
+        this(userId, email, null, role, authorities);
     }
 
     @Override

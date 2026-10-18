@@ -9,6 +9,7 @@ import org.springframework.http.ResponseCookie;
 
 public interface AuthService {
     LoginResult login(String email, String password);
+    LoginResult loginWithGoogle(String idToken);
     ResponseCookie getUserCookie(String jwtToken);
     ResponseCookie getLogoutCookie();
 
@@ -16,3 +17,4 @@ public interface AuthService {
 
     void createFanpageAdmin(UserDto userDto, FanpageAdminProfileDto fanpageAdminProfileDto);
 }
+

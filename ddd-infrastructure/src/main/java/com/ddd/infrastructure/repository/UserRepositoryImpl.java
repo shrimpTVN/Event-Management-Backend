@@ -40,7 +40,12 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public User save(User user, String roleName) {
+        String roleWithPrefix = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+        String roleWithoutPrefix = roleName.startsWith("ROLE_") ? roleName.substring(5) : roleName;
+
         RoleJpaEntity roleJpaEntity = roleJpaRepository.findByName(roleName)
+                .or(() -> roleJpaRepository.findByName(roleWithoutPrefix))
+                .or(() -> roleJpaRepository.findByName(roleWithPrefix))
                 .orElseThrow(() -> new ResourceAccessException("Role not found with name: " + roleName));
         UserJpaEntity userJpaEntity = userMapper.toEntity(user);
         userJpaEntity.setRole(roleJpaEntity);
@@ -52,4 +57,14 @@ public class UserRepositoryImpl implements UserRepository {
         return userJpaRepository.findById(userId).map(userMapper::toDomain);
     }
 
+    @Override
+    public User update(User user) {
+        UserJpaEntity existing = userJpaRepository.findById(user.getId())
+                .orElseThrow(() -> new ResourceAccessException("User not found with id: " + user.getId()));
+        existing.setProviderId(user.getProviderId());
+        existing.setPassword(user.getPassword() != null ? user.getPassword() : existing.getPassword());
+        return userMapper.toDomain(userJpaRepository.save(existing));
+    }
+
 }
+

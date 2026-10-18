@@ -24,4 +24,17 @@ public class StudentProfileCommandServiceImpl implements StudentProfileCommandSe
        StudentProfile studentProfile = studentProfileDtoMapper.toStudentProfile(studentProfileDto);
        studentProfileRepository.save(studentProfile, userId);
     }
+
+    @Override
+    public void createGoogleStudentProfile(String firstName, String lastName, String avatarUrl, Long userId) {
+        if (studentProfileRepository.existsByUserId(userId)) {
+            return;
+        }
+        StudentProfile studentProfile = new StudentProfile();
+        studentProfile.setFirstName(firstName);
+        studentProfile.setLastName(lastName);
+        studentProfile.setAvatarUrl(avatarUrl);
+        studentProfile.assignUser(userId);
+        studentProfileRepository.save(studentProfile, userId);
+    }
 }

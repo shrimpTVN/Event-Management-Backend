@@ -45,8 +45,12 @@ public class JwtTokenValidatorFilter extends OncePerRequestFilter {
                 Long userId = userIdNum != null ? userIdNum.longValue() : null;
                 String authoritiesClaim = claims.get("roles").toString();
 
-                UserDetailsCustom statelessPrincipal = new UserDetailsCustom(userId, username, authoritiesClaim,"",
-                        AuthorityUtils.commaSeparatedStringToAuthorityList(authoritiesClaim));
+                UserDetailsCustom statelessPrincipal = new UserDetailsCustom(
+                        userId,
+                        username,
+                        authoritiesClaim,
+                        AuthorityUtils.commaSeparatedStringToAuthorityList(authoritiesClaim)
+                );
 
                 Authentication authentication = new UsernamePasswordAuthenticationToken(
                         statelessPrincipal, null, statelessPrincipal.getAuthorities());
