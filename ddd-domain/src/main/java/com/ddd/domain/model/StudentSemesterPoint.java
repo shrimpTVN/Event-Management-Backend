@@ -11,6 +11,7 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 public class StudentSemesterPoint {
+    private Long id;
     private Long userId;
     private Long semesterId;
     private Long pointCategoryId;

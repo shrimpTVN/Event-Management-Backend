@@ -11,4 +11,6 @@ public interface StudentSemesterPointRepository {
     List<StudentSemesterPoint> findAllIn(List<Long> studentUserIds, Long semesterId, List<Long> pointCategoryIds);
 
     void saveAll(ArrayList<StudentSemesterPoint> studentSemesterPoints);
+
+    void save(StudentSemesterPoint studentSemesterPoint);
 }

@@ -31,6 +31,13 @@ public class PointTransactionRepositoryImpl implements PointTransactionRepositor
         pointTransactionJpaRepository.saveAll(pointTransactionJpaEntities);
     }
 
+    @Override
+    public void save(PointTransaction pointTransaction) {
+        PointTransactionJpaEntity entity = pointTransactionMapper.toJpaEntity(pointTransaction);
+        setAssociationReferences(pointTransaction, entity);
+        pointTransactionJpaRepository.save(entity);
+    }
+
     private void setAssociationReferences(PointTransaction pointTransaction, PointTransactionJpaEntity entity) {
         if (pointTransaction.getUserId() != null) {
             entity.setUser(entityManager.getReference(UserJpaEntity.class, pointTransaction.getUserId()));
