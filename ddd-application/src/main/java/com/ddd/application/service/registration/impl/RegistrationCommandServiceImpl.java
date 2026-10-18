@@ -2,27 +2,25 @@ package com.ddd.application.service.registration.impl;
 
 import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.domain.enums.EventStatusEnum;
+import com.ddd.domain.enums.PointTransactionStatusEnum;
+import com.ddd.domain.enums.PointTransactionTypeEnum;
 import com.ddd.domain.enums.RegistrationStatusEnum;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.DuplicateResourceException;
 import com.ddd.domain.exception.EventAttendanceException;
 import com.ddd.domain.exception.EventRegistrationException;
-import com.ddd.domain.model.Event;
-import com.ddd.domain.model.FanpageMember;
-import com.ddd.domain.model.Registration;
-import com.ddd.domain.model.User;
-import com.ddd.domain.repository.EventRepository;
-import com.ddd.domain.repository.FanpageMemberRepository;
-import com.ddd.domain.repository.RegistrationRepository;
-import com.ddd.domain.repository.UserRepository;
+import com.ddd.domain.model.*;
+import com.ddd.domain.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +31,10 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
     private final FanpageMemberRepository fanpageMemberRepository;
+    private final EventPointRepository eventPointRepository;
+    private final PointTransactionRepository pointTransactionRepository;
+    private final StudentSemesterPointRepository studentSemesterPointRepository;
+
     private Registration isRegistered(User user, Long userId, Long eventId) {
         if (registrationRepository.isRegistered(user.getId(), eventId)) {
             Registration registration = registrationRepository.findByUserAndEvent(user.getId(), eventId);
@@ -61,7 +63,6 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         reg.setStatus(RegistrationStatusEnum.REGISTERED);
         registrationRepository.save(reg, user.getId(), eventId);
     }
-
 
     @Override
     public void cancelRegistration(String email, Long eventId, String reason) {
@@ -113,15 +114,11 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         Event event = eventRepository.findById(eventId);
         Registration registration = registrationRepository.findByUserAndEvent(user.getId(), eventId);
 
-
-        if (registration.getStatus() != RegistrationStatusEnum.CHECKED_IN) {
-            throw new EventAttendanceException("You have not checked in");
-        }
-        registration.setCheckOutAt(Instant.now());
-        registration.setCheckOutEvidenceUrl(proofUrl);
-        registration.setCheckOutBy(user.getId());
-        registration.setStatus(RegistrationStatusEnum.COMPLETED);
+        Instant now = Instant.now();
+        validateAndCompleteRegistration(registration, user.getId(), user.getId(), proofUrl, now);
         registrationRepository.save(registration, user.getId(), eventId);
+
+        awardPointsForStudents(event, List.of(user.getId()), now);
     }
 
     private void validateFanpageMemberPermission(User adminUser, Event event) {
@@ -163,10 +160,14 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         for (Long studentUserId : studentUserIds) {
             Registration registration = registrationMap.get(studentUserId);
             if (registration == null) {
-                throw new EventAttendanceException("Student ID " + studentUserId + " has not registered for the event!");
+                throw new EventAttendanceException("Student ID " + studentUserId + " has not registered for this event!");
             }
-            if (registration.getStatus() != RegistrationStatusEnum.REGISTERED) {
-                throw new EventAttendanceException("Student ID " + studentUserId + " is not in REGISTERED status!");
+            if (registration.getStatus() == RegistrationStatusEnum.COMPLETED) {
+                throw new EventAttendanceException("Student ID " + studentUserId + " has already completed check-out!");
+            }
+            if (registration.getStatus() != RegistrationStatusEnum.CHECKED_IN) {
+                throw new EventAttendanceException("Student ID " + studentUserId + " cannot check out! Current status is: " +
+                        registration.getStatus());
             }
             registration.setCheckInAt(now);
             registration.setCheckInBy(fanpageMember.getId());
@@ -175,8 +176,6 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
 
         registrationRepository.saveAll(registrations, eventId);
     }
-
-
 
     @Override
     public void fanpageMemberCheckOut(String fanpageMemberEmail, Long eventId, List<Long> studentUserIds) {
@@ -190,22 +189,100 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
 
         List<Registration> registrations = registrationRepository.findAllByUserIdsAndEvent(studentUserIds, eventId);
         Map<Long, Registration> registrationMap = registrations.stream()
-                .collect(Collectors.toMap(Registration::getUserId, r -> r));
+                .collect(Collectors.toMap(Registration::getUserId, Function.identity()));
 
         Instant now = Instant.now();
         for (Long studentUserId : studentUserIds) {
-            Registration registration = registrationMap.get(studentUserId);
-            if (registration == null) {
-                throw new EventAttendanceException("Student ID " + studentUserId + " has not registered for the event!");
-            }
-            if (registration.getStatus() != RegistrationStatusEnum.CHECKED_IN) {
-                throw new EventAttendanceException("Student ID " + studentUserId + " has not checked in!");
-            }
-            registration.setCheckOutAt(now);
-            registration.setCheckOutBy(fanpageMember.getId());
-            registration.setStatus(RegistrationStatusEnum.COMPLETED);
+            validateAndCompleteRegistration(registrationMap.get(studentUserId),
+                    studentUserId, fanpageMember.getId(), null, now);
         }
 
         registrationRepository.saveAll(registrations, eventId);
+        awardPointsForStudents(event, studentUserIds, now);
+    }
+
+    private void validateAndCompleteRegistration(Registration registration, Long studentUserId, Long checkedOutById,
+                                                 String proofUrl, Instant now) {
+        if (registration == null) {
+            throw new EventAttendanceException("Student ID " + studentUserId + " has not registered for the event!");
+        }
+        if (!registration.getStatus().equals(RegistrationStatusEnum.CHECKED_IN)) {
+            throw new EventAttendanceException("Student ID " + studentUserId + " has not checked in!");
+        }
+        registration.setCheckOutAt(now);
+        registration.setCheckOutBy(checkedOutById);
+        if (proofUrl != null) {
+            registration.setCheckOutEvidenceUrl(proofUrl);
+        }
+        registration.setStatus(RegistrationStatusEnum.COMPLETED);
+    }
+
+    private void awardPointsForStudents(Event event, List<Long> studentUserIds, Instant now) {
+        List<EventPoint> eventPoints = eventPointRepository.findByEventId(event.getId());
+        if (eventPoints.isEmpty() || studentUserIds == null || studentUserIds.isEmpty()) {
+            return;
+        }
+
+        if (event.getSemesterId() == null) {
+            throw new BusinessException("Event is not assigned to any semester");
+        }
+
+
+        List<StudentSemesterPoint> existingPoints = takeExistingPoints(studentUserIds, event, eventPoints);
+        Map<StudentPointKey, StudentSemesterPoint> pointMap = existingPoints.stream()
+                .collect(Collectors.toMap(
+                        sp -> new StudentPointKey(sp.getUserId(), sp.getPointCategoryId()),
+                        Function.identity()
+                ));
+
+        List<PointTransaction> pointTransactions = new ArrayList<>();
+
+
+        for (Long studentUserId : studentUserIds) {
+            for (EventPoint eventPoint : eventPoints) {
+
+                pointTransactions.add(createPointTransaction(event, studentUserId, eventPoint));
+
+                // Update or create StudentSemesterPoint
+                StudentPointKey key = new StudentPointKey(studentUserId, eventPoint.getPointCategoryId());
+                StudentSemesterPoint ssp = pointMap.get(key);
+                if (ssp == null) {
+                    ssp = new StudentSemesterPoint(studentUserId, event.getSemesterId(),
+                            eventPoint.getPointCategoryId(), eventPoint.getPoint());
+                    pointMap.put(key, ssp);
+                } else {
+                    ssp.setTotalPoint(ssp.getTotalPoint() + eventPoint.getPoint());
+                    ssp.setUpdatedAt(now);
+                }
+            }
+        }
+
+        pointTransactionRepository.saveAll(pointTransactions);
+        studentSemesterPointRepository.saveAll(new ArrayList<>(pointMap.values()));
+    }
+
+    private List<StudentSemesterPoint> takeExistingPoints(List<Long> studentUserIds, Event event,
+                                                          List<EventPoint> eventPoints) {
+        List<Long> pointCategoryIds = eventPoints.stream()
+                .map(EventPoint::getPointCategoryId)
+                .distinct()
+                .toList();
+        return studentSemesterPointRepository.findAllIn(studentUserIds, event.getSemesterId(), pointCategoryIds);
+    }
+
+    private PointTransaction createPointTransaction(Event event, Long studentUserId, EventPoint eventPoint) {
+        PointTransaction pt = new PointTransaction();
+        pt.setUserId(studentUserId);
+        pt.setEventId(event.getId());
+        pt.setPoints(eventPoint.getPoint());
+        pt.setPointCategoryId(eventPoint.getPointCategoryId());
+        pt.setSemesterId(event.getSemesterId());
+        pt.setType(PointTransactionTypeEnum.CHECKOUT_REWARD.name());
+        pt.setStatus(PointTransactionStatusEnum.CONFIRMED.name());
+        pt.setDescription("Checkout reward for event: " + event.getName());
+        return pt;
+    }
+
+    record StudentPointKey(Long userId, Long pointCategoryId) {
     }
 }

@@ -124,10 +124,10 @@ CREATE TABLE users
 );
 
 ALTER TABLE users
-    add column  first_name  VARCHAR(100) NOT NULL default 'Nathan',
-    add column last_name   VARCHAR(100) NOT NULL default 'Tran',
-    add column gender      VARCHAR(10)  NOT NULL DEFAULT 'OTHER',
-    add column  avatar_url  TEXT;
+    add column first_name VARCHAR(100) NOT NULL default 'Nathan',
+    add column last_name  VARCHAR(100) NOT NULL default 'Tran',
+    add column gender     VARCHAR(10)  NOT NULL DEFAULT 'OTHER',
+    add column avatar_url TEXT;
 -- ============================================================
 --  STUDENT_PROFILE
 --  Hồ sơ thông tin sinh viên
@@ -293,19 +293,56 @@ CREATE TABLE semesters
 -- ============================================================
 CREATE TABLE student_semester_points
 (
-    id                BIGINT         NOT NULL GENERATED ALWAYS AS IDENTITY,
-    user_id           BIGINT         NOT NULL,
-    semester_id       BIGINT         NOT NULL,
-    point_category_id BIGINT         NOT NULL,
-    total_point       NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    id                BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    user_id           BIGINT      NOT NULL,
+    semester_id       BIGINT      NOT NULL,
+    point_category_id BIGINT      NOT NULL,
+    total_point       INTEGER     NOT NULL DEFAULT 0,
     finalized_at      TIMESTAMPTZ,
     -- audit
-    created_at        TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by        BIGINT,
-    updated_at        TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
-    updated_by        BIGINT
---     CONSTRAINT pk_student_semester_points PRIMARY KEY (user_id, semester_id, point_category_id)
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by        BIGINT,
+    UNIQUE (user_id, semester_id, point_category_id),
+    CONSTRAINT pk_student_semester_points PRIMARY KEY (id)
 );
+
+ALTER TABLE student_semester_points
+    ADD CONSTRAINT pk_student_semester_points PRIMARY KEY (id),
+    ADD UNIQUE (user_id, semester_id, point_category_id);
+
+
+-- ============================================================
+--  point_transactions
+--  Ghi nhận thay đổi điểm rèn luyện của sinh viên
+-- ============================================================
+CREATE TABLE point_transactions
+(
+    id                BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    user_id           BIGINT      NOT NULL,
+    semester_id       BIGINT      NOT NULL,
+    point_category_id BIGINT      NOT NULL,
+    event_id          BIGINT,
+    points            INTEGER     NOT NULL,
+    type              VARCHAR(50) NOT NULL,
+    status            VARCHAR(50) NOT NULL DEFAULT 'CONFIRMED',
+    description       TEXT,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by        BIGINT,
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by        BIGINT,
+    CONSTRAINT pk_point_transactions PRIMARY KEY (id),
+    CONSTRAINT fk_pt_users FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_pt_semesters FOREIGN KEY (semester_id) REFERENCES semesters (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_pt_categories FOREIGN KEY (point_category_id) REFERENCES point_categories (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_pt_events FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE SET NULL
+);
+-- partial unique index to ensure that a user can only have one confirmed CHECKOUT_REWARD transaction per event and point category
+CREATE UNIQUE INDEX uq_pt_checkout_reward ON point_transactions (user_id, event_id, point_category_id)
+    WHERE type = 'CHECKOUT_REWARD' AND status = 'CONFIRMED';
+
+CREATE INDEX idx_pt_user_semester ON point_transactions (user_id, semester_id);
 
 -- ============================================================
 --  CRITERIA
@@ -404,31 +441,31 @@ CREATE TABLE event_points
 -- ============================================================
 CREATE TABLE registrations
 (
-    user_id      BIGINT      NOT NULL,
-    event_id     BIGINT      NOT NULL,
-    reg_date     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    check_in_at  TIMESTAMPTZ,
-    check_out_at TIMESTAMPTZ,
-    check_in_evidence_url TEXT,
+    user_id                BIGINT      NOT NULL,
+    event_id               BIGINT      NOT NULL,
+    reg_date               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    check_in_at            TIMESTAMPTZ,
+    check_out_at           TIMESTAMPTZ,
+    check_in_evidence_url  TEXT,
     check_out_evidence_url TEXT,
-    check_in_by  BIGINT,
-    check_out_by BIGINT,
-    status       VARCHAR(50) NOT NULL DEFAULT 'REGISTERED',--'REGISTERED','CHECKED_IN','CHECKED_OUT','CANCELLED','ABSENTED'
-    reason       TEXT,
+    check_in_by            BIGINT,
+    check_out_by           BIGINT,
+    status                 VARCHAR(50) NOT NULL DEFAULT 'REGISTERED',--'REGISTERED','CHECKED_IN','CHECKED_OUT','CANCELLED','ABSENTED'
+    reason                 TEXT,
     -- audit
-    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by   BIGINT,
-    updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_by   BIGINT,
+    created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by             BIGINT,
+    updated_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by             BIGINT,
     CONSTRAINT pk_registrations PRIMARY KEY (user_id, event_id)
 );
 
 ALTER TABLE registrations
     DROP COLUMN evidence_url,
-    ADD COLUMN check_in_evidence_url TEXT,
+    ADD COLUMN check_in_evidence_url  TEXT,
     ADD COLUMN check_out_evidence_url TEXT,
-    ADD COLUMN check_in_by BIGINT,
-    ADD COLUMN check_out_by BIGINT;
+    ADD COLUMN check_in_by            BIGINT,
+    ADD COLUMN check_out_by           BIGINT;
 
 -- ============================================================
 --  CONVERSATION
@@ -774,6 +811,7 @@ CREATE TRIGGER trg_semesters_updated_at
     ON semesters
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+
 CREATE TRIGGER trg_ssp_updated_at
     BEFORE UPDATE
     ON student_semester_points

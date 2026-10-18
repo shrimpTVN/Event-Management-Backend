@@ -7,4 +7,6 @@ import java.util.List;
 public interface EventPointRepository {
     void saveAll(List<EventPoint> eventPoints);
     List<EventPoint> findByEventId(Long eventId);
+
+
 }

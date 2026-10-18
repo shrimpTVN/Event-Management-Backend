@@ -121,6 +121,16 @@ public class GlobalExceptionHandler {
                 ErrorCodeEnum.AUTH_INVALID_CREDENTIALS.getStatus());
     }
 
+    @ExceptionHandler(EventAttendanceException.class)
+    public ResponseEntity<Object> handleEventAttendanceException(
+            EventAttendanceException exception, WebRequest webRequest){
+        log.warn("Event attendance exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.EVENT_ATTENDANCE_ERROR.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.EVENT_ATTENDANCE_ERROR.getDefaultMessage(),
+                ErrorCodeEnum.EVENT_ATTENDANCE_ERROR.getStatus());
+    }
+
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Object> handleBusinessException(BusinessException exception, WebRequest webRequest){
         log.warn("Business exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
