@@ -6,10 +6,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
-public interface StudentSemesterJpaRepository extends JpaRepository<StudentSemesterPointJpaEntity, Long> {
+public interface StudentSemesterPointJpaRepository extends JpaRepository<StudentSemesterPointJpaEntity, Long> {
     StudentSemesterPointJpaEntity findByUserIdAndSemesterIdAndPointCategoryId(Long userId, Long semesterId, Long pointCategoryId);
 
 
@@ -22,4 +23,6 @@ public interface StudentSemesterJpaRepository extends JpaRepository<StudentSemes
     List<StudentSemesterPointJpaEntity> findAllIn(@Param("studentUserIds") List<Long> studentUserIds,
                                                   @Param("semesterId") Long semesterId,
                                                   @Param("pointCategoryIds") List<Long> pointCategoryIds);
+
+    List<StudentSemesterPointJpaEntity> findByUserIdAndSemesterId(Long id, Long semesterId);
 }

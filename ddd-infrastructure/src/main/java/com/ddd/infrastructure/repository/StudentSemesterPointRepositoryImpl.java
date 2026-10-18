@@ -4,7 +4,7 @@ import com.ddd.domain.model.StudentSemesterPoint;
 import com.ddd.domain.repository.StudentSemesterPointRepository;
 import com.ddd.infrastructure.entity.StudentSemesterPointJpaEntity;
 import com.ddd.infrastructure.mapper.StudentSemesterPointMapper;
-import com.ddd.infrastructure.repository.jpaRepository.StudentSemesterJpaRepository;
+import com.ddd.infrastructure.repository.jpaRepository.StudentSemesterPointJpaRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,13 +15,15 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class StudentSemesterPointRepositoryImpl implements StudentSemesterPointRepository {
-    private final StudentSemesterJpaRepository jpaRepository;
+    private final StudentSemesterPointJpaRepository jpaRepository;
     private final StudentSemesterPointMapper mapper;
     private final EntityManager entityManager;
 
     @Override
-    public StudentSemesterPoint findByUserIdAndSemesterIdAndPointCategoryId(Long userId, Long semesterId, Long pointCategoryId) {
-        return mapper.toDomain(jpaRepository.findByUserIdAndSemesterIdAndPointCategoryId(userId, semesterId, pointCategoryId));
+    public StudentSemesterPoint findByUserIdAndSemesterIdAndPointCategoryId(Long userId,
+                                                                            Long semesterId, Long pointCategoryId) {
+        return mapper.toDomain(jpaRepository.findByUserIdAndSemesterIdAndPointCategoryId(userId,
+                semesterId, pointCategoryId));
     }
 
     @Override
@@ -50,13 +52,16 @@ public class StudentSemesterPointRepositoryImpl implements StudentSemesterPointR
 
     private void setAssociationReferences(StudentSemesterPoint studentSemesterPoint, StudentSemesterPointJpaEntity entity) {
         if (studentSemesterPoint.getUserId() != null) {
-            entity.setUser(entityManager.getReference(com.ddd.infrastructure.entity.UserJpaEntity.class, studentSemesterPoint.getUserId()));
+            entity.setUser(entityManager.getReference(com.ddd.infrastructure.entity.UserJpaEntity.class,
+                    studentSemesterPoint.getUserId()));
         }
         if (studentSemesterPoint.getSemesterId() != null) {
-            entity.setSemester(entityManager.getReference(com.ddd.infrastructure.entity.SemesterJpaEntity.class, studentSemesterPoint.getSemesterId()));
+            entity.setSemester(entityManager.getReference(com.ddd.infrastructure.entity.SemesterJpaEntity.class,
+                    studentSemesterPoint.getSemesterId()));
         }
         if (studentSemesterPoint.getPointCategoryId() != null) {
-            entity.setPointCategory(entityManager.getReference(com.ddd.infrastructure.entity.PointCategoryJpaEntity.class, studentSemesterPoint.getPointCategoryId()));
+            entity.setPointCategory(entityManager.getReference(com.ddd.infrastructure.entity.PointCategoryJpaEntity.class,
+                    studentSemesterPoint.getPointCategoryId()));
         }
     }
 }
