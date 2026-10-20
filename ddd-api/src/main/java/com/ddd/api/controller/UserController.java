@@ -2,6 +2,7 @@ package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
 import com.ddd.api.dto.user.req.StudentProfileRequestDto;
+import com.ddd.api.dto.user.req.UpdateAvatarRequestDto;
 import com.ddd.api.dto.user.res.StudentProfileResponseDto;
 import com.ddd.api.dto.user.res.UserResponseDto;
 import com.ddd.api.mapper.StudentProfileApiMapper;
@@ -10,6 +11,7 @@ import com.ddd.application.dto.user.StudentProfileSummaryDto;
 import com.ddd.application.dto.user.UserSummaryDto;
 import com.ddd.application.service.user.UserCommandService;
 import com.ddd.application.service.user.UserQueryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
@@ -57,35 +59,44 @@ public class UserController {
     }
 
     @GetMapping("/admin/{id}/profile")
-    public BaseResponse<StudentProfileResponseDto> getAdminProfileById(@RequestParam Long id) {
-        //userCommandService.getProfileById(id);
-        return BaseResponse.ok();
+    public BaseResponse<StudentProfileResponseDto> getAdminProfileById(@PathVariable Long id) {
+        StudentProfileSummaryDto summary = userQueryService.getProfileStudentById(id);
+        return BaseResponse.of(studentProfileApiMapper.toStudentProfileResponseDto(summary));
     }
 
     @PutMapping("/me/profile")
-    public BaseResponse<StudentProfileResponseDto> updateUserProfile(Authentication authentication,
-                                                                     @RequestBody StudentProfileRequestDto studentProfileRequestDto) {
-        //userCommandService.updateProfile(authentication, studentProfileResponseDto);
-        return BaseResponse.ok();
+    public BaseResponse<StudentProfileResponseDto> updateUserProfile(
+            Authentication authentication,
+            @RequestBody @Valid StudentProfileRequestDto studentProfileRequestDto) {
+        String email = authentication.getName();
+        StudentProfileSummaryDto summary = userCommandService.updateStudentProfile(
+                email, studentProfileApiMapper.toStudentProfileUpdateDto(studentProfileRequestDto));
+        return BaseResponse.of(studentProfileApiMapper.toStudentProfileResponseDto(summary));
     }
 
     @PatchMapping("/me/profile/change-avatar")
-    public BaseResponse<StudentProfileResponseDto> updateAvatar(@RequestBody Map<String, String> avatarUrl) {
-        //userCommandService.updateAvatar(studentProfileRequestDto);
-        return BaseResponse.ok();
+    public BaseResponse<StudentProfileResponseDto> updateAvatar(
+            Authentication authentication,
+            @RequestBody UpdateAvatarRequestDto updateAvatarRequestDto) {
+        String email = authentication.getName();
+        String url = updateAvatarRequestDto.avatarUrl();
+        StudentProfileSummaryDto summary = userCommandService.updateAvatar(email, url);
+        return BaseResponse.of(studentProfileApiMapper.toStudentProfileResponseDto(summary));
     }
 
     @PutMapping("/admin/{id}/profile")
-    public BaseResponse<StudentProfileResponseDto> updateAdminProfile(@RequestParam Long id,
-                                                                      @RequestBody StudentProfileRequestDto studentProfileRequestDto) {
-        //userCommandService.updateProfileById(id, studentProfileResponseDto);
-        return BaseResponse.ok();
+    public BaseResponse<StudentProfileResponseDto> updateAdminProfile(
+            @PathVariable Long id,
+            @RequestBody @Valid StudentProfileRequestDto studentProfileRequestDto) {
+        StudentProfileSummaryDto summary = userCommandService.updateStudentProfileById(
+                id, studentProfileApiMapper.toStudentProfileUpdateDto(studentProfileRequestDto));
+        return BaseResponse.of(studentProfileApiMapper.toStudentProfileResponseDto(summary));
     }
 
     @PatchMapping("/admin/{id}/change-status")
     public BaseResponse<UserResponseDto> updateAdminProfileStatus(@PathVariable Long id) {
-        //userCommandService.updateProfileStatusById(id);
-        return BaseResponse.ok();
+        UserSummaryDto userSummary = userCommandService.updateProfileStatusById(id);
+        return BaseResponse.of(userApiMapper.toUserResponseDto(userSummary));
     }
 
     @PatchMapping("/admin/{id}/change-role")
