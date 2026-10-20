@@ -9,6 +9,7 @@ target/
 .codegraph/
 .agents/
 .gemini/
+postgres-data/
 
 ### STS ###
 .apt_generated

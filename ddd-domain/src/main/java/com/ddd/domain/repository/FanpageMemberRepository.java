@@ -2,6 +2,7 @@ package com.ddd.domain.repository;
 
 import com.ddd.domain.model.FanpageMember;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface FanpageMemberRepository {
@@ -14,4 +15,8 @@ public interface FanpageMemberRepository {
     boolean isAdminOfFanpage(Long fanpageId, Long userId);
 
     void removeFanpageMember(Long fanpageId, Long userId);
+
+    List<Long> findFanpageIdsByUserIdAndRole(Long userId, String role);
+
+    void deactivateAllMembersByFanpageId(Long fanpageId);
 }
