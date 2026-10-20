@@ -1,17 +1,4 @@
 -- ============================================================
---  PostgreSQL Schema - Centralized Event Management Platform
---  Primary Keys: BIGINT GENERATED ALWAYS AS IDENTITY
---  Audit fields:
---    created_at  TIMESTAMPTZ  – thời điểm tạo bản ghi
---    created_by  BIGINT       – id của user/actor thực hiện tạo
---    updated_at  TIMESTAMPTZ  – thời điểm cập nhật gần nhất
---    updated_by  BIGINT       – id của user/actor thực hiện cập nhật
--- ============================================================
-
-DROP SCHEMA IF EXISTS public CASCADE;
-CREATE SCHEMA public;
-
--- ============================================================
 --  1. ROLE
 -- ============================================================
 CREATE TABLE roles
@@ -85,10 +72,10 @@ CREATE TABLE users
     id          BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
     email       VARCHAR(255) NOT NULL UNIQUE,
     password    VARCHAR(255),
-    provider_id VARCHAR(255) DEFAULT '',
+    provider_id VARCHAR(255)          DEFAULT '',
     first_name  VARCHAR(100),
     last_name   VARCHAR(100),
-    gender      VARCHAR(10)  DEFAULT 'OTHER',
+    gender      VARCHAR(10)           DEFAULT 'OTHER',
     avatar_url  TEXT,
     is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -211,19 +198,22 @@ CREATE TABLE event_types
 -- ============================================================
 CREATE TABLE criterias
 (
-    id             BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
-    name           VARCHAR(255) NOT NULL,
-    note           TEXT,
-    scope          TEXT,
-    level          INTEGER      NOT NULL DEFAULT 0,
-    children_order INTEGER      NOT NULL DEFAULT 1,
-    parent_id      BIGINT,
-    is_active      BOOLEAN      NOT NULL DEFAULT TRUE,
-    created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    created_by     BIGINT,
-    updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_by     BIGINT,
-    CONSTRAINT pk_criterias PRIMARY KEY (id)
+    id                BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
+    name              VARCHAR(255) NOT NULL,
+    note              TEXT,
+    scope             TEXT,
+    level             INTEGER      NOT NULL DEFAULT 0,
+    children_order    INTEGER      NOT NULL DEFAULT 1,
+    required_children INTEGER,
+    parent_id         BIGINT,
+    is_active         BOOLEAN      NOT NULL DEFAULT TRUE,
+    created_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_by        BIGINT,
+    updated_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_by        BIGINT,
+    CONSTRAINT pk_criterias PRIMARY KEY (id),
+    CONSTRAINT ck_criterias_required_children
+        CHECK (required_children IS NULL OR required_children > 0)
 );
 
 -- ============================================================
@@ -248,26 +238,46 @@ CREATE TABLE point_categories
 );
 
 -- ============================================================
---  14. SEMESTER (Học kỳ)
+--  14. ACADEMIC_YEAR (Năm học)
 -- ============================================================
-CREATE TABLE semesters
+CREATE TABLE academic_years
 (
-    id            BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
-    number        INTEGER     NOT NULL,
-    academic_year VARCHAR(20) NOT NULL,
-    start_date    DATE        NOT NULL,
-    end_date      DATE        NOT NULL,
-    status        VARCHAR(50) NOT NULL DEFAULT 'ONGOING',
-    is_active     BOOLEAN     NOT NULL DEFAULT TRUE,
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by    BIGINT,
-    updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_by    BIGINT,
-    CONSTRAINT pk_semesters PRIMARY KEY (id)
+    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    code       VARCHAR(20) NOT NULL UNIQUE,
+    start_date DATE        NOT NULL,
+    end_date   DATE        NOT NULL,
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by BIGINT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by BIGINT,
+    CONSTRAINT pk_academic_years PRIMARY KEY (id),
+    CONSTRAINT ck_academic_year_dates CHECK (start_date <= end_date)
 );
 
 -- ============================================================
---  15. EVENT (Sự kiện)
+--  15. SEMESTER (Học kỳ)
+-- ============================================================
+CREATE TABLE semesters
+(
+    id               BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    number           INTEGER     NOT NULL,
+    academic_year    VARCHAR(20) NOT NULL,
+    academic_year_id BIGINT,
+    start_date       DATE        NOT NULL,
+    end_date         DATE        NOT NULL,
+    status           VARCHAR(50) NOT NULL DEFAULT 'ONGOING',
+    is_active        BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by       BIGINT,
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by       BIGINT,
+    CONSTRAINT pk_semesters PRIMARY KEY (id),
+    CONSTRAINT uq_semester_number_per_year UNIQUE (academic_year_id, number)
+);
+
+-- ============================================================
+--  16. EVENT (Sự kiện)
 -- ============================================================
 CREATE TABLE events
 (
@@ -279,8 +289,8 @@ CREATE TABLE events
     date_close      TIMESTAMPTZ  NOT NULL,
     date_happen     TIMESTAMPTZ  NOT NULL,
     capacity        INTEGER      NOT NULL DEFAULT 0,
-    male_quantity   INTEGER      DEFAULT 0,
-    female_quantity INTEGER      DEFAULT 0,
+    male_quantity   INTEGER               DEFAULT 0,
+    female_quantity INTEGER               DEFAULT 0,
     banner_url      TEXT         NOT NULL,
     status          VARCHAR(50)  NOT NULL DEFAULT 'DRAFT',
     event_type_id   BIGINT,
@@ -296,7 +306,7 @@ CREATE TABLE events
 );
 
 -- ============================================================
---  16. EVENT_POINT
+--  17. EVENT_POINT
 -- ============================================================
 CREATE TABLE event_points
 (
@@ -313,7 +323,7 @@ CREATE TABLE event_points
 );
 
 -- ============================================================
---  17. REGISTRATION
+--  18. REGISTRATION
 -- ============================================================
 CREATE TABLE registrations
 (
@@ -328,15 +338,37 @@ CREATE TABLE registrations
     check_out_by           BIGINT,
     status                 VARCHAR(50) NOT NULL DEFAULT 'REGISTERED',
     reason                 TEXT,
-    created_at             TIMESTAMPTZ DEFAULT NOW(),
+    created_at             TIMESTAMPTZ          DEFAULT NOW(),
     created_by             BIGINT,
-    updated_at             TIMESTAMPTZ DEFAULT NOW(),
+    updated_at             TIMESTAMPTZ          DEFAULT NOW(),
     updated_by             BIGINT,
     CONSTRAINT pk_registrations PRIMARY KEY (user_id, event_id)
 );
 
 -- ============================================================
---  18. POINT_TRANSACTION
+--  19. STUDENT_CRITERIA_PROGRESS
+-- ============================================================
+CREATE TABLE student_criteria_progress
+(
+    id                BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    user_id           BIGINT      NOT NULL,
+    criteria_id       BIGINT      NOT NULL,
+    academic_year_id  BIGINT      NOT NULL,
+    event_id          BIGINT,
+    is_completed      BOOLEAN     NOT NULL DEFAULT FALSE,
+    completion_source VARCHAR(30) NOT NULL DEFAULT 'MANUAL',
+    completed_at      TIMESTAMPTZ,
+    is_active         BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by        BIGINT,
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by        BIGINT,
+    CONSTRAINT pk_student_criteria_progress PRIMARY KEY (id),
+    CONSTRAINT uq_student_criteria_progress UNIQUE (user_id, criteria_id, academic_year_id)
+);
+
+-- ============================================================
+--  20. POINT_TRANSACTION
 -- ============================================================
 CREATE TABLE point_transactions
 (
@@ -357,7 +389,7 @@ CREATE TABLE point_transactions
 );
 
 -- ============================================================
---  19. STUDENT_SEMESTER_POINT
+--  21. STUDENT_SEMESTER_POINT
 -- ============================================================
 CREATE TABLE student_semester_points
 (
@@ -376,25 +408,25 @@ CREATE TABLE student_semester_points
 );
 
 -- ============================================================
---  20. REFRESH_TOKEN
+--  22. REFRESH_TOKEN
 -- ============================================================
 CREATE TABLE refresh_tokens
 (
-    id         BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
-    token      VARCHAR(64)  NOT NULL UNIQUE,
-    user_id    BIGINT       NOT NULL,
-    expires_at TIMESTAMPTZ  NOT NULL,
-    revoked    BOOLEAN      NOT NULL DEFAULT FALSE,
-    is_active  BOOLEAN      NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    token      VARCHAR(64) NOT NULL UNIQUE,
+    user_id    BIGINT      NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    revoked    BOOLEAN     NOT NULL DEFAULT FALSE,
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by BIGINT,
-    updated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by BIGINT,
     CONSTRAINT pk_refresh_tokens PRIMARY KEY (id)
 );
 
 -- ============================================================
---  21. CONVERSATION
+--  23. CONVERSATION
 -- ============================================================
 CREATE TABLE conversations
 (
@@ -410,7 +442,7 @@ CREATE TABLE conversations
 );
 
 -- ============================================================
---  22. MESSAGE
+--  24. MESSAGE
 -- ============================================================
 CREATE TABLE messages
 (
@@ -430,40 +462,40 @@ CREATE TABLE messages
 );
 
 -- ============================================================
---  23. NOTIFICATION
+--  25. NOTIFICATION
 -- ============================================================
 CREATE TABLE notifications
 (
-    id         BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
+    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
     title      VARCHAR(255),
     message    TEXT,
-    status     VARCHAR(50)  NOT NULL DEFAULT 'SENT',
+    status     VARCHAR(50) NOT NULL DEFAULT 'SENT',
     icon_url   TEXT,
     url        TEXT,
-    user_id    BIGINT       NOT NULL,
-    is_active  BOOLEAN      NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    user_id    BIGINT      NOT NULL,
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by BIGINT,
-    updated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by BIGINT,
     CONSTRAINT pk_notifications PRIMARY KEY (id)
 );
 
 -- ============================================================
---  24. REPORT
+--  26. REPORT
 -- ============================================================
 CREATE TABLE reports
 (
-    id         BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
+    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
     subject    VARCHAR(255),
     message    TEXT,
-    status     VARCHAR(50)  NOT NULL DEFAULT 'OPEN',
-    user_id    BIGINT       NOT NULL,
-    fanpage_id BIGINT       NOT NULL,
-    is_active  BOOLEAN      NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    status     VARCHAR(50) NOT NULL DEFAULT 'OPEN',
+    user_id    BIGINT      NOT NULL,
+    fanpage_id BIGINT      NOT NULL,
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by BIGINT,
-    updated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by BIGINT,
     CONSTRAINT pk_reports PRIMARY KEY (id)
 );
@@ -502,6 +534,10 @@ ALTER TABLE criterias
     ADD CONSTRAINT fk_criterias_parent
         FOREIGN KEY (parent_id) REFERENCES criterias (id) ON DELETE SET NULL;
 
+ALTER TABLE semesters
+    ADD CONSTRAINT fk_semesters_academic_year
+        FOREIGN KEY (academic_year_id) REFERENCES academic_years (id) ON DELETE RESTRICT;
+
 ALTER TABLE point_categories
     ADD CONSTRAINT fk_point_categories_parent
         FOREIGN KEY (parent_category_id) REFERENCES point_categories (id) ON DELETE SET NULL;
@@ -527,6 +563,16 @@ ALTER TABLE registrations
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     ADD CONSTRAINT fk_registrations_events
         FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE;
+
+ALTER TABLE student_criteria_progress
+    ADD CONSTRAINT fk_progress_users
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    ADD CONSTRAINT fk_progress_criteria
+        FOREIGN KEY (criteria_id) REFERENCES criterias (id) ON DELETE CASCADE,
+    ADD CONSTRAINT fk_progress_academic_year
+        FOREIGN KEY (academic_year_id) REFERENCES academic_years (id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_progress_event
+        FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE SET NULL;
 
 ALTER TABLE point_transactions
     ADD CONSTRAINT fk_point_transactions_users
@@ -582,30 +628,136 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_roles_updated_at BEFORE UPDATE ON roles FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_schools_updated_at BEFORE UPDATE ON schools FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_majors_updated_at BEFORE UPDATE ON majors FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_associations_updated_at BEFORE UPDATE ON associations FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_user_roles_updated_at BEFORE UPDATE ON user_roles FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_student_profiles_updated_at BEFORE UPDATE ON student_profiles FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_fanpage_admin_profiles_updated_at BEFORE UPDATE ON fanpage_admin_profiles FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_fanpages_updated_at BEFORE UPDATE ON fanpages FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_fanpage_members_updated_at BEFORE UPDATE ON fanpage_members FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_event_types_updated_at BEFORE UPDATE ON event_types FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_criterias_updated_at BEFORE UPDATE ON criterias FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_point_categories_updated_at BEFORE UPDATE ON point_categories FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_semesters_updated_at BEFORE UPDATE ON semesters FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_events_updated_at BEFORE UPDATE ON events FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_event_points_updated_at BEFORE UPDATE ON event_points FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_registrations_updated_at BEFORE UPDATE ON registrations FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_point_transactions_updated_at BEFORE UPDATE ON point_transactions FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_student_semester_points_updated_at BEFORE UPDATE ON student_semester_points FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_refresh_tokens_updated_at BEFORE UPDATE ON refresh_tokens FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_conversations_updated_at BEFORE UPDATE ON conversations FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_messages_updated_at BEFORE UPDATE ON messages FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_notifications_updated_at BEFORE UPDATE ON notifications FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_reports_updated_at BEFORE UPDATE ON reports FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_roles_updated_at
+    BEFORE UPDATE
+    ON roles
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_schools_updated_at
+    BEFORE UPDATE
+    ON schools
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_majors_updated_at
+    BEFORE UPDATE
+    ON majors
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_associations_updated_at
+    BEFORE UPDATE
+    ON associations
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_users_updated_at
+    BEFORE UPDATE
+    ON users
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_user_roles_updated_at
+    BEFORE UPDATE
+    ON user_roles
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_student_profiles_updated_at
+    BEFORE UPDATE
+    ON student_profiles
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_fanpage_admin_profiles_updated_at
+    BEFORE UPDATE
+    ON fanpage_admin_profiles
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_fanpages_updated_at
+    BEFORE UPDATE
+    ON fanpages
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_fanpage_members_updated_at
+    BEFORE UPDATE
+    ON fanpage_members
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_event_types_updated_at
+    BEFORE UPDATE
+    ON event_types
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_criterias_updated_at
+    BEFORE UPDATE
+    ON criterias
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_point_categories_updated_at
+    BEFORE UPDATE
+    ON point_categories
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_academic_years_updated_at
+    BEFORE UPDATE
+    ON academic_years
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_semesters_updated_at
+    BEFORE UPDATE
+    ON semesters
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_events_updated_at
+    BEFORE UPDATE
+    ON events
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_event_points_updated_at
+    BEFORE UPDATE
+    ON event_points
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_registrations_updated_at
+    BEFORE UPDATE
+    ON registrations
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_student_criteria_progress_updated_at
+    BEFORE UPDATE
+    ON student_criteria_progress
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_point_transactions_updated_at
+    BEFORE UPDATE
+    ON point_transactions
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_student_semester_points_updated_at
+    BEFORE UPDATE
+    ON student_semester_points
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_refresh_tokens_updated_at
+    BEFORE UPDATE
+    ON refresh_tokens
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_conversations_updated_at
+    BEFORE UPDATE
+    ON conversations
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_messages_updated_at
+    BEFORE UPDATE
+    ON messages
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_notifications_updated_at
+    BEFORE UPDATE
+    ON notifications
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_reports_updated_at
+    BEFORE UPDATE
+    ON reports
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
 
 -- ============================================================
 --  INDEXES
@@ -626,6 +778,8 @@ CREATE INDEX idx_messages_conversation ON messages (conversation_id);
 CREATE INDEX idx_semesters_academic_year ON semesters (academic_year);
 CREATE INDEX idx_pct_parent ON point_categories (parent_category_id);
 CREATE INDEX idx_criterias_parent ON criterias (parent_id);
+CREATE INDEX idx_progress_user_year ON student_criteria_progress (user_id, academic_year_id);
+CREATE INDEX idx_progress_criteria ON student_criteria_progress (criteria_id);
 CREATE INDEX idx_point_transactions_user ON point_transactions (user_id, semester_id);
 CREATE INDEX idx_refresh_tokens_token ON refresh_tokens (token);
 CREATE INDEX idx_refresh_tokens_user ON refresh_tokens (user_id);
