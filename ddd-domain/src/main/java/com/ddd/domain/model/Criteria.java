@@ -11,6 +11,7 @@ public class Criteria extends BaseModel {
     private String scope;
     private Integer level = 0;
     private Integer childrenOrder = 1;
+    private Integer requiredChildren;
     private Long parentId;
 
     public void setLevel(Integer level) {
@@ -25,6 +26,13 @@ public class Criteria extends BaseModel {
             throw new IllegalArgumentException("Children order must be non-negative");
         }
         this.childrenOrder = childrenOrder;
+    }
+
+    public void setRequiredChildren(Integer requiredChildren) {
+        if (requiredChildren != null && requiredChildren <= 0) {
+            throw new IllegalArgumentException("Required children must be positive");
+        }
+        this.requiredChildren = requiredChildren;
     }
 
     // Deprecated alias for backwards-compatibility during refactoring
