@@ -11,4 +11,8 @@ public interface FanpageQueryService {
     List<FanpageMemberDto> getMembersOfFanpage(Long fanpageId);
 
     Page<FanpageInfoDto> searchAndFilterFanpages(FanpageSearchCriteriaDto criteria);
+
+    FanpageInfoDto getFanpageById(Long fanpageId, String currentUserEmail, boolean isAdmin);
+
+    List<FanpageInfoDto> getMyManagedFanpages(String email);
 }

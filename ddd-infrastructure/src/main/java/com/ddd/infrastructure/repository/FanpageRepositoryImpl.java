@@ -9,6 +9,7 @@ import com.ddd.infrastructure.repository.jpaRepository.FanpageJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -23,13 +24,30 @@ public class FanpageRepositoryImpl implements FanpageRepository {
     }
 
     @Override
+    public boolean existsByNameAndIdNot(String name, Long id) {
+        return fanpageJpaRepository.existsByNameAndIdNot(name, id);
+    }
+
+    @Override
     public Fanpage save(Fanpage fanpage) {
         FanpageJpaEntity fanpageJpaEntity = fanpageMapper.toEntity(fanpage);
-        return fanpageMapper.toDomain( fanpageJpaRepository.save(fanpageJpaEntity));
+        return fanpageMapper.toDomain(fanpageJpaRepository.save(fanpageJpaEntity));
     }
 
     @Override
     public Optional<Fanpage> findById(Long fanpageId) {
         return fanpageJpaRepository.findById(fanpageId).map(fanpageMapper::toDomain);
+    }
+
+    @Override
+    public Optional<Fanpage> findByIdAndIsActive(Long fanpageId, boolean isActive) {
+        return fanpageJpaRepository.findByIdAndIsActive(fanpageId, isActive).map(fanpageMapper::toDomain);
+    }
+
+    @Override
+    public List<Fanpage> findAllByIdsAndIsActive(List<Long> fanpageIds, boolean isActive) {
+        return fanpageJpaRepository.findAllByIdInAndIsActive(fanpageIds, isActive).stream()
+                .map(fanpageMapper::toDomain)
+                .toList();
     }
 }

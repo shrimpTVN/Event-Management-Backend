@@ -1,8 +1,10 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
+import com.ddd.api.dto.fanpage.req.FanpageAdminUpdateRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageFilterRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageRegisterRequestDto;
+import com.ddd.api.dto.fanpage.req.FanpageSystemAdminUpdateRequestDto;
 import com.ddd.api.dto.fanpage.res.FanpageMemberResponseDto;
 import com.ddd.api.dto.fanpage.res.FanpageResponseDto;
 import com.ddd.api.mapper.FanpageApiMapper;
@@ -59,11 +61,53 @@ public class FanpageController {
         return BaseResponse.of(fanpages.map(fanpageApiMapper::toResponseDto));
     }
 
+    @GetMapping("/{fanpageId}")
+    public BaseResponse<FanpageResponseDto> getFanpageDetail(
+            @PathVariable Long fanpageId,
+            Authentication authentication) {
+        String email = authentication != null ? authentication.getName() : null;
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        FanpageInfoDto fanpageInfo = fanpageQueryService.getFanpageById(fanpageId, email, isAdmin);
+        return BaseResponse.of(fanpageApiMapper.toResponseDto(fanpageInfo));
+    }
+
+    @GetMapping({"/fanpage-admin/my-fanpages", "/my-fanpages"})
+    public BaseResponse<List<FanpageResponseDto>> getMyManagedFanpages(Authentication authentication) {
+        String email = authentication.getName();
+        List<FanpageInfoDto> fanpages = fanpageQueryService.getMyManagedFanpages(email);
+        return BaseResponse.of(fanpages.stream().map(fanpageApiMapper::toResponseDto).toList());
+    }
+
     @PostMapping("/fanpage-admin/register")
     public BaseResponse<?> registerFanpage(@RequestBody @Valid FanpageRegisterRequestDto request,
                                            Authentication authentication) {
         String email = authentication.getName();
         fanpageService.createFanpage(fanpageApiMapper.toRegisterDto(request), email);
+        return BaseResponse.ok();
+    }
+
+    @PutMapping("/fanpage-admin/{fanpageId}")
+    public BaseResponse<?> updateFanpageByFanpageAdmin(
+            @PathVariable Long fanpageId,
+            @RequestBody @Valid FanpageAdminUpdateRequestDto request,
+            Authentication authentication) {
+        String email = authentication.getName();
+        fanpageService.updateFanpageByFanpageAdmin(fanpageId, fanpageApiMapper.toAdminUpdateDto(request), email);
+        return BaseResponse.ok();
+    }
+
+    @PutMapping("/admin/{fanpageId}")
+    public BaseResponse<?> updateFanpageByAdmin(
+            @PathVariable Long fanpageId,
+            @RequestBody @Valid FanpageSystemAdminUpdateRequestDto request) {
+        fanpageService.updateFanpageByAdmin(fanpageId, fanpageApiMapper.toSystemAdminUpdateDto(request));
+        return BaseResponse.ok();
+    }
+
+    @DeleteMapping("/admin/{fanpageId}")
+    public BaseResponse<?> deleteFanpageByAdmin(@PathVariable Long fanpageId) {
+        fanpageService.deleteFanpage(fanpageId);
         return BaseResponse.ok();
     }
 

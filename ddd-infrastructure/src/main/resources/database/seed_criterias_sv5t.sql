@@ -7,8 +7,15 @@
 -- id, name, note, scope, level, children_order, parent_id, is_active
 -- ============================================================================
 
--- Reset bảng criterias
-TRUNCATE TABLE criterias RESTART IDENTITY CASCADE;
+-- Reset bảng criterias an toàn (tránh xóa cascade làm mất bảng events)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'events') THEN
+        UPDATE events SET criteria_id = NULL WHERE criteria_id IS NOT NULL;
+    END IF;
+END $$;
+DELETE FROM criterias;
+ALTER TABLE criterias ALTER COLUMN id RESTART WITH 1;
 
 INSERT INTO criterias
     (id, name, note, scope, level, children_order, parent_id, is_active)

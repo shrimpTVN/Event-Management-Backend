@@ -4,8 +4,21 @@
 -- id, name, note, maximum, is_active, date_apply, level, children_order, parent_category_id
 -- ============================================================================
 
--- Xóa dữ liệu cũ nếu muốn reset
-TRUNCATE TABLE point_categories RESTART IDENTITY CASCADE;
+-- Xóa dữ liệu cũ an toàn
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'event_points') THEN
+        DELETE FROM event_points;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'point_transactions') THEN
+        DELETE FROM point_transactions;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'student_semester_points') THEN
+        DELETE FROM student_semester_points;
+    END IF;
+END $$;
+DELETE FROM point_categories;
+ALTER TABLE point_categories ALTER COLUMN id RESTART WITH 1;
 
 INSERT INTO point_categories 
     (id, name, note, maximum, is_active, date_apply, level, children_order, parent_category_id)

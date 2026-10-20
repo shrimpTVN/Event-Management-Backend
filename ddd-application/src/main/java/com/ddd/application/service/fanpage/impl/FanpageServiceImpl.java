@@ -1,6 +1,8 @@
 package com.ddd.application.service.fanpage.impl;
 
+import com.ddd.application.dto.fanpage.FanpageAdminUpdateDto;
 import com.ddd.application.dto.fanpage.FanpageRegisterDto;
+import com.ddd.application.dto.fanpage.FanpageSystemAdminUpdateDto;
 import com.ddd.application.mapper.FanpageDtoMapper;
 import com.ddd.application.service.fanpage.FanpageService;
 import com.ddd.domain.enums.FanpageRoleEnum;
@@ -105,5 +107,54 @@ public class FanpageServiceImpl implements FanpageService {
         fanpage.setStatus(FanpageStatusEnum.ACTIVE.name());
         fanpageRepository.save(fanpage);
         log.info("Fanpage unbanned successfully: {}", fanpage.getName());
+    }
+
+    @Override
+    public void updateFanpageByFanpageAdmin(Long fanpageId, FanpageAdminUpdateDto updateDto, String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found");
+        }
+        if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, user.getId())) {
+            throw new BusinessException("User email: " + email + " is not an admin of the fanpage");
+        }
+
+        Fanpage fanpage = fanpageRepository.findByIdAndIsActive(fanpageId, true)
+                .orElseThrow(() -> new ResourceNotFoundException("Fanpage not found with id: " + fanpageId));
+
+        fanpageDtoMapper.updateFanpageFromAdminDto(updateDto, fanpage);
+
+        fanpageRepository.save(fanpage);
+        log.info("Fanpage id: {} updated by fanpage admin: {}", fanpageId, email);
+    }
+
+    @Override
+    public void updateFanpageByAdmin(Long fanpageId, FanpageSystemAdminUpdateDto updateDto) {
+        Fanpage fanpage = fanpageRepository.findById(fanpageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fanpage not found with id: " + fanpageId));
+
+        if (updateDto.name() != null && !updateDto.name().trim().equalsIgnoreCase(fanpage.getName())) {
+            if (fanpageRepository.existsByNameAndIdNot(updateDto.name().trim(), fanpageId)) {
+                throw new DuplicateResourceException("Fanpage name already exists: " + updateDto.name());
+            }
+        }
+
+        fanpageDtoMapper.updateFanpageFromSystemAdminDto(updateDto, fanpage);
+
+        fanpageRepository.save(fanpage);
+        log.info("Fanpage id: {} updated by system admin", fanpageId);
+    }
+
+    @Override
+    public void deleteFanpage(Long fanpageId) {
+        Fanpage fanpage = fanpageRepository.findById(fanpageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fanpage not found with id: " + fanpageId));
+
+        fanpage.deactivate();
+        fanpageRepository.save(fanpage);
+
+        // Deactivate all members of this fanpage
+        fanpageMemberRepository.deactivateAllMembersByFanpageId(fanpageId);
+        log.info("Fanpage id: {} soft deleted by admin", fanpageId);
     }
 }
