@@ -7,6 +7,7 @@ public record CriteriaResponseDto(
         String scope,
         Integer level,
         Integer childrenOrder,
+        Integer requiredChildren,
         Long parentId,
         boolean isActive
 ) {

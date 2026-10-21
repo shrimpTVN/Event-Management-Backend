@@ -14,4 +14,6 @@ public interface CriteriaJpaRepository extends JpaRepository<CriteriaJpaEntity, 
     List<CriteriaJpaEntity> findByParentIsNull(Sort sort);
     List<CriteriaJpaEntity> findByParentId(Long parentId, Sort sort);
     List<CriteriaJpaEntity> findByLevel(Integer level, Sort sort);
+
+    boolean existsByParentIdAndIsActive(Long criteriaId, boolean isActive);
 }

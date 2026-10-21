@@ -1,8 +1,9 @@
-package com.ddd.application.service.impl;
+package com.ddd.application.service.academicyear.impl;
 
 import com.ddd.application.dto.SemesterDto;
 import com.ddd.application.mapper.SemesterDtoMapper;
-import com.ddd.application.service.SemesterService;
+import com.ddd.application.service.academicyear.AcademicYearService;
+import com.ddd.application.service.academicyear.SemesterService;
 import com.ddd.domain.enums.SemesterStatusEnum;
 import com.ddd.domain.exception.DuplicateResourceException;
 import com.ddd.domain.exception.ResourceNotFoundException;
@@ -20,6 +21,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class SemesterServiceImpl implements SemesterService {
     private final SemesterRepository semesterRepository;
+    private final AcademicYearService academicYearService;
     private final SemesterDtoMapper semesterDtoMapper;
 
     @Override
@@ -42,8 +44,11 @@ public class SemesterServiceImpl implements SemesterService {
     }
 
     @Override
+    @Transactional
     public SemesterDto getCurrent() {
-        return semesterDtoMapper.toDto(semesterRepository.getCurrent());
+        Semester semester = semesterRepository.getCurrent();
+        ensureAcademicYear(semester);
+        return semesterDtoMapper.toDto(semester);
     }
 
 
@@ -62,6 +67,7 @@ public class SemesterServiceImpl implements SemesterService {
         }
 
         Semester semester = semesterDtoMapper.toEntity(semesterDto);
+        ensureAcademicYear(semester);
         // Set the status based on the start, end dates and current date
         semester.setStatus(resolveStatus(semester.getStartDate(), semester.getEndDate()));
 
@@ -77,6 +83,7 @@ public class SemesterServiceImpl implements SemesterService {
         validateDateRange(semesterDto.startDate(), semesterDto.endDate());
 
         semesterDtoMapper.updateEntityFromDto(semesterDto, existingSemester);
+        ensureAcademicYear(existingSemester);
         existingSemester.setStatus(resolveStatus(existingSemester.getStartDate(), existingSemester.getEndDate()));
 
         return semesterDtoMapper.toDto(semesterRepository.save(existingSemester));
@@ -103,5 +110,9 @@ public class SemesterServiceImpl implements SemesterService {
         } else {
             return SemesterStatusEnum.ONGOING;
         }
+    }
+
+    private void ensureAcademicYear(Semester semester) {
+        academicYearService.resolveOrCreateForSemester(semester);
     }
 }

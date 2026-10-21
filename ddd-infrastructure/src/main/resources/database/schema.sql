@@ -280,7 +280,6 @@ CREATE TABLE semesters
 (
     id               BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
     number           INTEGER     NOT NULL,
-    academic_year    VARCHAR(20) NOT NULL,
     academic_year_id BIGINT,
     start_date       DATE        NOT NULL,
     end_date         DATE        NOT NULL,
@@ -384,6 +383,11 @@ CREATE TABLE student_criteria_progress
     CONSTRAINT pk_student_criteria_progress PRIMARY KEY (id),
     CONSTRAINT uq_student_criteria_progress UNIQUE (user_id, criteria_id, academic_year_id)
 );
+
+ALTER TABLE student_criteria_progress
+    DROP COLUMN completed_at,
+    DROP COLUMN is_completed,
+    ADD COLUMN note TEXT default '';
 
 -- ============================================================
 --  20. POINT_TRANSACTION
@@ -589,14 +593,14 @@ ALTER TABLE registrations
         FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE;
 
 ALTER TABLE student_criteria_progress
+    ADD CONSTRAINT fk_progress_event
+        FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE SET NULL,
     ADD CONSTRAINT fk_progress_users
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     ADD CONSTRAINT fk_progress_criteria
         FOREIGN KEY (criteria_id) REFERENCES criterias (id) ON DELETE CASCADE,
     ADD CONSTRAINT fk_progress_academic_year
-        FOREIGN KEY (academic_year_id) REFERENCES academic_years (id) ON DELETE RESTRICT,
-    ADD CONSTRAINT fk_progress_event
-        FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE SET NULL;
+        FOREIGN KEY (academic_year_id) REFERENCES academic_years (id) ON DELETE RESTRICT;
 
 ALTER TABLE point_transactions
     ADD CONSTRAINT fk_point_transactions_users
@@ -694,7 +698,6 @@ CREATE INDEX idx_registrations_status ON registrations (status);
 CREATE INDEX idx_notifications_user_id ON notifications (user_id);
 CREATE INDEX idx_notifications_status ON notifications (status);
 CREATE INDEX idx_messages_conversation ON messages (conversation_id);
-CREATE INDEX idx_semesters_academic_year ON semesters (academic_year);
 CREATE INDEX idx_pct_parent ON point_categories (parent_category_id);
 CREATE INDEX idx_criterias_parent ON criterias (parent_id);
 CREATE INDEX idx_progress_user_year ON student_criteria_progress (user_id, academic_year_id);

@@ -35,6 +35,8 @@ public class SecurityConstant {
             "/api/point-categories/**",
             "/api/events/**",
             "/api/criterias/**",
+            "/academic-years/**",
+            "/api/academic-years/**",
     };
 
     public static final String[] SECURE_ENDPOINTS = {

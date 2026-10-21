@@ -79,4 +79,9 @@ public class CriteriaRepositoryImpl implements CriteriaRepository {
         criteriaJpaEntity.setIsActive(false);
         criteriaJpaRepository.save(criteriaJpaEntity);
     }
+
+    @Override
+    public boolean hasChildren(Long criteriaId) {
+        return criteriaJpaRepository.existsByParentIdAndIsActive(criteriaId, true);
+    }
 }

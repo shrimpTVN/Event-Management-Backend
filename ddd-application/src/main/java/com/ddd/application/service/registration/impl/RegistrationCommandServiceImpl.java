@@ -1,5 +1,6 @@
 package com.ddd.application.service.registration.impl;
 
+import com.ddd.application.service.criteria.StudentCriteriaProgressCommandService;
 import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.PointTransactionStatusEnum;
@@ -34,6 +35,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final EventPointRepository eventPointRepository;
     private final PointTransactionRepository pointTransactionRepository;
     private final StudentSemesterPointRepository studentSemesterPointRepository;
+    private final StudentCriteriaProgressCommandService studentCriteriaProgressService;
 
     private Registration isRegistered(User user, Long userId, Long eventId) {
         if (registrationRepository.isRegistered(user.getId(), eventId)) {
@@ -119,6 +121,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         registrationRepository.save(registration, user.getId(), eventId);
 
         awardPointsForStudents(event, List.of(user.getId()), now);
+        studentCriteriaProgressService.markCompletedFromEvent(user.getId(), eventId);
     }
 
     private void validateFanpageMemberPermission(User adminUser, Event event) {
@@ -199,6 +202,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
 
         registrationRepository.saveAll(registrations, eventId);
         awardPointsForStudents(event, studentUserIds, now);
+        studentCriteriaProgressService.markCompletedFromEvent(studentUserIds, eventId);
     }
 
     private void validateAndCompleteRegistration(Registration registration, Long studentUserId, Long checkedOutById,

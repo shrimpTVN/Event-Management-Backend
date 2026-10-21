@@ -12,5 +12,6 @@ public record SemesterDto(@Positive Integer number,
         @NotNull LocalDate startDate,
         @NotNull LocalDate endDate,
         SemesterStatusEnum status,
-        @Positive Long id) implements Serializable {
+        @Positive Long id,
+        Long academicYearId) implements Serializable {
 }

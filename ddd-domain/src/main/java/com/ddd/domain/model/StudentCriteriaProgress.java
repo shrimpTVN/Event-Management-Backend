@@ -14,30 +14,25 @@ public class StudentCriteriaProgress extends BaseModel {
     private Long userId;
     private Long criteriaId;
     private Long academicYearId;
-    private boolean completed;
+    private Long eventId;
+    private String note="";
     private CriteriaCompletionSourceEnum completionSource = CriteriaCompletionSourceEnum.MANUAL;
-    private Long sourceEventId;
-    private Instant completedAt;
 
-    public StudentCriteriaProgress(Long userId, Long criteriaId, Long academicYearId) {
+
+    public StudentCriteriaProgress(Long userId, Long criteriaId, Long academicYearId, String note) {
         this.userId = userId;
         this.criteriaId = criteriaId;
         this.academicYearId = academicYearId;
+        this.note = note;
     }
 
-    public void complete(CriteriaCompletionSourceEnum source, Long eventId, Instant completedAt) {
-        this.completed = true;
-        this.completionSource = source;
-        this.sourceEventId = eventId;
-        if (this.completedAt == null) {
-            this.completedAt = completedAt;
-        }
+    public StudentCriteriaProgress(Long userId, Long criteriaId, Long academicYearId, String note, Long eventId) {
+        this.userId = userId;
+        this.criteriaId = criteriaId;
+        this.academicYearId = academicYearId;
+        this.eventId = eventId;
+        this.note = note;
+        completionSource = CriteriaCompletionSourceEnum.EVENT_CHECKOUT;
     }
 
-    public void uncomplete() {
-        this.completed = false;
-        this.completionSource = CriteriaCompletionSourceEnum.MANUAL;
-        this.sourceEventId = null;
-        this.completedAt = null;
-    }
 }
