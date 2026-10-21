@@ -22,4 +22,8 @@ public interface FanpageService {
     void updateFanpageByAdmin(Long fanpageId, FanpageSystemAdminUpdateDto updateDto);
 
     void deleteFanpage(Long fanpageId);
+
+    void followFanpage(Long fanpageId, String email);
+
+    void unfollowFanpage(Long fanpageId, String email);
 }
