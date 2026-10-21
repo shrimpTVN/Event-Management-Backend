@@ -47,7 +47,7 @@ public class AcademicYearServiceImpl implements AcademicYearService {
                     .orElseThrow(() -> new ResourceNotFoundException("Academic year not found"));
         }
 
-        AcademicYear academicYear = academicYearRepository.findByCode(semester.getAcademicYear())
+        AcademicYear academicYear = academicYearRepository.findById(semester.getAcademicYearId())
                 .orElseGet(() -> createAcademicYear(semester));
         semester.setAcademicYearId(academicYear.getId());
         semesterRepository.save(semester);
@@ -61,7 +61,7 @@ public class AcademicYearServiceImpl implements AcademicYearService {
 
     private AcademicYear createAcademicYear(Semester semester) {
         AcademicYear academicYear = new AcademicYear();
-        academicYear.setCode(semester.getAcademicYear());
+        academicYear.setCode(semester.getNumber() + "-" + semester.getStartDate().getYear());
         academicYear.setStartDate(semester.getStartDate());
         academicYear.setEndDate(semester.getEndDate());
         return academicYearRepository.save(academicYear);

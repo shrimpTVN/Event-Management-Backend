@@ -101,7 +101,7 @@ public class StudentCriteriaProgressCommandServiceImpl implements StudentCriteri
         if (!criteria.isActive()) {
             throw new BusinessException("Cannot set progress for inactive criteria");
         }
-        if (isLeaf(criteria.getId())) {
+        if (!isLeaf(criteria.getId())) {
             throw new BusinessException("Only leaf criteria can be changed manually");
         }
     }

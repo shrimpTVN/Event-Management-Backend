@@ -21,9 +21,6 @@ public class SemesterJpaEntity extends BaseEntityJpa {
     @Column(name = "number", nullable = false)
     private Integer number;
 
-    @Column(name = "academic_year", nullable = false, length = 20)
-    private String academicYear;
-
     @Column(name = "academic_year_id")
     private Long academicYearId;
 

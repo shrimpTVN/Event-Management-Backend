@@ -41,7 +41,7 @@ public class StudentCriteriaProgressQueryServiceImpl implements StudentCriteriaP
 
     @Override
     public StudentCriteriaProgressDto getProgress(String email, Long academicYearId) {
-        UserJpaEntity user = findUser(email);
+        UserJpaEntity user = userJpaRepository.findByEmail(email);
         AcademicYearJpaEntity academicYear = resolveAcademicYear(academicYearId);
 
         List<CriteriaJpaEntity> activeCriteria = getActiveCriteria();
@@ -50,13 +50,13 @@ public class StudentCriteriaProgressQueryServiceImpl implements StudentCriteriaP
         List<StudentCriteriaProgressJpaEntity> progressList = loadProgressList(user.getId(), academicYear.getId());
         Set<Long> completedCriteriaIds = extractCompletedCriteriaIds(progressList);
 
-        Map<Long, Boolean> completionCache = buildCompletionCache(activeCriteria, childrenByParent, completedCriteriaIds);
-
         List<CriteriaJpaEntity> mainCriteria = resolveMainCriteria(activeCriteria, childrenByParent);
-        List<CriteriaProgressItemDto> criteriaTree = buildCriteriaTree(mainCriteria, childrenByParent, completionCache);
+        List<CriteriaProgressItemDto> criteriaTree = buildCriteriaTree(mainCriteria, childrenByParent, completedCriteriaIds);
         List<LeafProgressDetailDto> progressDetails = buildProgressDetails(progressList);
 
-        int completedMain = countCompletedCriteria(mainCriteria, completionCache);
+        int completedMain = (int) criteriaTree.stream()
+                .filter(CriteriaProgressItemDto::isCompleted)
+                .count();
 
         return new StudentCriteriaProgressDto(
                 academicYear.getId(),
@@ -75,13 +75,6 @@ public class StudentCriteriaProgressQueryServiceImpl implements StudentCriteriaP
                 .orElseThrow(() -> new ResourceNotFoundException("Criteria not found with id: " + criteriaId));
     }
 
-    private UserJpaEntity findUser(String email) {
-        UserJpaEntity user = userJpaRepository.findByEmail(email);
-        if (user == null) {
-            throw new ResourceNotFoundException("User not found");
-        }
-        return user;
-    }
 
     private List<CriteriaJpaEntity> getActiveCriteria() {
         Sort defaultSort = Sort.by(Sort.Direction.ASC, "level")
@@ -124,57 +117,6 @@ public class StudentCriteriaProgressQueryServiceImpl implements StudentCriteriaP
 
 
     /**
-     * Builds a cache mapping each criteria ID to its completion status.
-     * Leaf criteria: completed if it has any progress record.
-     * Parent criteria: completed if enough children are completed (based on requiredChildren).
-     */
-    private Map<Long, Boolean> buildCompletionCache(
-            List<CriteriaJpaEntity> activeCriteria,
-            Map<Long, List<CriteriaJpaEntity>> childrenByParent,
-            Set<Long> completedCriteriaIds) {
-
-        Map<Long, Boolean> completionCache = new HashMap<>();
-        for (CriteriaJpaEntity criteria : activeCriteria) {
-            evaluateCriteriaCompletion(criteria, childrenByParent, completedCriteriaIds, completionCache);
-        }
-        return completionCache;
-    }
-
-    private boolean evaluateCriteriaCompletion(
-            CriteriaJpaEntity criteria,
-            Map<Long, List<CriteriaJpaEntity>> childrenByParent,
-            Set<Long> completedCriteriaIds,
-            Map<Long, Boolean> completionCache) {
-
-        if (completionCache.containsKey(criteria.getId())) {
-            return completionCache.get(criteria.getId());
-        }
-
-        List<CriteriaJpaEntity> children = childrenByParent.get(criteria.getId());
-        boolean completed;
-
-        if (children == null || children.isEmpty()) {
-            // Leaf: completed if any progress record exists for this criteria
-            completed = completedCriteriaIds.contains(criteria.getId());
-        } else {
-            // Parent: completed if enough children are completed
-            int completedChildrenCount = 0;
-            for (CriteriaJpaEntity child : children) {
-                if (evaluateCriteriaCompletion(child, childrenByParent, completedCriteriaIds, completionCache)) {
-                    completedChildrenCount++;
-                }
-            }
-            int required = criteria.getRequiredChildren() == null
-                    ? children.size()
-                    : criteria.getRequiredChildren();
-            completed = completedChildrenCount >= required;
-        }
-
-        completionCache.put(criteria.getId(), completed);
-        return completed;
-    }
-
-    /**
      * Resolves the "main" criteria to show at the top level of the tree.
      * If there is a single root with children, its children become the main criteria.
      */
@@ -199,28 +141,29 @@ public class StudentCriteriaProgressQueryServiceImpl implements StudentCriteriaP
     }
 
     /**
-     * Builds a nested tree of CriteriaProgressItemDto from the given top-level criteria.
+     * Builds a nested tree of CriteriaProgressItemDto from the given top-level criteria in a single bottom-up pass.
      */
     private List<CriteriaProgressItemDto> buildCriteriaTree(
             List<CriteriaJpaEntity> mainCriteria,
             Map<Long, List<CriteriaJpaEntity>> childrenByParent,
-            Map<Long, Boolean> completionCache) {
+            Set<Long> completedCriteriaIds) {
 
         return mainCriteria.stream()
                 .sorted(CRITERIA_COMPARATOR)
-                .map(c -> buildCriteriaNode(c, childrenByParent, completionCache))
+                .map(c -> buildCriteriaNode(c, childrenByParent, completedCriteriaIds))
                 .toList();
     }
 
     private CriteriaProgressItemDto buildCriteriaNode(
             CriteriaJpaEntity criteria,
             Map<Long, List<CriteriaJpaEntity>> childrenByParent,
-            Map<Long, Boolean> completionCache) {
+            Set<Long> completedCriteriaIds) {
 
         List<CriteriaJpaEntity> children = childrenByParent.getOrDefault(criteria.getId(), List.of());
 
+        // Base case: Leaf criteria (evaluated directly against student progress records)
         if (children.isEmpty()) {
-            boolean completed = completionCache.getOrDefault(criteria.getId(), false);
+            boolean completed = completedCriteriaIds.contains(criteria.getId());
             return new CriteriaProgressItemDto(
                     criteria.getId(),
                     criteria.getName(),
@@ -235,14 +178,17 @@ public class StudentCriteriaProgressQueryServiceImpl implements StudentCriteriaP
             );
         }
 
-        // Recursively build children nodes
-        List<CriteriaProgressItemDto> childDtos = buildCriteriaTree(children, childrenByParent, completionCache);
+        // Recursive step: Parent criteria (evaluated bottom-up from children completion)
+        List<CriteriaProgressItemDto> childDtos = buildCriteriaTree(children, childrenByParent, completedCriteriaIds);
 
         int completedChildrenCount = (int) childDtos.stream()
                 .filter(CriteriaProgressItemDto::isCompleted)
                 .count();
 
-        boolean completed = completionCache.getOrDefault(criteria.getId(), false);
+        int required = criteria.getRequiredChildren() == null
+                ? childDtos.size()
+                : criteria.getRequiredChildren();
+        boolean completed = completedChildrenCount >= required;
 
         return new CriteriaProgressItemDto(
                 criteria.getId(),
@@ -271,12 +217,6 @@ public class StudentCriteriaProgressQueryServiceImpl implements StudentCriteriaP
                         p.getCompletionSource()
                 ))
                 .toList();
-    }
-
-    private int countCompletedCriteria(List<CriteriaJpaEntity> criteria, Map<Long, Boolean> completionCache) {
-        return (int) criteria.stream()
-                .filter(c -> completionCache.getOrDefault(c.getId(), false))
-                .count();
     }
 
     /**
