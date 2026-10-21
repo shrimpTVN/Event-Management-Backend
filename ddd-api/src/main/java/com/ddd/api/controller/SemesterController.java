@@ -5,7 +5,7 @@ import com.ddd.api.dto.semester.SemesterRequestDto;
 import com.ddd.api.dto.semester.SemesterResponseDto;
 import com.ddd.api.mapper.SemesterApiMapper;
 import com.ddd.application.dto.SemesterDto;
-import com.ddd.application.service.SemesterService;
+import com.ddd.application.service.academicyear.SemesterService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

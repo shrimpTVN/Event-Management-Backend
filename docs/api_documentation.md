@@ -12,17 +12,20 @@ This document provides complete, production-ready specifications for Frontend De
 - **Port**: `8080` (configured in `application.yml` via `${SERVER_PORT:8080}`).
 
 > [!IMPORTANT]
-> Note on Route Prefixing: Most controllers mount directly on root paths (e.g. `/auth`, `/users`, `/events`, `/fanpages`, `/schools`, `/majors`, `/associations`, `/event-types`, `/semesters`, `/point-categories`, `/criterias`, `/me/registrations`), while `RoleController` is explicitly prefixed at `/api/v1/roles`.
+> Note on Route Prefixing: Most controllers mount directly on root paths (e.g. `/auth`, `/users`, `/events`, `/registrations`, `/fanpages`, `/schools`, `/majors`, `/associations`, `/event-types`, `/semesters`, `/point-categories`, `/point-transactions`, `/student-semester-points`, `/criterias`), while `RoleController` is explicitly prefixed at `/api/v1/roles`.
 
 ---
 
 ### 1.2 Authentication & Cookie Session
-The backend uses **JWT token stored inside an HttpOnly Cookie** (`ddd_jwt`):
-- Upon successful login (`POST /auth/login`), the server sends a `Set-Cookie: ddd_jwt=...; Path=/; HttpOnly; Max-Age=86400; SameSite=Lax`.
+The backend uses **JWT token stored inside an HttpOnly Cookie** (`ddd_jwt` and `ddd_refresh`):
+- Upon successful login (`POST /auth/login`), the server sends:
+  - `Set-Cookie: ddd_jwt=...; Path=/; HttpOnly; Max-Age=...; SameSite=Lax`
+  - `Set-Cookie: ddd_refresh=...; Path=/; HttpOnly; Max-Age=...; SameSite=Lax`
 - **Frontend HTTP clients (Axios, Fetch, TanStack Query) MUST enable credentials on all requests:**
   - **Axios**: `axios.defaults.withCredentials = true;` or `{ withCredentials: true }`
   - **Fetch**: `fetch(url, { credentials: 'include' })`
-- On logout (`POST /auth/logout`), the server returns a cleared cookie with `Max-Age=0`.
+- On token refresh (`POST /auth/refresh-token`), new cookies are automatically set.
+- On logout (`POST /auth/logout`), the server returns cleared cookies with `Max-Age=0`.
 
 #### Recommended Axios Client Setup (TypeScript)
 ```typescript
@@ -38,10 +41,18 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Redirect to login or refresh state
-      console.warn('Session expired or unauthorized');
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        await apiClient.post('/auth/refresh-token');
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        console.warn('Session expired or unauthorized');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
     }
     return Promise.reject(error);
   }
@@ -51,7 +62,7 @@ apiClient.interceptors.response.use(
 ---
 
 ### 1.3 Standard Response Envelope (`BaseResponse<T>`)
-Every REST endpoint (except empty delete endpoints returning HTTP 200/204) wraps its response payload inside `BaseResponse<T>`:
+Every REST endpoint (except endpoints returning raw `void`) wraps its response payload inside `BaseResponse<T>`:
 
 ```typescript
 export interface BaseResponse<T> {
@@ -136,7 +147,7 @@ export interface PageResponse<T> {
 #### 2.1.1 Login
 - **Endpoint**: `POST /auth/login`
 - **Access**: `PUBLIC`
-- **Description**: Authenticate with email and password. On success, sets `ddd_jwt` cookie and returns user profile info.
+- **Description**: Authenticate with email and password. On success, sets `ddd_jwt` and `ddd_refresh` cookies and returns user profile info.
 - **Request Body**:
 ```json
 {
@@ -159,12 +170,27 @@ export interface PageResponse<T> {
   "exceptionCode": null
 }
 ```
-- **Header**: `Set-Cookie: ddd_jwt=eyJhbGciOi...; Path=/; HttpOnly`
+- **Header**: `Set-Cookie: ddd_jwt=eyJhbGciOi...; Path=/; HttpOnly; SameSite=Lax`
 - **Errors**: `401 Unauthorized` (`AUTH_INVALID_CREDENTIALS`).
 
 ---
 
-#### 2.1.2 Register Student
+#### 2.1.2 Refresh Token
+- **Endpoint**: `POST /auth/refresh-token`
+- **Access**: `PUBLIC` (Requires `ddd_refresh` cookie)
+- **Description**: Exchanges valid refresh cookie for a newly issued access token and refreshed refresh cookie.
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.1.3 Register Student
 - **Endpoint**: `POST /auth/register`
 - **Access**: `PUBLIC`
 - **Description**: Register a new student user with profile attributes (school association, major, student ID).
@@ -202,7 +228,7 @@ export interface PageResponse<T> {
 
 ---
 
-#### 2.1.3 Register Fanpage Admin
+#### 2.1.4 Register Fanpage Admin
 - **Endpoint**: `POST /auth/register/fanpage-admin`
 - **Access**: `PUBLIC`
 - **Description**: Register an account with role `FANPAGE_ADMIN` and manager profile.
@@ -236,10 +262,10 @@ export interface PageResponse<T> {
 
 ---
 
-#### 2.1.4 Logout
+#### 2.1.5 Logout
 - **Endpoint**: `POST /auth/logout`
 - **Access**: `AUTHENTICATED`
-- **Description**: Invalidates session and clears the `ddd_jwt` cookie (`Max-Age=0`).
+- **Description**: Invalidates refresh token session in database and clears both `ddd_jwt` and `ddd_refresh` cookies (`Max-Age=0`).
 - **Response `200 OK`**:
 ```json
 {
@@ -251,10 +277,17 @@ export interface PageResponse<T> {
 
 ---
 
-#### 2.1.5 Change Password
+#### 2.1.6 Change Password
 - **Endpoint**: `POST /auth/change-password`
 - **Access**: `AUTHENTICATED`
 - **Description**: Change the account password.
+- **Request Body**:
+```json
+{
+  "oldPassword": "OldPassword123!",
+  "newPassword": "NewStrongPassword456!"
+}
+```
 - **Response `200 OK`**:
 ```json
 {
@@ -307,35 +340,6 @@ export interface PageResponse<T> {
   - `sortBy` (string, default: `"createdAt"`)
   - `sortDir` (string, default: `"desc"`)
 - **Response `200 OK`**: `BaseResponse<Page<StudentProfileResponseDto>>`
-```json
-{
-  "data": {
-    "content": [
-      {
-        "email": "student@university.edu.vn",
-        "role": "STUDENT",
-        "isActive": true,
-        "firstName": "Van A",
-        "lastName": "Nguyen",
-        "studentId": "B21DCCN001",
-        "gender": "MALE",
-        "kNumber": "21",
-        "avatarUrl": "https://cdn.example.com/avatar.png",
-        "associationName": "Doan Thanh Nien",
-        "majorName": "Software Engineering",
-        "majorCode": "7480103",
-        "schoolName": "Information Technology"
-      }
-    ],
-    "totalElements": 1,
-    "totalPages": 1,
-    "size": 10,
-    "number": 0
-  },
-  "message": "Success",
-  "exceptionCode": null
-}
-```
 
 ---
 
@@ -348,12 +352,13 @@ export interface PageResponse<T> {
   - `size` (integer, default: `10`)
   - `sortBy` (string, default: `"createdAt"`)
   - `sortDir` (string, default: `"desc"`)
-- **Response `200 OK`**:
+- **Response `200 OK`**: `BaseResponse<Page<UserResponseDto>>`
 ```json
 {
   "data": {
     "content": [
       {
+        "id": 1,
         "email": "student@university.edu.vn",
         "role": "STUDENT",
         "isActive": true
@@ -378,7 +383,9 @@ export interface PageResponse<T> {
 - **`GET /users/admin/{id}/profile?id={id}`**: Retrieve student profile by ID.
 - **`PUT /users/admin/{id}/profile?id={id}`**: Admin update student profile.
 - **`PATCH /users/admin/{id}/change-status`**: Toggle user account active status.
-- **`PATCH /users/admin/{id}/change-role?role={ROLE_NAME}`**: Admin change user role (e.g. `ADMIN`, `FANPAGE_ADMIN`, `STUDENT`).
+- **`PATCH /users/admin/{id}/change-role?role={ROLE_NAME}`**: Admin change single user role (`ADMIN`, `FANPAGE_ADMIN`, `STUDENT`).
+- **`PATCH /users/admin/{id}/change-roles`**: Admin change user multiple roles.
+  - Body: `["ADMIN", "FANPAGE_ADMIN"]`
 
 ---
 
@@ -431,7 +438,34 @@ export interface PageResponse<T> {
 
 ---
 
-#### 2.3.2 Get Event by ID
+#### 2.3.2 Search Events (Public)
+- **Endpoint**: `GET /events` or `GET /events/`
+- **Access**: `PUBLIC`
+- **Description**: Search active events available for registration and view.
+- **Query Parameters (`EventFilterRequestDto`)**:
+  - `keyword`: string (search by name, description, location)
+  - `semesterId`: Long
+  - `fanpageId`: Long
+  - `eventTypeId`: Long
+  - `criteriaId`: Long
+  - `status`: string (defaults to `ACTIVE`)
+  - `page`: integer (default: `0`)
+  - `size`: integer (default: `10`)
+  - `sortBy`: string (default: `"createdAt"`)
+  - `sortDir`: string (default: `"desc"`)
+- **Response `200 OK`**: `BaseResponse<Page<EventResponseDto>>`
+
+---
+
+#### 2.3.3 Admin - Search Events
+- **Endpoint**: `GET /events/admin`
+- **Access**: `ROLE_ADMIN`
+- **Query Parameters**: Same filter model as `EventFilterRequestDto`, allowing viewing of drafts, pending approvals, and closed events.
+- **Response `200 OK`**: `BaseResponse<Page<EventResponseDto>>`
+
+---
+
+#### 2.3.4 Get Event by ID
 - **Endpoint**: `GET /events/{id}`
 - **Access**: `PUBLIC`
 - **Description**: Get complete event details, semester, and point allocation breakdown.
@@ -480,26 +514,18 @@ export interface PageResponse<T> {
 
 ---
 
-#### 2.3.3 Get Events by Fanpage ID (Paginated)
+#### 2.3.5 Get Events by Fanpage ID (Paginated)
 - **Endpoint**: `GET /events/fanpage/{fanpageId}`
 - **Access**: `PUBLIC`
-- **Query Parameters**: `page` (default 0), `size` (default 10), `sortBy` (default "createdAt"), `sortDir` (default "desc")
+- **Query Parameters**: `page` (default 0), `size` (default 10), `sortBy` (default `"createdAt"`), `sortDir` (default `"desc"`)
 - **Response `200 OK`**: `BaseResponse<Page<EventResponseDto>>`
 
 ---
 
-#### 2.3.4 Admin - Get All Events (Paginated)
-- **Endpoint**: `GET /events/admin`
-- **Access**: `ROLE_ADMIN`
-- **Query Parameters**: `page` (default 0), `size` (default 10), `sortBy` (default "createdAt"), `sortDir` (default "desc")
-- **Response `200 OK`**: `BaseResponse<Page<EventResponseDto>>`
-
----
-
-#### 2.3.5 Update Event
+#### 2.3.6 Update Event
 - **Endpoint**: `PUT /events/fanpage-member/{id}`
 - **Access**: `ROLE_FANPAGE_ADMIN` / Fanpage Member
-- **Request Body**: `EventUpdateRequestDto` (same schema as create event).
+- **Request Body**: `EventUpdateRequestDto`
 - **Response `200 OK`**:
 ```json
 {
@@ -511,7 +537,7 @@ export interface PageResponse<T> {
 
 ---
 
-#### 2.3.6 Change Event Status
+#### 2.3.7 Change Event Status
 - **Endpoint**: `PATCH /events/fanpage-member/{id}/status?status={status}`
 - **Access**: `ROLE_FANPAGE_ADMIN` / Fanpage Member
 - **Query Parameters**: `status` (Enum: `DRAFT`, `PENDING_APPROVAL`, `APPROVED`, `REJECTED`, `OPEN_REGISTRATION`, `CLOSED_REGISTRATION`, `IN_PROGRESS`, `FINISHED`, `CANCELLED`)
@@ -526,7 +552,7 @@ export interface PageResponse<T> {
 
 ---
 
-#### 2.3.7 Delete Event
+#### 2.3.8 Delete Event
 - **Endpoint**: `DELETE /events/admin/{id}` or `DELETE /events/fanpage-member/{id}`
 - **Access**: `ROLE_ADMIN` or Fanpage Member
 - **Response `200 OK`**:
@@ -540,10 +566,10 @@ export interface PageResponse<T> {
 
 ---
 
-### 2.4 Student Registrations & Check-in (`RegistrationController` - `/me/registrations`)
+### 2.4 Student Registrations & Check-in (`RegistrationController` - `/registrations`)
 
 #### 2.4.1 Register for an Event
-- **Endpoint**: `POST /me/registrations/events/{eventId}`
+- **Endpoint**: `POST /registrations/me/events/{eventId}`
 - **Access**: `ROLE_STUDENT`
 - **Description**: Registers the current authenticated student for the event. Validates quota, gender limitations, and registration window.
 - **Response `200 OK`**:
@@ -561,7 +587,7 @@ export interface PageResponse<T> {
 ---
 
 #### 2.4.2 Cancel Event Registration
-- **Endpoint**: `PATCH /me/registrations/events/{eventId}/cancel`
+- **Endpoint**: `PATCH /registrations/me/events/{eventId}/cancel`
 - **Access**: `ROLE_STUDENT`
 - **Request Body**:
 ```json
@@ -581,7 +607,7 @@ export interface PageResponse<T> {
 ---
 
 #### 2.4.3 Get Registration History (Paginated)
-- **Endpoint**: `GET /me/registrations/history`
+- **Endpoint**: `GET /registrations/me/history`
 - **Access**: `ROLE_STUDENT`
 - **Query Parameters**: `page` (default 0), `size` (default 10)
 - **Response `200 OK`**:
@@ -619,16 +645,22 @@ export interface PageResponse<T> {
 ---
 
 #### 2.4.4 Get Upcoming Registered Events
-- **Endpoint**: `GET /me/registrations/upcoming`
+- **Endpoint**: `GET /registrations/me/upcoming`
 - **Access**: `ROLE_STUDENT`
 - **Response `200 OK`**: `BaseResponse<List<RegistrationResponseDto>>`
 
 ---
 
 #### 2.4.5 Student Self Check-in
-- **Endpoint**: `PATCH /me/registrations/events/{eventId}/check-in`
+- **Endpoint**: `PATCH /registrations/me/events/{eventId}/check-in`
 - **Access**: `ROLE_STUDENT`
-- **Description**: Records student presence at the event check-in window.
+- **Description**: Records student presence at event check-in window.
+- **Request Body (Optional)**:
+```json
+{
+  "proofUrl": "https://s3.amazonaws.com/event-proofs/checkin_user101.jpg"
+}
+```
 - **Response `200 OK`**:
 ```json
 {
@@ -641,16 +673,77 @@ export interface PageResponse<T> {
 ---
 
 #### 2.4.6 Student Self Check-out (with Proof Photo)
-- **Endpoint**: `PATCH /me/registrations/events/{eventId}/check-out`
+- **Endpoint**: `PATCH /registrations/me/events/{eventId}/check-out`
 - **Access**: `ROLE_STUDENT`
 - **Description**: Submits self check-out with proof photo URL (e.g. uploaded photo or selfie at event).
+- **Request Body (Optional)**:
+```json
+{
+  "proofUrl": "https://s3.amazonaws.com/event-proofs/checkout_user101_event12.jpg"
+}
+```
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.4.7 Organizer - Get Event Attendees (Paginated)
+- **Endpoint**: `GET /registrations/fanpage-member/fanpages/{fanpageId}/events/{eventId}/attendees`
+- **Access**: `ROLE_FANPAGE_ADMIN` / Organizer
+- **Query Parameters**: `page` (default 0), `size` (default 10), `sortBy` (default `"regDate"`), `sortDir` (default `"asc"`)
+- **Response `200 OK`**: `BaseResponse<List<AttendeeResponseDto>>`
+```json
+{
+  "data": [
+    {
+      "userId": 101,
+      "status": "REGISTERED",
+      "regDate": "2026-10-18T10:00:00Z",
+      "email": "student@university.edu.vn",
+      "firstName": "Van A",
+      "lastName": "Nguyen",
+      "gender": "MALE",
+      "avatarUrl": "https://cdn.example.com/avatar.png"
+    }
+  ],
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.4.8 Organizer - Batch Attendance Actions
+- **Batch Check-in**: `PATCH /registrations/fanpage-member/events/{eventId}/check-in`
+- **Batch Check-out**: `PATCH /registrations/fanpage-member/events/{eventId}/check-out`
+- **Access**: `ROLE_FANPAGE_ADMIN` / Organizer
 - **Request Body**:
 ```json
 {
-  "proofUrl": "https://s3.amazonaws.com/event-proofs/evidence_user101_event12.jpg"
+  "studentUserIds": [101, 102, 105]
 }
 ```
-- **Validation Rules**: `proofUrl` is required.
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.4.9 Organizer - Individual Student Attendance Actions
+- **Check-in Single Student**: `PATCH /registrations/fanpage-member/events/{eventId}/users/{studentUserId}/check-in`
+- **Check-out Single Student**: `PATCH /registrations/fanpage-member/events/{eventId}/users/{studentUserId}/check-out`
+- **Access**: `ROLE_FANPAGE_ADMIN` / Organizer
 - **Response `200 OK`**:
 ```json
 {
@@ -664,7 +757,67 @@ export interface PageResponse<T> {
 
 ### 2.5 Fanpages & Organizations (`FanpageController` - `/fanpages`)
 
-#### 2.5.1 Register a Fanpage / Organization
+#### 2.5.1 Search Fanpages (Public)
+- **Endpoint**: `GET /fanpages` or `GET /fanpages/`
+- **Access**: `PUBLIC`
+- **Description**: Search and list approved, active fanpages (clubs, associations, student unions). Forces filter `status=ACTIVE` and `isActive=true`.
+- **Query Parameters (`FanpageFilterRequestDto`)**:
+  - `keyword`: string (search by name, orgName)
+  - `orgType`: string (`CLUB`, `UNION`, `ASSOCIATION`)
+  - `page`: integer (default: `0`)
+  - `size`: integer (default: `10`)
+  - `sortBy`: string (default: `"createdAt"`)
+  - `sortDir`: string (default: `"desc"`)
+- **Response `200 OK`**: `BaseResponse<Page<FanpageResponseDto>>`
+
+---
+
+#### 2.5.2 Admin - Search Fanpages
+- **Endpoint**: `GET /fanpages/admin` or `GET /fanpages/admin/`
+- **Access**: `ROLE_ADMIN`
+- **Description**: Search all fanpages with unfiltered access to `PENDING`, `BANNED`, or inactive statuses.
+- **Query Parameters**: Same as `FanpageFilterRequestDto` with `status` and `isActive` configurable.
+- **Response `200 OK`**: `BaseResponse<Page<FanpageResponseDto>>`
+
+---
+
+#### 2.5.3 Get Fanpage Detail
+- **Endpoint**: `GET /fanpages/{fanpageId}`
+- **Access**: `PUBLIC` / `AUTHENTICATED`
+- **Description**: Retrieve fanpage overview. Unapproved fanpages are only viewable by system admins.
+- **Response `200 OK`**:
+```json
+{
+  "data": {
+    "id": 5,
+    "name": "Robotics Club",
+    "description": "University Robotics & Automation Student Club",
+    "avatarUrl": "https://cdn.example.com/robotics-logo.png",
+    "orgType": "CLUB",
+    "orgName": "Youth Union",
+    "parentOrg": "University Student Association",
+    "helpContact": "robotics@university.edu.vn",
+    "helpPhone": "0912345678",
+    "createdAt": "2026-09-01T00:00:00Z",
+    "status": "ACTIVE",
+    "isActive": true
+  },
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.5.4 Get My Managed Fanpages
+- **Endpoint**: `GET /fanpages/fanpage-admin/my-fanpages` or `GET /fanpages/my-fanpages`
+- **Access**: `ROLE_FANPAGE_ADMIN`
+- **Description**: Returns all fanpages currently managed by the authenticated fanpage admin.
+- **Response `200 OK`**: `BaseResponse<List<FanpageResponseDto>>`
+
+---
+
+#### 2.5.5 Register a Fanpage / Organization
 - **Endpoint**: `POST /fanpages/fanpage-admin/register`
 - **Access**: `ROLE_FANPAGE_ADMIN`
 - **Request Body**:
@@ -691,7 +844,75 @@ export interface PageResponse<T> {
 
 ---
 
-#### 2.5.2 Admin - Fanpage Moderation
+#### 2.5.6 Update Fanpage by Fanpage Admin
+- **Endpoint**: `PUT /fanpages/fanpage-admin/{fanpageId}`
+- **Access**: `ROLE_FANPAGE_ADMIN`
+- **Description**: Fanpage admins can update description, avatar, and contact info.
+- **Request Body**:
+```json
+{
+  "description": "Updated club description and operational guidelines",
+  "avatarUrl": "https://cdn.example.com/new-robotics-logo.png",
+  "helpContact": "support.robotics@university.edu.vn",
+  "helpPhone": "0987654321"
+}
+```
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.5.7 Update Fanpage by System Admin
+- **Endpoint**: `PUT /fanpages/admin/{fanpageId}`
+- **Access**: `ROLE_ADMIN`
+- **Description**: System admins can update core details, status, and activity flag.
+- **Request Body**:
+```json
+{
+  "name": "Robotics Club",
+  "description": "Updated club description",
+  "avatarUrl": "https://cdn.example.com/logo.png",
+  "orgType": "CLUB",
+  "orgName": "Youth Union",
+  "parentOrg": "University Student Association",
+  "helpContact": "robotics@university.edu.vn",
+  "helpPhone": "0912345678",
+  "status": "ACTIVE",
+  "isActive": true
+}
+```
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.5.8 Delete Fanpage (Admin)
+- **Endpoint**: `DELETE /fanpages/admin/{fanpageId}`
+- **Access**: `ROLE_ADMIN`
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.5.9 Admin Moderation: Accept, Ban, Unban Fanpage
 - **Accept Fanpage**: `POST /fanpages/admin/accept-fanpage/{fanpageId}`
 - **Ban Fanpage**: `POST /fanpages/admin/ban-fanpage/{fanpageId}`
 - **Unban Fanpage**: `POST /fanpages/admin/unban-fanpage/{fanpageId}`
@@ -707,37 +928,7 @@ export interface PageResponse<T> {
 
 ---
 
-#### 2.5.3 Admin/Organizer Check-in Student
-- **Endpoint**: `PATCH /fanpages/events/{eventId}/users/{studentUserId}/check-in`
-- **Access**: `ROLE_FANPAGE_ADMIN` / Organizer
-- **Description**: Event organizer manual check-in for a participant.
-- **Response `200 OK`**:
-```json
-{
-  "data": null,
-  "message": "Success",
-  "exceptionCode": null
-}
-```
-
----
-
-#### 2.5.4 Admin/Organizer Check-out Student
-- **Endpoint**: `PATCH /fanpages/events/{eventId}/users/{studentUserId}/check-out`
-- **Access**: `ROLE_FANPAGE_ADMIN` / Organizer
-- **Description**: Event organizer manual check-out for a participant.
-- **Response `200 OK`**:
-```json
-{
-  "data": null,
-  "message": "Success",
-  "exceptionCode": null
-}
-```
-
----
-
-#### 2.5.5 Fanpage Member Management
+#### 2.5.10 Fanpage Member Management
 - **Get Members of Fanpage**:
   - `GET /fanpages/{fanpageId}/members`
   - Response:
@@ -759,6 +950,7 @@ export interface PageResponse<T> {
 ```
 - **Add Member**: `POST /fanpages/fanpage-admin/{fanpageId}/add-member/{userId}`
 - **Remove Member**: `POST /fanpages/fanpage-admin/{fanpageId}/remove-member/{userId}`
+- **Access**: `ROLE_FANPAGE_ADMIN`
 
 ---
 
@@ -802,8 +994,8 @@ export interface PageResponse<T> {
 ---
 
 #### 2.6.4 Admin - Semester Management
-- **List All (including inactive)**: `GET /semesters/admin`
-- **Create Semester**: `POST /semesters/admin`
+- **List All Semesters**: `GET /semesters/admin` or `GET /semesters/admin/`
+- **Create Semester**: `POST /semesters/admin` or `POST /semesters/admin/`
   - Body:
 ```json
 {
@@ -846,21 +1038,28 @@ export interface PageResponse<T> {
 
 ---
 
-#### 2.7.2 Get Point Categories by Level
+#### 2.7.2 Get Point Category by ID
+- **Endpoint**: `GET /point-categories/{id}`
+- **Access**: `PUBLIC`
+- **Response `200 OK`**: `BaseResponse<PointCategoryResponseDto>`
+
+---
+
+#### 2.7.3 Get Point Categories by Level
 - **Endpoint**: `GET /point-categories/level?level={level}`
 - **Access**: `PUBLIC`
 - **Query Parameter**: `level` (integer, default: `1`). Level 1 (main criterion), Level 2 (sub-group), Level 3 (specific activity).
 
 ---
 
-#### 2.7.3 Get Point Categories by Parent Category ID
+#### 2.7.4 Get Point Categories by Parent Category ID
 - **Endpoint**: `GET /point-categories/parentId?parentId={parentId}`
 - **Access**: `PUBLIC`
 - **Query Parameter**: `parentId` (Long, default: `0`).
 
 ---
 
-#### 2.7.4 Admin - Point Category Management
+#### 2.7.5 Admin - Point Category Management
 - **Create Category**: `POST /point-categories/admin`
   - Body:
 ```json
@@ -881,8 +1080,12 @@ export interface PageResponse<T> {
 ### 2.8 Evaluation Criteria (`CriteriaController` - `/criterias`)
 
 #### 2.8.1 Get All Criteria
-- **Endpoint**: `GET /criterias?isActive={true|false}`
+- **Endpoint**: `GET /criterias` or `GET /criterias/`
 - **Access**: `PUBLIC`
+- **Query Parameters**:
+  - `isActive`: boolean (default: `true`)
+  - `parentId`: Long (optional)
+  - `level`: Integer (optional)
 - **Response `200 OK`**:
 ```json
 {
@@ -890,8 +1093,11 @@ export interface PageResponse<T> {
     {
       "id": 1,
       "name": "Political & Social Ideology",
-      "description": "Compliance with university regulations and national laws",
+      "note": "Compliance with university regulations and national laws",
       "scope": "UNIVERSITY",
+      "level": 1,
+      "childrenOrder": 1,
+      "parentId": null,
       "isActive": true
     }
   ],
@@ -902,61 +1108,224 @@ export interface PageResponse<T> {
 
 ---
 
-#### 2.8.2 Criteria CRUD
-- **Get by ID**: `GET /criterias/{id}`
-- **Create**: `POST /criterias`
+#### 2.8.2 Get Criteria by Parent ID
+- **Endpoint**: `GET /criterias/parentId?parentId={parentId}`
+- **Access**: `PUBLIC`
+- **Query Parameter**: `parentId` (default: `0`)
+- **Response `200 OK`**: `BaseResponse<List<CriteriaResponseDto>>`
+
+---
+
+#### 2.8.3 Get Criteria by Level
+- **Endpoint**: `GET /criterias/level?level={level}`
+- **Access**: `PUBLIC`
+- **Query Parameter**: `level` (default: `0`)
+- **Response `200 OK`**: `BaseResponse<List<CriteriaResponseDto>>`
+
+---
+
+#### 2.8.4 Get Criteria by ID
+- **Endpoint**: `GET /criterias/{id}`
+- **Access**: `PUBLIC`
+- **Response `200 OK`**: `BaseResponse<CriteriaResponseDto>`
+
+---
+
+#### 2.8.5 Admin - Criteria Management
+- **Create Criteria**: `POST /criterias/admin`
   - Body:
 ```json
 {
   "name": "Community Volunteering",
-  "description": "Green Summer and Blood Donation drives",
-  "scope": "COMMUNITY"
+  "note": "Green Summer and Blood Donation drives",
+  "scope": "COMMUNITY",
+  "childrenOrder": 1,
+  "parentId": 1
 }
 ```
-- **Update**: `PUT /criterias/{id}`
-- **Toggle Active Status**: `PATCH /criterias/{id}/change-status`
-- **Delete**: `DELETE /criterias/{id}`
+- **Update Criteria**: `PUT /criterias/admin/{id}`
+- **Toggle Active Status**: `PATCH /criterias/admin/{id}/change-status`
+- **Delete Criteria**: `DELETE /criterias/admin/{id}`
 
 ---
 
-### 2.9 Master Data: Schools, Majors & Associations
+### 2.9 Training Point Transactions (`PointTransactionController` - `/point-transactions`)
 
-#### 2.9.1 Schools (`SchoolController` - `/schools`)
+#### 2.9.1 Get Student Point Transactions
+- **Endpoint**: `GET /point-transactions/me/semesters/{semesterId}/point-categories/{pointCategoryId}`
+- **Access**: `ROLE_STUDENT`
+- **Description**: Returns all point award transactions earned by the logged-in student for a specified semester and point category.
+- **Response `200 OK`**:
+```json
+{
+  "data": [
+    {
+      "id": 201,
+      "pointCategoryId": 10,
+      "semesterId": 1,
+      "eventId": 12,
+      "eventName": "Tech Seminar 2026",
+      "points": 5,
+      "type": "EVENT",
+      "status": "APPROVED",
+      "description": "Attended tech seminar with verified check-in/out",
+      "createdAt": "2026-10-30T10:30:00Z"
+    }
+  ],
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.9.2 Create Point Transaction for Student
+- **Endpoint**: `POST /point-transactions/me`
+- **Access**: `ROLE_STUDENT` / Authenticated
+- **Description**: Submits a point transaction request for the authenticated user.
+- **Request Body**:
+```json
+{
+  "userId": 101,
+  "semesterId": 1,
+  "pointCategoryId": 10,
+  "eventId": 12,
+  "points": 5,
+  "description": "Participated in university programming contest"
+}
+```
+- **Validation Rules**:
+  - `semesterId`: Required, positive integer.
+  - `pointCategoryId`: Required, positive integer.
+  - `points`: Required, positive integer.
+  - `userId`, `eventId`: Optional, must be positive if supplied.
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+### 2.10 Student Semester Point Aggregates (`StudentSemesterPointController` - `/student-semester-points`)
+
+#### 2.10.1 Get Semester Total Points by Categories
+- **Endpoint**: `GET /student-semester-points/me/semesters/{semesterId}`
+- **Access**: `ROLE_STUDENT`
+- **Description**: Retrieves aggregated total points by category earned by the authenticated student in a semester.
+- **Response `200 OK`**:
+```json
+{
+  "data": [
+    {
+      "id": 501,
+      "pointCategoryId": 1,
+      "totalPoint": 18,
+      "finalizedAt": "2027-01-20T00:00:00Z"
+    },
+    {
+      "id": 502,
+      "pointCategoryId": 2,
+      "totalPoint": 20,
+      "finalizedAt": null
+    }
+  ],
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+### 2.11 Master Data: Schools, Majors, Associations & Event Types
+
+#### 2.11.1 Schools (`SchoolController` - `/schools`)
 - `GET /schools?isActive={boolean}`: List all schools.
 - `GET /schools/{id}`: Detailed school profile including list of linked majors (`SchoolDetailResponseDto`).
 - `POST /schools/admin`: Create school (`CreateSchoolRequestDto`: `{ "name": "...", "code": "..." }`).
-- `PUT /schools/admin/{id}`: Update school.
+- `PUT /schools/admin/{id}`: Update school (`UpdateSchoolRequestDto`).
 - `DELETE /schools/admin/{id}`: Delete school.
 
-#### 2.9.2 Majors (`MajorController` - `/majors`)
+#### 2.11.2 Majors (`MajorController` - `/majors`)
 - `GET /majors`: List all academic majors.
 - `GET /majors/{id}`: Major detail.
-- `POST /majors/admin`: Create major (`{ "name": "Computer Science", "code": "CS", "schoolId": 1 }`).
-- `PUT /majors/admin/{id}`: Update major.
+- `POST /majors/admin`: Create major (`CreateMajorRequestDto`: `{ "name": "Computer Science", "code": "CS", "schoolId": 1 }`).
+- `PUT /majors/admin/{id}`: Update major (`UpdateMajorRequestDto`).
 - `DELETE /majors/admin/{id}`: Delete major.
 
-#### 2.9.3 Youth Associations (`AssociationController` - `/associations`)
+#### 2.11.3 Youth Associations (`AssociationController` - `/associations`)
 - `GET /associations`: List youth associations and union branches.
 - `GET /associations/{id}`: Association detail.
-- `POST /associations/admin`: Create association (`{ "name": "...", "code": "..." }`).
-- `PUT /associations/admin/{id}`: Update association.
+- `POST /associations/admin`: Create association (`CreateAssociationRequestDto`: `{ "name": "...", "code": "..." }`).
+- `PUT /associations/admin/{id}`: Update association (`UpdateAssociationRequestDto`).
 - `DELETE /associations/admin/{id}`: Delete association.
 
-#### 2.9.4 Event Types (`EventTypeController` - `/event-types`)
+#### 2.11.4 Event Types (`EventTypeController` - `/event-types`)
 - `GET /event-types`: List event classifications (Workshop, Seminar, Competition, Volunteer).
 - `GET /event-types/{id}`: Event type detail.
-- `POST /event-types/admin`: Create event type (`{ "name": "...", "description": "..." }`).
-- `PUT /event-types/admin/{id}`: Update event type.
+- `POST /event-types/admin`: Create event type (`CreateEventTypeRequestDto`: `{ "name": "...", "description": "..." }`).
+- `PUT /event-types/admin/{id}`: Update event type (`UpdateEventTypeRequestDto`).
 - `DELETE /event-types/admin/{id}`: Delete event type.
 
 ---
 
-### 2.10 Roles Management (`RoleController` - `/api/v1/roles`)
+### 2.12 Roles Management (`RoleController` - `/api/v1/roles`)
 - `GET /api/v1/roles`: List all system roles (`ADMIN`, `FANPAGE_ADMIN`, `STUDENT`).
 - `GET /api/v1/roles/{id}`: Get role by ID.
-- `POST /api/v1/roles`: Create role (`{ "name": "...", "description": "..." }`).
-- `PUT /api/v1/roles/{id}`: Update role.
+- `POST /api/v1/roles`: Create role (`RoleRequestDto`: `{ "name": "...", "description": "..." }`).
+- `PUT /api/v1/roles/{id}`: Update role (`RoleRequestDto`).
 - `DELETE /api/v1/roles/{id}`: Delete role.
+
+---
+
+### 2.13 Academic Years (`AcademicYearController` - `/academic-years`)
+
+#### 2.13.1 Get All Active Academic Years
+- **Endpoint**: `GET /academic-years` or `GET /academic-years/`
+- **Access**: `PUBLIC`
+- **Response `200 OK`**: `BaseResponse<List<AcademicYearResponseDto>>`
+
+#### 2.13.2 Get Current Academic Year
+- **Endpoint**: `GET /academic-years/current`
+- **Access**: `PUBLIC`
+- **Response `200 OK`**: `BaseResponse<AcademicYearResponseDto>`
+
+---
+
+### 2.14 Student Criteria Progress (`StudentCriteriaProgressController` - `/student`)
+
+#### 2.14.1 Get Student Criteria Progress Tree
+- **Endpoint**: `GET /student/criteria-progress`
+- **Access**: `STUDENT` (requires JWT cookie)
+- **Query Parameter**: `academicYearId` (optional; defaults to current active academic year)
+- **Response `200 OK`**: `BaseResponse<StudentCriteriaProgressResponseDto>`
+- **Description**: Returns hierarchical criteria tree with completion statuses evaluated based on child criteria and student check-ins.
+
+#### 2.14.2 Get Specific Criterion Progress Node
+- **Endpoint**: `GET /student/criteria/{criteriaId}/progress`
+- **Access**: `STUDENT` (requires JWT cookie)
+- **Query Parameter**: `academicYearId` (optional; defaults to current active academic year)
+- **Response `200 OK`**: `BaseResponse<CriteriaProgressNodeResponseDto>`
+- **Description**: Evaluates and returns the status, completed children count, and source for a specific node in the criteria tree.
+
+#### 2.14.3 Manually Complete or Uncomplete Leaf Criterion
+- **Endpoint**: `PATCH /student/criteria/{criteriaId}/progress`
+- **Access**: `STUDENT` (requires JWT cookie)
+- **Request Body**:
+```json
+{
+  "academicYearId": 1,
+  "completed": true
+}
+```
+- **Rules**:
+  - Only leaf criteria can be toggled manually.
+  - Inactive criteria cannot be toggled.
+  - Criteria verified via `EVENT_CHECKOUT` cannot be manually unchecked or downgraded to `MANUAL`.
+- **Response `200 OK`**: `BaseResponse<Void>`
 
 ---
 
@@ -992,6 +1361,58 @@ export interface StudentProfileResponseDto {
   majorName: string;
   majorCode: string;
   schoolName: string;
+}
+
+export interface UserResponseDto {
+  id: number;
+  email: string;
+  role: string;
+  isActive: boolean;
+}
+
+// Fanpage
+export interface FanpageResponseDto {
+  id: number;
+  name: string;
+  description: string;
+  avatarUrl: string;
+  orgType: string;
+  orgName: string;
+  parentOrg: string;
+  helpContact?: string;
+  helpPhone?: string;
+  createdAt: string;
+  status: 'ACTIVE' | 'PENDING' | 'BANNED';
+  isActive: boolean;
+}
+
+export interface FanpageMemberResponseDto {
+  userId: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string;
+  role: string;
+}
+
+export interface FanpageAdminUpdateRequestDto {
+  description?: string;
+  avatarUrl?: string;
+  helpContact?: string;
+  helpPhone?: string;
+}
+
+export interface FanpageSystemAdminUpdateRequestDto {
+  name: string;
+  description: string;
+  avatarUrl: string;
+  orgType: string;
+  orgName: string;
+  parentOrg: string;
+  helpContact?: string;
+  helpPhone?: string;
+  status: string;
+  isActive: boolean;
 }
 
 // Event
@@ -1034,7 +1455,7 @@ export interface SemesterResponseDto {
   status: 'ACTIVE' | 'UPCOMING' | 'CLOSED';
 }
 
-// Registration
+// Registration & Attendance
 export interface RegistrationResponseDto {
   eventId: number;
   regDate: string;
@@ -1049,5 +1470,123 @@ export interface RegistrationResponseDto {
   dateClose: string;
   dateHappen: string;
   bannerUrl: string;
+}
+
+export interface AttendeeResponseDto {
+  userId: number;
+  status: string;
+  regDate: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  gender: string;
+  avatarUrl?: string;
+}
+
+export interface BatchAttendanceRequestDto {
+  studentUserIds: number[];
+}
+
+// Point Categories & Criteria
+export interface PointCategoryResponseDto {
+  id: number;
+  name: string;
+  note: string;
+  maximum: number;
+  dateApply: string;
+  level: number;
+  parentCategoryId?: number | null;
+  isActive: boolean;
+  childrenOrder: number;
+}
+
+export interface CriteriaResponseDto {
+  id: number;
+  name: string;
+  note: string;
+  scope: string;
+  level: number;
+  childrenOrder: number;
+  parentId?: number | null;
+  isActive: boolean;
+}
+
+export interface CriteriaRequestDto {
+  name: string;
+  note?: string;
+  scope: string;
+  childrenOrder: number;
+  parentId?: number | null;
+}
+
+// Point Transactions & Student Points
+export interface PointTransactionRequestDto {
+  userId?: number;
+  semesterId: number;
+  pointCategoryId: number;
+  eventId?: number;
+  points: number;
+  description?: string;
+}
+
+export interface PointTransactionResponseDto {
+  id: number;
+  pointCategoryId: number;
+  semesterId: number;
+  eventId?: number;
+  eventName?: string;
+  points: number;
+  type: string;
+  status: string;
+  description?: string;
+  createdAt: string;
+}
+
+export interface StudentSemesterPointResponseDto {
+  id: number;
+  pointCategoryId: number;
+  totalPoint: number;
+  finalizedAt?: string | null;
+}
+
+// Academic Year
+export interface AcademicYearResponseDto {
+  id: number;
+  code: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+}
+
+// Student Criteria Progress
+export interface CriteriaProgressNodeResponseDto {
+  criteriaId: number;
+  name: string;
+  note?: string | null;
+  scope?: string | null;
+  level: number;
+  childrenOrder: number;
+  requiredChildren?: number | null;
+  isCompleted: boolean;
+  completedChildren: number;
+  totalChildren: number;
+  completionSource?: 'MANUAL' | 'EVENT_CHECKOUT' | 'SYSTEM' | null;
+  completedAt?: string | null;
+  children: CriteriaProgressNodeResponseDto[];
+}
+
+export interface StudentCriteriaProgressResponseDto {
+  academicYearId: number;
+  academicYear: string;
+  completedLeafCriteria: number;
+  totalLeafCriteria: number;
+  completedMainCriteria: number;
+  totalMainCriteria: number;
+  criteria: CriteriaProgressNodeResponseDto[];
+}
+
+export interface ManualCriteriaProgressRequestDto {
+  academicYearId: number;
+  completed: boolean;
 }
 ```

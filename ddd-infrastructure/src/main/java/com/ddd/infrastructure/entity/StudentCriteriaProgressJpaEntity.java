@@ -1,61 +1,56 @@
 package com.ddd.infrastructure.entity;
 
-import com.ddd.domain.enums.CriteriaCompletionSourceEnum;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import lombok.AllArgsConstructor;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.Instant;
-
-@Entity
-@Table(
-        name = "student_criteria_progress",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uq_student_criteria_progress",
-                columnNames = {"user_id", "criteria_id", "academic_year_id"}
-        )
-)
-@NoArgsConstructor
-@AllArgsConstructor
 @Getter
 @Setter
+@Entity
+@Table(name = "student_criteria_progress")
 public class StudentCriteriaProgressJpaEntity extends BaseEntityJpa {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserJpaEntity user;
 
-    @Column(name = "criteria_id", nullable = false)
-    private Long criteriaId;
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "criteria_id", nullable = false)
+    private CriteriaJpaEntity criteria;
 
-    @Column(name = "academic_year_id", nullable = false)
-    private Long academicYearId;
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.RESTRICT)
+    @JoinColumn(name = "academic_year_id", nullable = false)
+    private AcademicYearJpaEntity academicYear;
 
-    @Column(name = "event_id")
-    private Long sourceEventId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    @JoinColumn(name = "event_id")
+    private EventJpaEntity event;
 
-    @Column(name = "is_completed", nullable = false)
-    private Boolean completed = false;
-
-    @Enumerated(EnumType.STRING)
+    @Size(max = 30)
+    @NotNull
+    @ColumnDefault("'MANUAL'")
     @Column(name = "completion_source", nullable = false, length = 30)
-    private CriteriaCompletionSourceEnum completionSource = CriteriaCompletionSourceEnum.MANUAL;
+    private String completionSource;
+
+    @ColumnDefault("''")
+    @Column(name = "note", length = Integer.MAX_VALUE)
+    private String note;
 
 
-
-    @Column(name = "completed_at")
-    private Instant completedAt;
 }

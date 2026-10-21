@@ -1,4 +1,4 @@
-package com.ddd.application.service;
+package com.ddd.application.service.academicyear;
 
 import com.ddd.application.dto.SemesterDto;
 
