@@ -5,12 +5,16 @@ import com.ddd.api.dto.fanpage.req.FanpageAdminUpdateRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageFilterRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageRegisterRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageSystemAdminUpdateRequestDto;
+import com.ddd.api.dto.fanpage.res.FanpageFollowCountResponseDto;
 import com.ddd.api.dto.fanpage.res.FanpageMemberResponseDto;
 import com.ddd.api.dto.fanpage.res.FanpageResponseDto;
 import com.ddd.api.mapper.FanpageApiMapper;
+import com.ddd.application.dto.fanpage.FanpageFollowCountDto;
 import com.ddd.application.dto.fanpage.FanpageInfoDto;
 import com.ddd.application.dto.fanpage.FanpageMemberDto;
 import com.ddd.application.service.fanpage.FanpageQueryService;
+import com.ddd.application.utils.ServiceUtil;
+import org.springframework.data.domain.Pageable;
 import com.ddd.application.service.fanpage.FanpageService;
 import com.ddd.application.service.registration.RegistrationCommandService;
 import jakarta.validation.Valid;
@@ -150,6 +154,55 @@ public class FanpageController {
         String email = authentication.getName();
         fanpageService.removeMemberFromFanpage(fanpageId, userId, email);
         return BaseResponse.ok();
+    }
+
+    @PostMapping("/{fanpageId}/follow")
+    public BaseResponse<Void> followFanpage(
+            @PathVariable Long fanpageId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        fanpageService.followFanpage(fanpageId, email);
+        return BaseResponse.ok();
+    }
+
+    @DeleteMapping("/{fanpageId}/follow")
+    public BaseResponse<Void> unfollowFanpage(
+            @PathVariable Long fanpageId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        fanpageService.unfollowFanpage(fanpageId, email);
+        return BaseResponse.ok();
+    }
+
+    @PostMapping("/{fanpageId}/unfollow")
+    public BaseResponse<Void> unfollowFanpageAlias(
+            @PathVariable Long fanpageId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        fanpageService.unfollowFanpage(fanpageId, email);
+        return BaseResponse.ok();
+    }
+
+    @GetMapping("/{fanpageId}/followers/count")
+    public BaseResponse<FanpageFollowCountResponseDto> getFollowerCount(
+            @PathVariable Long fanpageId,
+            Authentication authentication) {
+        String email = authentication != null ? authentication.getName() : null;
+        FanpageFollowCountDto dto = fanpageQueryService.getFollowerCount(fanpageId, email);
+        return BaseResponse.of(fanpageApiMapper.toFollowCountResponseDto(dto));
+    }
+
+    @GetMapping("/following")
+    public BaseResponse<Page<FanpageResponseDto>> getFollowingFanpages(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir) {
+        String email = authentication.getName();
+        Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
+        Page<FanpageInfoDto> fanpages = fanpageQueryService.getFollowingFanpages(email, pageable);
+        return BaseResponse.of(fanpages.map(fanpageApiMapper::toResponseDto));
     }
 
 }

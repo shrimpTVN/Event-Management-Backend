@@ -191,6 +191,24 @@ CREATE TABLE fanpage_members
 );
 
 -- ============================================================
+--  10.1 FOLLOWING
+-- ============================================================
+CREATE TABLE followings
+(
+    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    fanpage_id BIGINT      NOT NULL,
+    user_id    BIGINT      NOT NULL,
+    fol_status VARCHAR(50) NOT NULL DEFAULT 'FOLLOWING',
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by BIGINT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by BIGINT,
+    CONSTRAINT pk_followings PRIMARY KEY (id),
+    CONSTRAINT uq_followings_fanpage_user UNIQUE (fanpage_id, user_id)
+);
+
+-- ============================================================
 --  11. EVENT_TYPE
 -- ============================================================
 CREATE TABLE event_types
@@ -498,6 +516,12 @@ ALTER TABLE fanpage_members
     ADD CONSTRAINT fk_fanpage_members_users
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
 
+ALTER TABLE followings
+    ADD CONSTRAINT fk_followings_fanpages
+        FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE CASCADE,
+    ADD CONSTRAINT fk_followings_users
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
+
 ALTER TABLE criterias
     ADD CONSTRAINT fk_criterias_parent
         FOREIGN KEY (parent_id) REFERENCES criterias (id) ON DELETE SET NULL;
@@ -606,6 +630,7 @@ CREATE TRIGGER trg_conversations_updated_at BEFORE UPDATE ON conversations FOR E
 CREATE TRIGGER trg_messages_updated_at BEFORE UPDATE ON messages FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
 CREATE TRIGGER trg_notifications_updated_at BEFORE UPDATE ON notifications FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
 CREATE TRIGGER trg_reports_updated_at BEFORE UPDATE ON reports FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_followings_updated_at BEFORE UPDATE ON followings FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
 
 -- ============================================================
 --  INDEXES
@@ -629,3 +654,6 @@ CREATE INDEX idx_criterias_parent ON criterias (parent_id);
 CREATE INDEX idx_point_transactions_user ON point_transactions (user_id, semester_id);
 CREATE INDEX idx_refresh_tokens_token ON refresh_tokens (token);
 CREATE INDEX idx_refresh_tokens_user ON refresh_tokens (user_id);
+CREATE INDEX idx_followings_fanpage ON followings (fanpage_id);
+CREATE INDEX idx_followings_user ON followings (user_id);
+CREATE INDEX idx_followings_status ON followings (fol_status);
