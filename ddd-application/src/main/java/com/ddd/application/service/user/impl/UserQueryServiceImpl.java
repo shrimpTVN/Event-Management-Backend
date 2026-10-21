@@ -39,6 +39,14 @@ public class UserQueryServiceImpl implements UserQueryService {
     }
 
     @Override
+    public StudentProfileSummaryDto getProfileStudentById(Long id) {
+        StudentProfileJpaEntity studentProfileJpaEntity = studentProfileJpaRepository.findByUserId(id)
+                .or(() -> studentProfileJpaRepository.findByIdWithDetails(id))
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found for id: " + id));
+        return studentProfileDtoMapper.toStudentProfileSummaryDto(studentProfileJpaEntity);
+    }
+
+    @Override
     public Page<StudentProfileSummaryDto> getAllProfiles(boolean isActive, int page, int size, String sortBy, String sortDir) {
         Pageable pageable = createPageable(page, size, sortBy, sortDir);
 

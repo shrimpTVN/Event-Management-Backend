@@ -136,3 +136,14 @@ VALUES
 -- Reset sequence để backend chèn thêm tiêu chí sau này không bị lỗi trùng ID
 ALTER TABLE criterias
     ALTER COLUMN id RESTART WITH 41;
+
+-- Progress evaluation rules. A NULL value on a leaf criterion means that the
+-- student's own progress record determines completion.
+UPDATE criterias SET required_children = 5 WHERE id = 1;
+UPDATE criterias SET required_children = 3 WHERE id = 2;
+UPDATE criterias SET required_children = 1 WHERE id = 5;
+UPDATE criterias SET required_children = 2 WHERE id = 11;
+UPDATE criterias SET required_children = 1 WHERE id = 14;
+UPDATE criterias SET required_children = 1 WHERE id = 17;
+UPDATE criterias SET required_children = 2 WHERE id = 21;
+UPDATE criterias SET required_children = 1 WHERE id IN (22, 28, 35);

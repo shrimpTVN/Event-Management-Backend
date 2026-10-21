@@ -30,6 +30,9 @@ public class CriteriaJpaEntity extends BaseEntityJpa {
     @Column(name = "children_order", nullable = false)
     private Integer childrenOrder = 1;
 
+    @Column(name = "required_children")
+    private Integer requiredChildren;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private CriteriaJpaEntity parent;

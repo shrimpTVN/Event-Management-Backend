@@ -19,8 +19,17 @@ public interface StudentProfileJpaRepository extends JpaRepository<StudentProfil
             "WHERE u.email = :email")
     Optional<StudentProfileJpaEntity> findByEmail(String email);
 
+    @Query("SELECT s FROM StudentProfileJpaEntity s " +
+            "JOIN FETCH s.user u JOIN FETCH s.major m JOIN FETCH m.school " +
+            "WHERE u.id = :userId")
+    Optional<StudentProfileJpaEntity> findByUserId(Long userId);
+
+    @Query("SELECT s FROM StudentProfileJpaEntity s " +
+            "JOIN FETCH s.user u JOIN FETCH s.major m JOIN FETCH m.school " +
+            "WHERE s.id = :id")
+    Optional<StudentProfileJpaEntity> findByIdWithDetails(Long id);
+
     @EntityGraph(attributePaths = {"user", "major", "major.school"})
     @Query("SELECT s FROM StudentProfileJpaEntity s WHERE s.user.isActive = :isActive")
     Page<StudentProfileJpaEntity> findAllByIsActive(boolean isActive, Pageable pageable);
-
 }
