@@ -66,9 +66,7 @@ public class EventQueryServiceImpl implements EventQueryService {
                 criteria.semesterId(),
                 criteria.criteriaId(),
                 criteria.pointCategoryId(),
-                criteria.dateHappenFrom(),
-                criteria.dateHappenTo(),
-                criteria.isActive()
+                criteria.dateHappenFrom()
         );
         return eventJpaRepository.findAll(spec, pageable).map(eventDtoMapper::toInfoDto);
     }
