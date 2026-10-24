@@ -76,6 +76,7 @@ public class EventQueryServiceImpl implements EventQueryService {
     @Override
     public Page<EventInfoDto> getRecommendEvents(String email) {
         // implement get Event for Student
+        //Fix recommend inactive event
         return null;
     }
 
