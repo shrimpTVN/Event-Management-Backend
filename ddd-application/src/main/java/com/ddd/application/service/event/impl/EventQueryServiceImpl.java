@@ -73,5 +73,11 @@ public class EventQueryServiceImpl implements EventQueryService {
         return eventJpaRepository.findAll(spec, pageable).map(eventDtoMapper::toInfoDto);
     }
 
+    @Override
+    public Page<EventInfoDto> getRecommendEvents(String email) {
+        // implement get Event for Student
+        return null;
+    }
+
 
 }
