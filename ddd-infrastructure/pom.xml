@@ -23,6 +23,10 @@
             <artifactId>ddd-domain</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http5</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

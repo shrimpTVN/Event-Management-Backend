@@ -39,13 +39,23 @@ public class JwtUtil {
     }
 
     public String extractToken(HttpServletRequest request) {
-        if (request.getCookies() == null) {
-            return null;
+        // 1. Try extracting from Authorization header (Bearer <token>)
+        String authHeaderName = jwtProperties.header() != null ? jwtProperties.header() : "Authorization";
+        String authHeader = request.getHeader(authHeaderName);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7).trim();
+            if (!token.isEmpty()) {
+                return token;
+            }
         }
-        String cookieName = getCookieName();
-        for (Cookie cookie : request.getCookies()) {
-            if (cookie.getName().equals(cookieName)) {
-                return cookie.getValue();
+
+        // 2. Fallback to Cookie
+        if (request.getCookies() != null) {
+            String cookieName = getCookieName();
+            for (Cookie cookie : request.getCookies()) {
+                if (cookie.getName().equals(cookieName)) {
+                    return cookie.getValue();
+                }
             }
         }
         return null;

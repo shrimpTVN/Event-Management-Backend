@@ -64,7 +64,14 @@ public enum ErrorCodeEnum {
     AUTH_ACCOUNT_EXISTS_BY_MOBILE(
             "AUTH.014", HttpStatus.BAD_REQUEST, "Account already exists with the given mobile number"),
     AUTH_ACCOUNT_EXISTS_BY_EMAIL(
-            "AUTH.015", HttpStatus.BAD_REQUEST, "Account already exists with the given email address");
+            "AUTH.015", HttpStatus.BAD_REQUEST, "Account already exists with the given email address"),
+
+    // MEDIA
+    FILE_EMPTY("MEDIA.001", HttpStatus.BAD_REQUEST, "File must not be empty"),
+    FILE_TOO_LARGE("MEDIA.002", HttpStatus.PAYLOAD_TOO_LARGE, "File size exceeds the permitted limit"),
+    FILE_INVALID_FORMAT("MEDIA.003", HttpStatus.BAD_REQUEST, "Invalid file format. Allowed formats: JPEG, PNG, WEBP, GIF"),
+    FILE_UPLOAD_FAILED("MEDIA.004", HttpStatus.INTERNAL_SERVER_ERROR, "Failed to upload file to Cloudinary"),
+    FILE_DELETE_FAILED("MEDIA.005", HttpStatus.INTERNAL_SERVER_ERROR, "Failed to delete file from Cloudinary");
 
     private final String code;
     private final HttpStatus status;

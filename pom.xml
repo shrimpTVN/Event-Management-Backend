@@ -37,6 +37,7 @@
     <properties>
         <java.version>21</java.version>
         <lombok.version>1.18.40</lombok.version>
+        <cloudinary.version>2.5.0</cloudinary.version>
     </properties>
     <dependencies>
         <dependency>
@@ -198,6 +199,11 @@
                 <groupId>com</groupId>
                 <artifactId>ddd-api</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.cloudinary</groupId>
+                <artifactId>cloudinary-http5</artifactId>
+                <version>${cloudinary.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

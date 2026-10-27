@@ -38,7 +38,8 @@ public class SecurityConstant {
     };
 
     public static final String[] SECURE_ENDPOINTS = {
-           "/api/events/fanpage-member/**",
+            "/api/events/fanpage-member/**",
+            "/api/media/**"
     };
 
     public static final String CORS_PATH_PATTERN = "/**";

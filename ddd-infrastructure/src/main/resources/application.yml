@@ -24,6 +24,11 @@ spring:
       enabled: ${DOCKER_COMPOSE_ENABLED:true}
       file: ${DOCKER_COMPOSE_FILE:compose.yaml}
       lifecycle-management: ${DOCKER_COMPOSE_LIFECYCLE:start-only}
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 20MB
 
 logging:
   pattern:
@@ -36,3 +41,11 @@ jwt:
   header: ${JWT_HEADER:Authorization}
   refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
   refresh-cookie-name: ${JWT_REFRESH_COOKIE_NAME:ddd_refresh}
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
+  folder-prefix: ${CLOUDINARY_FOLDER_PREFIX:event-management}
+  upload-preset: ${CLOUDINARY_UPLOAD_PRESET:upload-EventManagemen}
+

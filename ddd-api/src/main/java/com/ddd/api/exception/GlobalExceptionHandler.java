@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
@@ -240,6 +241,39 @@ public class GlobalExceptionHandler {
 //        return buildError(HttpStatus.BAD_GATEWAY, exception.getMessage(), webRequest.getDescription(false));
 //    }
 //
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Object> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException exception, WebRequest webRequest) {
+        log.warn("Max upload size exceeded [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.FILE_TOO_LARGE.getCode(),
+                ErrorCodeEnum.FILE_TOO_LARGE.getDefaultMessage(),
+                ErrorCodeEnum.FILE_TOO_LARGE.getStatus()
+        );
+    }
+
+    @ExceptionHandler(InvalidFileException.class)
+    public ResponseEntity<Object> handleInvalidFileException(
+            InvalidFileException exception, WebRequest webRequest) {
+        log.warn("Invalid file exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.FILE_INVALID_FORMAT.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.FILE_INVALID_FORMAT.getDefaultMessage(),
+                ErrorCodeEnum.FILE_INVALID_FORMAT.getStatus()
+        );
+    }
+
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<Object> handleFileStorageException(
+            FileStorageException exception, WebRequest webRequest) {
+        log.error("File storage exception [{}]: {}", webRequest.getDescription(false), exception.getMessage(), exception);
+        return wrapWithResponse(
+                ErrorCodeEnum.FILE_UPLOAD_FAILED.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.FILE_UPLOAD_FAILED.getDefaultMessage(),
+                ErrorCodeEnum.FILE_UPLOAD_FAILED.getStatus()
+        );
+    }
 
     // 500 Internal Server Error — catch-all
     @ExceptionHandler(Exception.class)
