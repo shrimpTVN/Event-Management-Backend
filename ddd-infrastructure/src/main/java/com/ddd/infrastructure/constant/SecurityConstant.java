@@ -7,7 +7,9 @@ public class SecurityConstant {
             "/api/semesters/admin/**",
             "/api/users/admin/**",
             "/api/fanpages/admin/**",
-            "/api/point-categories/admin/**"
+            "/api/point-categories/admin/**",
+            "/api/events/admin/**",
+            "/api/criterias/admin/**"
     };
 
     public static final String[] FANPAGE_ADMIN_ENDPOINTS = {
@@ -18,22 +20,35 @@ public class SecurityConstant {
             "/",
             "/swagger-ui/**",
             "/v3/api-docs/**",
+            "/auth/register",
+            "/auth/login",
+            "/auth/register/fanpage-admin",
+            "/auth/refresh-token",
+            "/auth/logout",
             "/api/auth/register",
             "/api/auth/login",
             "/api/auth/register/fanpage-admin",
             "/api/auth/send-otp",
             "/api/auth/verify-otp",
+            "/api/auth/refresh-token",
+            "/api/auth/logout",
             "/auth/**",
             "/api/semesters/**",
             "/api/fanpages/**",
             "/api/point-categories/**",
             "/api/events/**",
+            "/api/criterias/**",
+            "/academic-years/**",
+            "/api/academic-years/**",
             "/api/auth/google",
             "/google-test.html"
     };
 
     public static final String[] SECURE_ENDPOINTS = {
-           "/api/events/fanpage-member/**",
+            "/api/events/fanpage-member/**",
+            "/api/fanpages/*/follow",
+            "/api/fanpages/*/unfollow",
+            "/api/fanpages/following",
     };
 
     public static final String CORS_PATH_PATTERN = "/**";

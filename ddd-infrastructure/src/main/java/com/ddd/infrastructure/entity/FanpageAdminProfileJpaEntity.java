@@ -20,14 +20,6 @@ public class FanpageAdminProfileJpaEntity extends BaseEntityJpa {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Size(max = 100)
-    @Column(name = "first_name", length = 100)
-    private String firstName;
-
-    @Size(max = 100)
-    @Column(name = "last_name", length = 100)
-    private String lastName;
-
     @Size(max = 20)
     @NotNull
     @Column(name = "staff_id", nullable = false, length = 20)
@@ -44,16 +36,9 @@ public class FanpageAdminProfileJpaEntity extends BaseEntityJpa {
     @Column(name = "dob")
     private LocalDate dob;
 
-    @Size(max = 10)
-    @Column(name = "gender", length = 10)
-    private String gender;
-
     @Size(max = 20)
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
-
-    @Column(name = "avatar_url", length = Integer.MAX_VALUE)
-    private String avatarUrl;
 
     @NotNull
     @OneToOne(fetch = FetchType.LAZY, optional = false)

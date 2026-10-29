@@ -31,9 +31,6 @@ public class StudentProfileCommandServiceImpl implements StudentProfileCommandSe
             return;
         }
         StudentProfile studentProfile = new StudentProfile();
-        studentProfile.setFirstName(firstName);
-        studentProfile.setLastName(lastName);
-        studentProfile.setAvatarUrl(avatarUrl);
         studentProfile.assignUser(userId);
         studentProfileRepository.save(studentProfile, userId);
     }

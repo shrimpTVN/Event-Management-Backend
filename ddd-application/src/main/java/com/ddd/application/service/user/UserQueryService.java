@@ -5,7 +5,9 @@ import com.ddd.application.dto.user.UserSummaryDto;
 import org.springframework.data.domain.Page;
 
 public interface UserQueryService {
-    StudentProfileSummaryDto getProfileByEmail(String email);
+    StudentProfileSummaryDto getProfileStudentByEmail(String email);
+
+    StudentProfileSummaryDto getProfileStudentById(Long id);
 
     Page<StudentProfileSummaryDto> getAllProfiles(boolean isActive, int page, int size, String sortBy, String sortDir);
 

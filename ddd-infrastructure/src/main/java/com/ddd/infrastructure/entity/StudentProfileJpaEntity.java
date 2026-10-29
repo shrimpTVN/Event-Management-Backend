@@ -18,32 +18,12 @@ public class StudentProfileJpaEntity extends BaseEntityJpa {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Size(max = 100)
-    @Column(name = "first_name", length = 100)
-    private String firstName;
-
-    @Size(max = 100)
-    @Column(name = "last_name", length = 100)
-    private String lastName;
-
     @Size(max = 50)
     @Column(name = "student_id", length = 50)
     private String studentId;
 
-    @Size(max = 10)
-    @Column(name = "gender", length = 10)
-    private String gender;
-
     @Column(name = "k_number")
     private Integer kNumber;
-
-    @Column(name = "avatar_url", length = Integer.MAX_VALUE)
-    private String avatarUrl;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.SET_NULL)
-    @JoinColumn(name = "association_id")
-    private AssociationJpaEntity association;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.SET_NULL)

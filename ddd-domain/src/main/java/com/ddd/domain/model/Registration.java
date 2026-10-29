@@ -14,7 +14,10 @@ public class Registration {
     private Instant regDate;
     private Instant checkInAt;
     private Instant checkOutAt;
-    private String evidenceUrl;
+    private String checkInEvidenceUrl;
+    private String checkOutEvidenceUrl;
+    private Long checkInBy;
+    private Long checkOutBy;
     private RegistrationStatusEnum status;
     private String reason;
     private Instant createdAt;

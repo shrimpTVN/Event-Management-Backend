@@ -1,8 +1,17 @@
 package com.ddd.application.dto.user;
 
+import java.util.Set;
+
 public record UserSummaryDto(
+        Long userId,
         String email,
+        Set<String> roles,
         String role,
-        Boolean isActive
-) {
+        String firstName,
+        String lastName,
+        String gender,
+        Boolean isActive,
+        String providerId,
+        String avatarUrl) {
+
 }

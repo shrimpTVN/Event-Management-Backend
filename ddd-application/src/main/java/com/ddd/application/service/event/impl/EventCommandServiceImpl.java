@@ -94,7 +94,6 @@ public class EventCommandServiceImpl implements EventCommandService {
         log.info("Soft deleting event id: {} by user email: {}", id, email);
 
         Event event = eventRepository.findById(id);
-
         verifyUserFanpageMembership(event.getFanpageId(), email);
 
         event.setActive(false);
@@ -127,10 +126,8 @@ public class EventCommandServiceImpl implements EventCommandService {
         }
 
         if (dto.criteriaId() != null) {
-            Criteria criteria = criteriaRepository.findById(dto.criteriaId());
-            if (criteria == null) {
-                throw new ResourceNotFoundException("Criteria not found with id: " + dto.criteriaId());
-            }
+            criteriaRepository.findById(dto.criteriaId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Criteria not found with id: " + dto.criteriaId()));
         }
 
         if (dto.semesterId() != null) {
@@ -146,10 +143,8 @@ public class EventCommandServiceImpl implements EventCommandService {
         }
 
         if (dto.criteriaId() != null) {
-            Criteria criteria = criteriaRepository.findById(dto.criteriaId());
-            if (criteria == null) {
-                throw new ResourceNotFoundException("Criteria not found with id: " + dto.criteriaId());
-            }
+            criteriaRepository.findById(dto.criteriaId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Criteria not found with id: " + dto.criteriaId()));
         }
 
         if (dto.semesterId() != null) {

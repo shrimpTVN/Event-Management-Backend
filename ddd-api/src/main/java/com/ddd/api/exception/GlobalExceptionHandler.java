@@ -3,9 +3,7 @@ package com.ddd.api.exception;
 
 import com.ddd.api.common.BaseResponse;
 import com.ddd.api.common.enums.ErrorCodeEnum;
-import com.ddd.domain.exception.DuplicateResourceException;
-import com.ddd.domain.exception.ResourceNotFoundException;
-import com.ddd.domain.exception.UnauthorizedException;
+import com.ddd.domain.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpStatus;
@@ -14,6 +12,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.method.ParameterValidationResult;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -53,6 +52,18 @@ public class GlobalExceptionHandler {
     }
 
     // 400 Bad Request
+    /**
+     * Missing or malformed HTTP request body (e.g. invalid JSON, missing required body).
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Object> handleHttpMessageNotReadableException(
+            HttpMessageNotReadableException exception, WebRequest webRequest) {
+        log.warn("Http message not readable [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.VALIDATION_ERROR.getCode(),
+                "Required request body is missing or malformed",
+                ErrorCodeEnum.VALIDATION_ERROR.getStatus());
+    }
 
     /**
      * Bean-validation failures on @RequestBody (e.g. @NotNull, @Size).
@@ -110,6 +121,25 @@ public class GlobalExceptionHandler {
                 ErrorCodeEnum.AUTH_INVALID_CREDENTIALS.getStatus());
     }
 
+    @ExceptionHandler(EventAttendanceException.class)
+    public ResponseEntity<Object> handleEventAttendanceException(
+            EventAttendanceException exception, WebRequest webRequest){
+        log.warn("Event attendance exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.EVENT_ATTENDANCE_ERROR.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.EVENT_ATTENDANCE_ERROR.getDefaultMessage(),
+                ErrorCodeEnum.EVENT_ATTENDANCE_ERROR.getStatus());
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<Object> handleBusinessException(BusinessException exception, WebRequest webRequest){
+        log.warn("Business exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getDefaultMessage(),
+                ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getStatus());
+    }
+
     //     401 Unauthorized
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<Object> handleUnauthorized(
@@ -118,6 +148,16 @@ public class GlobalExceptionHandler {
         return wrapWithResponse(ErrorCodeEnum.UNAUTHORIZED_ERROR.getCode(),
                 ErrorCodeEnum.UNAUTHORIZED_ERROR.getDefaultMessage(),
                 ErrorCodeEnum.UNAUTHORIZED_ERROR.getStatus());
+    }
+
+    @ExceptionHandler(AuthException.class)
+    public ResponseEntity<Object> handleAuthException(
+            AuthException exception, WebRequest webRequest) {
+        log.warn("Auth exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.AUTH_EXPIRED_REVOKED_TOKEN.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.AUTH_EXPIRED_REVOKED_TOKEN.getDefaultMessage(),
+                ErrorCodeEnum.AUTH_EXPIRED_REVOKED_TOKEN.getStatus());
     }
 
     // 403 Forbidden
@@ -157,6 +197,15 @@ public class GlobalExceptionHandler {
     // ─────────────────────────────────────────────────────────────────────────
     // 409 Conflict
     // ─────────────────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(EventRegistrationException.class)
+    public  ResponseEntity<Object> handleEventRegistrationException(EventRegistrationException exception,
+                                                                   WebRequest webRequest){
+        log.warn("Event registration exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(ErrorCodeEnum.EVENT_REGISTRATION_ERROR.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.EVENT_REGISTRATION_ERROR.getDefaultMessage(),
+                ErrorCodeEnum.EVENT_REGISTRATION_ERROR.getStatus());
+    }
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<Object> handleDuplicateResource(

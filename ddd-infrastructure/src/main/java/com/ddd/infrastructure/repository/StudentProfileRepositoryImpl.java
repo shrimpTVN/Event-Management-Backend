@@ -36,10 +36,6 @@ public class StudentProfileRepositoryImpl implements StudentProfileRepository {
 
     @Override
     public void save(StudentProfile studentProfile, Long userId) {
-        AssociationJpaEntity associationJpaEntity = studentProfile.getAssociationId() != null
-                ? associationJpaRepository.findById(studentProfile.getAssociationId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Association not found with id: " + studentProfile.getAssociationId()))
-                : null;
         MajorJpaEntity majorJpaEntity = studentProfile.getMajorId() != null
                 ? majorJpaRepository.findById(studentProfile.getMajorId())
                     .orElseThrow(() -> new ResourceNotFoundException("Major not found with id: " + studentProfile.getMajorId()))
@@ -48,7 +44,6 @@ public class StudentProfileRepositoryImpl implements StudentProfileRepository {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         StudentProfileJpaEntity studentProfileJpaEntity = studentProfileMapper.toEntity(studentProfile);
-        studentProfileJpaEntity.setAssociation(associationJpaEntity);
         studentProfileJpaEntity.setMajor(majorJpaEntity);
         studentProfileJpaEntity.setUser(userJpaEntity);
 

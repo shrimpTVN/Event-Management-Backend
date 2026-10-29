@@ -12,13 +12,15 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceCustom implements UserDetailsService {
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
 
     @Override
     public UserDetailsCustom loadUserByUsername(@NonNull String email) throws UsernameNotFoundException {
@@ -27,18 +29,25 @@ public class UserServiceCustom implements UserDetailsService {
             throw new UsernameNotFoundException(email);
         }
 
-        String roleName = roleRepository.findById(user.getRoleId()).getName().toUpperCase();
-        if (!roleName.startsWith("ROLE_")) {
-            roleName = "ROLE_" + roleName;
-        }
+        Set<String> roleNames = user.getRoles() != null
+                ? user.getRoles().stream()
+                    .map(role -> {
+                        String name = role.getName().toUpperCase();
+                        return name.startsWith("ROLE_") ? name : "ROLE_" + name;
+                    })
+                    .collect(Collectors.toSet())
+                : Collections.emptySet();
 
-        GrantedAuthority authority = new SimpleGrantedAuthority(roleName);
+        List<GrantedAuthority> authorities = roleNames.stream()
+                .map(SimpleGrantedAuthority::new)
+                .collect(Collectors.toList());
+
         return new UserDetailsCustom(
                 user.getId(),
                 user.getEmail(),
                 user.getPassword(),
-                roleName,
-                Collections.singletonList(authority));
+                roleNames,
+                authorities);
     }
 
 }

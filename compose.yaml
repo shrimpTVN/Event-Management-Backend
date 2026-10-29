@@ -9,5 +9,4 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-admin}
       POSTGRES_DB: ${DATABASE_NAME:-mydb}
     volumes:
-      # Hardcode binding to project directory to prevent Mac file sharing errors
-      - ./postgres-data:/var/lib/postgresql
+        - /home/shrimp/code/portgres-db:/var/lib/postgresql

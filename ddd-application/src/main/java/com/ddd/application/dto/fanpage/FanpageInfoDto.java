@@ -1,5 +1,7 @@
 package com.ddd.application.dto.fanpage;
 
+import java.time.Instant;
+
 public record FanpageInfoDto(
         Long id,
         String name,
@@ -10,7 +12,7 @@ public record FanpageInfoDto(
         String parentOrg,
         String helpContact,
         String helpPhone,
-        String createdAt,
+        Instant createdAt,
         String status,
         Boolean isActive
 ) {

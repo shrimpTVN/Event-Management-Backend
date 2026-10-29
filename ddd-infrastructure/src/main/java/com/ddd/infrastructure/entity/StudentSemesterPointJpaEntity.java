@@ -1,55 +1,67 @@
 package com.ddd.infrastructure.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
-import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 
-@Entity
-@Table(name = "student_semester_points")
-@NoArgsConstructor
-@AllArgsConstructor
 @Getter
 @Setter
+@Entity
+@Table(name = "student_semester_points")
 public class StudentSemesterPointJpaEntity {
-    @EmbeddedId
-    private StudentSemesterPointId id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Long id;
 
-    @MapsId("userId")
-    @ManyToOne(fetch = FetchType.LAZY)
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "user_id", nullable = false)
     private UserJpaEntity user;
 
-    @MapsId("semesterId")
-    @ManyToOne(fetch = FetchType.LAZY)
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.RESTRICT)
     @JoinColumn(name = "semester_id", nullable = false)
     private SemesterJpaEntity semester;
 
-    @MapsId("pointCategoryId")
-    @ManyToOne(fetch = FetchType.LAZY)
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.RESTRICT)
     @JoinColumn(name = "point_category_id", nullable = false)
     private PointCategoryJpaEntity pointCategory;
 
-    @Column(name = "total_point", nullable = false, precision = 10, scale = 2)
-    private BigDecimal totalPoint = BigDecimal.ZERO;
+    @NotNull
+    @ColumnDefault("0")
+    @Column(name = "total_point", nullable = false)
+    private Integer totalPoint;
 
     @Column(name = "finalized_at")
     private Instant finalizedAt;
 
-    @Column(name = "created_at", updatable = false)
-    @CreationTimestamp
+    @NotNull
+    @ColumnDefault("now()")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
     @Column(name = "created_by")
     private Long createdBy;
 
-    @Column(name = "updated_at")
-    @UpdateTimestamp
+    @NotNull
+    @ColumnDefault("now()")
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
     @Column(name = "updated_by")
     private Long updatedBy;
+
+
 }

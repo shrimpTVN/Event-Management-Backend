@@ -14,6 +14,7 @@ import org.springframework.web.client.ResourceAccessException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -21,6 +22,7 @@ public class UserRepositoryImpl implements UserRepository {
     private final UserJpaRepository userJpaRepository;
     private final UserMapper userMapper;
     private final RoleJpaRepository roleJpaRepository;
+
     @Override
     public User findByEmail(String email) {
         UserJpaEntity userJpaEntity = userJpaRepository.findByEmail(email);
@@ -39,16 +41,38 @@ public class UserRepositoryImpl implements UserRepository {
 
 
     @Override
-    public User save(User user, String roleName) {
-        String roleWithPrefix = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
-        String roleWithoutPrefix = roleName.startsWith("ROLE_") ? roleName.substring(5) : roleName;
-
-        RoleJpaEntity roleJpaEntity = roleJpaRepository.findByName(roleName)
-                .or(() -> roleJpaRepository.findByName(roleWithoutPrefix))
-                .or(() -> roleJpaRepository.findByName(roleWithPrefix))
-                .orElseThrow(() -> new ResourceAccessException("Role not found with name: " + roleName));
+    public User save(User user, Set<String> roleNames) {
+        java.util.Set<String> searchNames = new java.util.HashSet<>();
+        for (String r : roleNames) {
+            searchNames.add(r);
+            if (r.startsWith("ROLE_")) {
+                searchNames.add(r.substring(5));
+            } else {
+                searchNames.add("ROLE_" + r);
+            }
+        }
+        Set<RoleJpaEntity> roleJpaEntities = roleJpaRepository.findByNameIn(searchNames);
+        if (roleJpaEntities.isEmpty()) {
+            throw new ResourceAccessException("Roles not found: " + roleNames);
+        }
         UserJpaEntity userJpaEntity = userMapper.toEntity(user);
-        userJpaEntity.setRole(roleJpaEntity);
+        userJpaEntity.setRoles(roleJpaEntities);
+        return userMapper.toDomain(userJpaRepository.save(userJpaEntity));
+    }
+
+    @Override
+    public User save(User user, String roleName) {
+        return save(user, java.util.Set.of(roleName));
+    }
+
+    @Override
+    public User save(User user) {
+        UserJpaEntity userJpaEntity = userMapper.toEntity(user);
+        if (user.getRoles() != null && !user.getRoles().isEmpty()) {
+            java.util.Set<String> roleNames = user.getRoleNames();
+            java.util.Set<RoleJpaEntity> roleJpaEntities = roleJpaRepository.findByNameIn(roleNames);
+            userJpaEntity.setRoles(roleJpaEntities);
+        }
         return userMapper.toDomain(userJpaRepository.save(userJpaEntity));
     }
 

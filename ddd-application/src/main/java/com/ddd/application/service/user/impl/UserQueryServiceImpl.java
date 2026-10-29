@@ -6,6 +6,7 @@ import com.ddd.application.mapper.StudentProfileDtoMapper;
 import com.ddd.application.mapper.UserDtoMapper;
 import com.ddd.application.service.user.UserQueryService;
 import com.ddd.domain.exception.ResourceNotFoundException;
+import com.ddd.domain.model.StudentProfile;
 import com.ddd.domain.model.User;
 import com.ddd.domain.repository.UserRepository;
 import com.ddd.infrastructure.entity.StudentProfileJpaEntity;
@@ -19,6 +20,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -29,11 +32,17 @@ public class UserQueryServiceImpl implements UserQueryService {
     private final UserDtoMapper userDtoMapper;
 
     @Override
-    public StudentProfileSummaryDto getProfileByEmail(String email) {
-        StudentProfileJpaEntity studentProfileJpaEntity = studentProfileJpaRepository.findByEmail(email);
-        if (studentProfileJpaEntity == null) {
-            throw new ResourceNotFoundException("Student profile not found for email: " + email);
-        }
+    public StudentProfileSummaryDto getProfileStudentByEmail(String email) {
+        StudentProfileJpaEntity studentProfileJpaEntity = studentProfileJpaRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found for email: " + email));
+        return studentProfileDtoMapper.toStudentProfileSummaryDto(studentProfileJpaEntity);
+    }
+
+    @Override
+    public StudentProfileSummaryDto getProfileStudentById(Long id) {
+        StudentProfileJpaEntity studentProfileJpaEntity = studentProfileJpaRepository.findByUserId(id)
+                .or(() -> studentProfileJpaRepository.findByIdWithDetails(id))
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found for id: " + id));
         return studentProfileDtoMapper.toStudentProfileSummaryDto(studentProfileJpaEntity);
     }
 

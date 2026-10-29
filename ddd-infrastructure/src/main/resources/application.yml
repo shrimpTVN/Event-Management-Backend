@@ -1,6 +1,7 @@
 server:
   port: ${SERVER_PORT:8080}
 
+
 spring:
   application:
     name: ddd
@@ -41,10 +42,11 @@ logging:
 
 jwt:
   secret: ${JWT_SECRET:bItuCsIDL5c+BspirFjkgEYurvJBLNosOfR6f7/wuRTF}
-  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  expiration-ms: ${JWT_EXPIRATION_MS:900000}
   cookie-name: ${JWT_COOKIE_NAME:ddd_jwt}
   header: ${JWT_HEADER:Authorization}
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  refresh-cookie-name: ${JWT_REFRESH_COOKIE_NAME:ddd_refresh}
 
 google:
   client-id: ${GOOGLE_CLIENT_ID:160718561900-cjq1bkd7krtp2snvk12mi5mplrki9gff.apps.googleusercontent.com}
-

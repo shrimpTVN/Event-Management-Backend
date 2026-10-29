@@ -1,6 +1,5 @@
 package com.ddd.infrastructure.repository.jpaRepository;
 
-import aj.org.objectweb.asm.commons.Remapper;
 import com.ddd.infrastructure.entity.StudentProfileJpaEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,19 +8,29 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface StudentProfileJpaRepository extends JpaRepository<StudentProfileJpaEntity, Long> {
     boolean existsByStudentId(String studentId);
     boolean existsByUserId(Long userId);
 
     @Query("SELECT s FROM StudentProfileJpaEntity s " +
-            "JOIN FETCH s.user u JOIN FETCH s.major m JOIN FETCH s.association a JOIN FETCH m.school " +
+            "JOIN FETCH s.user u JOIN FETCH s.major m JOIN FETCH m.school " +
             "WHERE u.email = :email")
-    StudentProfileJpaEntity findByEmail(String email);
+    Optional<StudentProfileJpaEntity> findByEmail(String email);
 
+    @Query("SELECT s FROM StudentProfileJpaEntity s " +
+            "JOIN FETCH s.user u JOIN FETCH s.major m JOIN FETCH m.school " +
+            "WHERE u.id = :userId")
+    Optional<StudentProfileJpaEntity> findByUserId(Long userId);
 
-    @EntityGraph(attributePaths = {"user", "major", "association", "major.school"})
+    @Query("SELECT s FROM StudentProfileJpaEntity s " +
+            "JOIN FETCH s.user u JOIN FETCH s.major m JOIN FETCH m.school " +
+            "WHERE s.id = :id")
+    Optional<StudentProfileJpaEntity> findByIdWithDetails(Long id);
+
+    @EntityGraph(attributePaths = {"user", "major", "major.school"})
     @Query("SELECT s FROM StudentProfileJpaEntity s WHERE s.user.isActive = :isActive")
     Page<StudentProfileJpaEntity> findAllByIsActive(boolean isActive, Pageable pageable);
-
 }

@@ -9,9 +9,11 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
+import com.ddd.domain.model.User;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -37,6 +39,10 @@ public class JwtUtil {
     }
 
     public String extractToken(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
         if (request.getCookies() == null) {
             return null;
         }
@@ -92,10 +98,74 @@ public class JwtUtil {
         throw new IllegalArgumentException("Invalid authentication information");
     }
 
-    /**
-     * Generates a JWT token directly from user details (used in Social Login flows
-     * that bypass the standard AuthenticationManager).
-     */
+    public long getRefreshExpirationMs() {
+        return jwtProperties.refreshExpirationMs();
+    }
+
+    public String getRefreshCookieName() {
+        return jwtProperties.refreshCookieName();
+    }
+
+    public String extractRefreshToken(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            return null;
+        }
+        String cookieName = getRefreshCookieName();
+        for (Cookie cookie : request.getCookies()) {
+            if (cookie.getName().equals(cookieName)) {
+                return cookie.getValue();
+            }
+        }
+        return null;
+    }
+
+    public ResponseCookie buildRefreshCookie(String rawRefreshToken, long maxAgeSeconds) {
+        return ResponseCookie.from(getRefreshCookieName(), rawRefreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/api/auth")
+                .maxAge(maxAgeSeconds)
+                .build();
+    }
+
+    public ResponseCookie buildClearRefreshCookie() {
+        return ResponseCookie.from(getRefreshCookieName(), "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/auth")
+                .maxAge(0)
+                .build();
+    }
+
+    public String generateJwtTokenFromUser(User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null");
+        }
+
+        //Parse roles to ensure they are in the correct format for JWT claims
+        String roles = user.getRoles() != null
+                ? user.getRoles().stream()
+                        .map(role -> {
+                            String name = role.getName().toUpperCase();
+                            return name.startsWith("ROLE_") ? name : "ROLE_" + name;
+                        })
+                        .collect(Collectors.joining(","))
+                : "";
+
+        return Jwts.builder()
+                .issuer("ddd-application")
+                .subject("JWT Token")
+                .claim("username", user.getEmail())
+                .claim("userId", user.getId())
+                .claim("roles", roles)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + getExpirationMs()))
+                .signWith(getSecretKey())
+                .compact();
+    }
+
     public String generateJwtTokenForUser(UserDetailsCustom userDetails) {
         String roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)

@@ -3,21 +3,23 @@ package com.ddd.infrastructure.mapper;
 import com.ddd.domain.model.Registration;
 import com.ddd.infrastructure.entity.RegistrationJpaEntity;
 
-import org.mapstruct.Mapper;
+import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
 public interface RegistrationMapper {
-    @org.mapstruct.Mapping(target = "user", ignore = true)
-    @org.mapstruct.Mapping(target = "event", ignore = true)
-    @org.mapstruct.Mapping(target = "id", ignore = true)
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "event", ignore = true)
+    @Mapping(target = "id", ignore = true)
     RegistrationJpaEntity toEntity(Registration registration);
 
-    @org.mapstruct.Mapping(target = "userId", source = "user.id")
-    @org.mapstruct.Mapping(target = "eventId", source = "event.id")
+    @Mapping(target = "userId", source = "user.id")
+    @Mapping(target = "eventId", source = "event.id")
     Registration toDomain(RegistrationJpaEntity registrationJpaEntity);
 
-    @org.mapstruct.Mapping(target = "user", ignore = true)
-    @org.mapstruct.Mapping(target = "event", ignore = true)
-    @org.mapstruct.Mapping(target = "id", ignore = true)
-    void updateEntityFromDomain(Registration registration, @org.mapstruct.MappingTarget RegistrationJpaEntity entity);
+
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "event", ignore = true)
+    @Mapping(target = "id", ignore = true)
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void updateEntityFromDomain(Registration registration, @MappingTarget RegistrationJpaEntity entity);
 }

@@ -8,7 +8,9 @@ public record JwtProperties(
         String secret,
         long expirationMs,
         String cookieName,
-        String header
+        String header,
+        long refreshExpirationMs,
+        String refreshCookieName
 ) {
     public JwtProperties {
         // Validation khi khởi tạo

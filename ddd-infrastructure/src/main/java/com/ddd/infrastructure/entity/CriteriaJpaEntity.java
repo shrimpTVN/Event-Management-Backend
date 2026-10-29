@@ -18,9 +18,22 @@ public class CriteriaJpaEntity extends BaseEntityJpa {
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "description", columnDefinition = "TEXT")
-    private String description;
+    @Column(name = "note", columnDefinition = "TEXT")
+    private String note;
 
     @Column(name = "scope", columnDefinition = "TEXT")
     private String scope;
+
+    @Column(name = "level", nullable = false)
+    private Integer level = 0;
+
+    @Column(name = "children_order", nullable = false)
+    private Integer childrenOrder = 1;
+
+    @Column(name = "required_children")
+    private Integer requiredChildren;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private CriteriaJpaEntity parent;
 }

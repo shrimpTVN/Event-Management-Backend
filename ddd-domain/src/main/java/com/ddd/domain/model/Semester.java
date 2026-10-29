@@ -10,7 +10,7 @@ import java.time.LocalDate;
 @Setter
 public class Semester extends BaseModel {
     private Integer number;
-    private String academicYear;
+    private Long academicYearId;
     private LocalDate startDate;
     private LocalDate endDate;
     private SemesterStatusEnum status;

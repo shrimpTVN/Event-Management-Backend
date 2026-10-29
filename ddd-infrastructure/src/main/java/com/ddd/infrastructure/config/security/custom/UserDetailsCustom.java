@@ -5,31 +5,55 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 
 @Getter
 public class UserDetailsCustom implements UserDetails {
     private final Long userId;
     private final String username;
     private final String password;
-    private final String role;
+    private final Set<String> roles;
     private final Collection<? extends GrantedAuthority> authorities;
 
-    public UserDetailsCustom(Long userId, String email, String password, String role,
+    public UserDetailsCustom(Long userId, String email, String password, Set<String> roles,
                              Collection<? extends GrantedAuthority> authorities) {
         this.userId = userId;
         this.password = password;
         this.username = email;
-        this.role = role;
+        this.roles = roles != null ? roles : Collections.emptySet();
         this.authorities = authorities;
     }
 
     /**
+     * Backward-compatible constructor accepting single role.
+     */
+    public UserDetailsCustom(Long userId, String email, String password, String role,
+                             Collection<? extends GrantedAuthority> authorities) {
+        this(userId, email, password, role != null ? Collections.singleton(role) : Collections.emptySet(), authorities);
+    }
+
+    /**
      * Lightweight constructor for stateless principal reconstruction from JWT claims.
-     * Used in JwtTokenValidatorFilter where name/email/role are not needed.
+     */
+    public UserDetailsCustom(Long userId, String email, Set<String> roles,
+                             Collection<? extends GrantedAuthority> authorities) {
+        this(userId, email, "", roles, authorities);
+    }
+
+    /**
+     * Backward-compatible lightweight constructor for single role.
      */
     public UserDetailsCustom(Long userId, String email, String role,
                              Collection<? extends GrantedAuthority> authorities) {
-        this(userId, email, null, role, authorities);
+        this(userId, email, "", role != null ? Collections.singleton(role) : Collections.emptySet(), authorities);
+    }
+
+    /**
+     * Backward-compatible getter returning primary role.
+     */
+    public String getRole() {
+        return (roles != null && !roles.isEmpty()) ? roles.iterator().next() : null;
     }
 
     @Override

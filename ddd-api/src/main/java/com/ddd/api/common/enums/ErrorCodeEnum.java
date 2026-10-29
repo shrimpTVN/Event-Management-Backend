@@ -18,6 +18,10 @@ public enum ErrorCodeEnum {
     DUPLICATE_RESOURCE("006", HttpStatus.CONFLICT, "Resource already exists"),
     RESOURCE_NOT_FOUND("007", HttpStatus.NOT_FOUND, "Resource not found"),
 
+    //BUSINESS
+    BUSINESS_ERROR("100", HttpStatus.BAD_REQUEST, "Business error"),
+    BUSINESS_RULE_VIOLATION("101", HttpStatus.BAD_REQUEST, "Business rule violation"),
+
     // SEMESTER
     SEMESTER_NOT_FOUND("SEMESTER.001", HttpStatus.NOT_FOUND, "Semester not found"),
     SEMESTER_DUPLICATE("SEMESTER.002", HttpStatus.CONFLICT, "Semester already exists"),
@@ -30,6 +34,10 @@ public enum ErrorCodeEnum {
     // ROLE
     ROLES_NOT_FOUND("ROLE.001", HttpStatus.NOT_FOUND, "One or more roles could not be found"),
     ROLE_NOT_FOUND("ROLE.002", HttpStatus.NOT_FOUND, "The role could not be found"),
+
+    EVENT_NOT_FOUND("EVENT.001", HttpStatus.NOT_FOUND, "Event not found"),
+    EVENT_REGISTRATION_ERROR("EVENT.002", HttpStatus.BAD_REQUEST, "The event registration is not open yet or has already closed!"),
+    EVENT_ATTENDANCE_ERROR("EVENT.003", HttpStatus.BAD_REQUEST, "The event attendance is not open yet or has already closed!"),
 
     // AUTH
     AUTH_LOGIN_FAILED("AUTH.001", HttpStatus.UNAUTHORIZED, "Login failed"),

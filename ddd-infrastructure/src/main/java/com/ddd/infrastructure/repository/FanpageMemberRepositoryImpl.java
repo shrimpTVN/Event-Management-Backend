@@ -14,6 +14,7 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -68,5 +69,15 @@ public class FanpageMemberRepositoryImpl implements FanpageMemberRepository {
                 .orElseThrow(() -> new ResourceNotFoundException("User is not a member of the fanpage or does not exist"));
 
         fanpageMemberJpaRepository.delete(fanpageMemberJpaEntity);
+    }
+
+    @Override
+    public List<Long> findFanpageIdsByUserIdAndRole(Long userId, String role) {
+        return fanpageMemberJpaRepository.findFanpageIdsByUserIdAndRole(userId, role);
+    }
+
+    @Override
+    public void deactivateAllMembersByFanpageId(Long fanpageId) {
+        fanpageMemberJpaRepository.deactivateAllMembersByFanpageId(fanpageId);
     }
 }

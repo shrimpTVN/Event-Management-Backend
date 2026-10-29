@@ -2,6 +2,7 @@ package com.ddd.infrastructure.repository.jpaRepository;
 
 import com.ddd.infrastructure.entity.EventJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import org.springframework.data.domain.Page;
@@ -11,7 +12,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import java.util.Optional;
 
 @Repository
-public interface EventJpaRepository extends JpaRepository<EventJpaEntity, Long> {
+public interface EventJpaRepository extends JpaRepository<EventJpaEntity, Long>, JpaSpecificationExecutor<EventJpaEntity> {
     Page<EventJpaEntity> findByFanpage_Id(Long fanpageId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage", "semester"})
@@ -25,4 +26,6 @@ public interface EventJpaRepository extends JpaRepository<EventJpaEntity, Long> 
 
     @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage", "semester"})
     Page<EventJpaEntity> findWithDetailsByFanpage_IdAndIsActiveTrue(Long fanpageId, Pageable pageable);
+
+    boolean existsByIdAndFanpageId(Long eventId, Long fanpageId);
 }

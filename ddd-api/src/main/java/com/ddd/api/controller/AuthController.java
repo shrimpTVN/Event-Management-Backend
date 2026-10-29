@@ -5,16 +5,19 @@ import com.ddd.api.dto.auth.req.*;
 import com.ddd.api.dto.auth.res.LoginResponseDto;
 import com.ddd.api.mapper.AuthApiMapper;
 import com.ddd.application.dto.auth.LoginResult;
+import com.ddd.application.dto.auth.TokenRefreshResultDto;
 import com.ddd.application.dto.user.FanpageAdminProfileDto;
 import com.ddd.application.dto.user.StudentProfileDto;
 import com.ddd.application.dto.user.UserDto;
 import com.ddd.application.service.AuthService;
 import com.ddd.application.service.otp.OtpCommandService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,7 +38,19 @@ public class AuthController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .header(HttpHeaders.SET_COOKIE, authService.getUserCookie(loginResult.jwtToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, authService.getRefreshCookie(loginResult.rawRefreshToken()).toString())
                 .body(BaseResponse.of(authApiMapper.toLoginResponse(loginResult.loginDto())));
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<BaseResponse<Void>> refreshToken(HttpServletRequest request) {
+        String rawRefresh = authService.extractRefreshToken(request);
+        TokenRefreshResultDto result = authService.refreshToken(rawRefresh);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .header(HttpHeaders.SET_COOKIE, authService.getUserCookie(result.newAccessToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, authService.getRefreshCookie(result.newRawRefreshToken()).toString())
+                .body(BaseResponse.ok());
     }
 
     @PostMapping("/register")
@@ -55,10 +70,13 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<BaseResponse<Void>> logout() {
+    public ResponseEntity<BaseResponse<Void>> logout(HttpServletRequest request) {
+        String rawRefresh = authService.extractRefreshToken(request);
+        authService.logout(rawRefresh);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .header(HttpHeaders.SET_COOKIE, authService.getLogoutCookie().toString())
+                .header(HttpHeaders.SET_COOKIE, authService.getClearRefreshCookie().toString())
                 .body(BaseResponse.ok());
     }
 
@@ -76,8 +94,10 @@ public class AuthController {
     }
 
     @PostMapping("/change-password")
-    public BaseResponse<Void> changePassword() {
-        System.out.println("change password");
+    public BaseResponse<Void> changePassword(@RequestBody ChangePasswordRequestDto changePasswordRequestDto, Authentication authentication) {
+        String email = authentication.getName();
+        authService.changePassword(changePasswordRequestDto.oldPassword(), changePasswordRequestDto.newPassword(), email);
+
         return BaseResponse.ok();
     }
 
@@ -88,6 +108,7 @@ public class AuthController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .header(HttpHeaders.SET_COOKIE, authService.getUserCookie(loginResult.jwtToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, authService.getRefreshCookie(loginResult.rawRefreshToken()).toString())
                 .body(BaseResponse.of(authApiMapper.toLoginResponse(loginResult.loginDto())));
     }
 }
