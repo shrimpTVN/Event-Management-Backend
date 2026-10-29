@@ -363,6 +363,23 @@ CREATE TABLE registrations
 );
 
 -- ============================================================
+--  18.1 STORED_EVENTS
+-- ============================================================
+CREATE TABLE stored_events
+(
+    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    user_id    BIGINT      NOT NULL,
+    event_id   BIGINT      NOT NULL,
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by BIGINT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by BIGINT,
+    CONSTRAINT pk_stored_events PRIMARY KEY (id),
+    CONSTRAINT uq_stored_events_user_event UNIQUE (user_id, event_id)
+);
+
+-- ============================================================
 --  19. STUDENT_CRITERIA_PROGRESS
 -- ============================================================
 CREATE TABLE student_criteria_progress
@@ -644,6 +661,12 @@ ALTER TABLE reports
     ADD CONSTRAINT fk_reports_fanpages
         FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE CASCADE;
 
+ALTER TABLE stored_events
+    ADD CONSTRAINT fk_stored_events_events
+        FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE,
+    ADD CONSTRAINT fk_stored_events_users
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
+
 -- ============================================================
 --  AUTO-UPDATE updated_at VIA TRIGGER
 -- ============================================================
@@ -781,6 +804,11 @@ CREATE TRIGGER trg_followings_updated_at
     ON followings
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_stored_events_updated_at
+    BEFORE UPDATE
+    ON stored_events
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
 
 -- ============================================================
 --  INDEXES
@@ -808,3 +836,5 @@ CREATE INDEX idx_refresh_tokens_user ON refresh_tokens (user_id);
 CREATE INDEX idx_followings_fanpage ON followings (fanpage_id);
 CREATE INDEX idx_followings_user ON followings (user_id);
 CREATE INDEX idx_followings_status ON followings (fol_status);
+CREATE INDEX idx_stored_events_user ON stored_events (user_id);
+CREATE INDEX idx_stored_events_event ON stored_events (event_id);

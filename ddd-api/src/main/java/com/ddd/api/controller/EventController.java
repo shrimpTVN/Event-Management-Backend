@@ -5,16 +5,22 @@ import com.ddd.api.dto.event.req.EventCreateRequestDto;
 import com.ddd.api.dto.event.req.EventFilterRequestDto;
 import com.ddd.api.dto.event.req.EventUpdateRequestDto;
 import com.ddd.api.dto.event.res.EventResponseDto;
+import com.ddd.api.dto.event.res.StoredEventStatusResponseDto;
 import com.ddd.api.mapper.EventApiMapper;
 import com.ddd.application.dto.event.EventCreateDto;
 import com.ddd.application.dto.event.EventInfoDto;
 import com.ddd.application.dto.event.EventUpdateDto;
+import com.ddd.application.dto.event.StoredEventStatusDto;
 import com.ddd.application.service.event.EventCommandService;
 import com.ddd.application.service.event.EventQueryService;
+import com.ddd.application.service.event.StoredEventCommandService;
+import com.ddd.application.service.event.StoredEventQueryService;
+import com.ddd.application.utils.ServiceUtil;
 import com.ddd.domain.enums.EventStatusEnum;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +32,8 @@ public class EventController {
 
     private final EventCommandService eventCommandService;
     private final EventQueryService eventQueryService;
+    private final StoredEventCommandService storedEventCommandService;
+    private final StoredEventQueryService storedEventQueryService;
     private final EventApiMapper eventApiMapper;
 
     @PostMapping("/fanpage-member")
@@ -109,6 +117,46 @@ public class EventController {
         String email = authentication.getName();
         eventCommandService.deleteEvent(id, email);
         return BaseResponse.ok();
+    }
+
+    @PostMapping("/{eventId}/store")
+    public BaseResponse<Void> storeEvent(
+            @PathVariable Long eventId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        storedEventCommandService.storeEvent(eventId, email);
+        return BaseResponse.ok();
+    }
+
+    @DeleteMapping("/{eventId}/store")
+    public BaseResponse<Void> unstoreEvent(
+            @PathVariable Long eventId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        storedEventCommandService.unstoreEvent(eventId, email);
+        return BaseResponse.ok();
+    }
+
+    @GetMapping("/{eventId}/is-stored")
+    public BaseResponse<StoredEventStatusResponseDto> isEventStored(
+            @PathVariable Long eventId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        StoredEventStatusDto dto = storedEventQueryService.isEventStored(eventId, email);
+        return BaseResponse.of(eventApiMapper.toStoredStatusResponseDto(dto));
+    }
+
+    @GetMapping({"/me/stored", "/stored"})
+    public BaseResponse<Page<EventResponseDto>> getStoredEvents(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        String email = authentication.getName();
+        Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
+        Page<EventInfoDto> storedEvents = storedEventQueryService.getStoredEvents(email, pageable);
+        return BaseResponse.of(storedEvents.map(eventApiMapper::toResponseDto));
     }
 }
 

@@ -566,6 +566,75 @@ export interface PageResponse<T> {
 
 ---
 
+#### 2.3.9 Store / Bookmark Event
+- **Endpoint**: `POST /events/{eventId}/store`
+- **Access**: `AUTHENTICATED` (Student)
+- **Description**: Bookmark an event to the student's personal saved list.
+- **Path Parameter**: `eventId` (Long) - ID of the active event to bookmark.
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+- **Errors**:
+  - `404 Not Found`: Event does not exist or is inactive.
+  - `409 Conflict`: Event is already stored.
+
+---
+
+#### 2.3.10 Unstore / Remove Stored Event
+- **Endpoint**: `DELETE /events/{eventId}/store`
+- **Access**: `AUTHENTICATED` (Student)
+- **Description**: Remove/un-bookmark an event from the student's stored collection (hard delete).
+- **Path Parameter**: `eventId` (Long) - ID of the event to un-save.
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+- **Errors**:
+  - `404 Not Found`: Stored record not found.
+
+---
+
+#### 2.3.11 Check If Event Is Stored
+- **Endpoint**: `GET /events/{eventId}/is-stored`
+- **Access**: `AUTHENTICATED` (Student)
+- **Description**: Checks whether the authenticated student has bookmarked the given event.
+- **Path Parameter**: `eventId` (Long)
+- **Response `200 OK`**:
+```json
+{
+  "data": {
+    "eventId": 12,
+    "isStored": true
+  },
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.3.12 Get Student's Stored Events (Paginated)
+- **Endpoint**: `GET /events/me/stored` (or `GET /events/stored`)
+- **Access**: `AUTHENTICATED` (Student)
+- **Description**: Retrieves a paginated list of active events bookmarked by the student.
+- **Query Parameters**:
+  - `page`: integer (default: `0`)
+  - `size`: integer (default: `10`)
+  - `sortBy`: string (default: `"createdAt"`)
+  - `sortDir`: string (default: `"desc"`)
+- **Response `200 OK`**: `BaseResponse<Page<EventResponseDto>>`
+
+---
+
 ### 2.4 Student Registrations & Check-in (`RegistrationController` - `/registrations`)
 
 #### 2.4.1 Register for an Event

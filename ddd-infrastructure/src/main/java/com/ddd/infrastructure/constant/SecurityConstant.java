@@ -44,6 +44,12 @@ public class SecurityConstant {
             "/api/fanpages/*/follow",
             "/api/fanpages/*/unfollow",
             "/api/fanpages/following",
+            "/events/*/store",
+            "/api/events/*/store",
+            "/events/*/is-stored",
+            "/api/events/*/is-stored",
+            "/events/me/stored",
+            "/api/events/me/stored",
     };
 
     public static final String CORS_PATH_PATTERN = "/**";
