@@ -66,6 +66,27 @@ public class StudentCriteriaProgressRepositoryImpl implements StudentCriteriaPro
         return mapper.toDomainList(jpaRepository.saveAll(jpaEntities));
     }
 
+    @Override
+    public boolean existByUserIdAndCriteriaIdAndAcademicYearId(Long userId, Long criteriaId, Long academicYearId) {
+        return jpaRepository.existsByUserIdAndCriteriaIdAndAcademicYearId(userId, criteriaId, academicYearId);
+    }
+
+    @Override
+    public List<StudentCriteriaProgress> findAllByUserIdAndAcademicYearId(Long userId, Long academicYearId) {
+        return jpaRepository.findAllByUserIdAndAcademicYearId(userId, academicYearId)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<StudentCriteriaProgress> findAllByUserIdsAndAcademicYearId(Collection<Long> userIds, Long academicYearId) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return mapper.toDomainList(jpaRepository.findAllByUserIdInAndAcademicYearId(userIds, academicYearId));
+    }
+
     private void assignReferences(StudentCriteriaProgress progress, StudentCriteriaProgressJpaEntity entity) {
        if ( progress.getUserId() != null) {
             entity.setUser(entityManager.getReference(UserJpaEntity.class, progress.getUserId()));

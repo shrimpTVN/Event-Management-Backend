@@ -3,11 +3,14 @@ package com.ddd.infrastructure.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -37,20 +40,15 @@ public class StudentCriteriaProgressJpaEntity extends BaseEntityJpa {
     @JoinColumn(name = "academic_year_id", nullable = false)
     private AcademicYearJpaEntity academicYear;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.SET_NULL)
-    @JoinColumn(name = "event_id")
-    private EventJpaEntity event;
+    @Column(name = "completed_children_count", nullable = false)
+    @ColumnDefault("0")
+    private Integer completedChildrenCount=0;
 
-    @Size(max = 30)
-    @NotNull
-    @ColumnDefault("'MANUAL'")
-    @Column(name = "completion_source", nullable = false, length = 30)
-    private String completionSource;
+    @ColumnDefault("false")
+    @Column(name = "is_completed", nullable = false)
+    private Boolean isCompleted=false;
 
-    @ColumnDefault("''")
-    @Column(name = "note", length = Integer.MAX_VALUE)
-    private String note;
-
+    @Column(name = "completed_at", nullable = true)
+    private Instant completedAt;
 
 }

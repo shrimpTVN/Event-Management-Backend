@@ -7,7 +7,6 @@ public record StudentCriteriaProgressResponseDto(
         String academicYear,
         int completedMainCriteria,
         int totalMainCriteria,
-        List<CriteriaProgressItemResponseDto> criterias,
-        List<LeafProgressDetailResponseDto> progress
+        List<CriteriaProgressItemResponseDto> criterias
 ) {
 }

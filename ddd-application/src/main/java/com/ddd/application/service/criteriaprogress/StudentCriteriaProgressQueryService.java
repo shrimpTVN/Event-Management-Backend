@@ -1,4 +1,4 @@
-package com.ddd.application.service.criteria;
+package com.ddd.application.service.criteriaprogress;
 
 import com.ddd.application.dto.criteria.CriteriaProgressItemDto;
 import com.ddd.application.dto.criteria.StudentCriteriaProgressDto;

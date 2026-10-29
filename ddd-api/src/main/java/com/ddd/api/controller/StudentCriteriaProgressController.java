@@ -7,8 +7,8 @@ import com.ddd.api.dto.criteria.res.StudentCriteriaProgressResponseDto;
 import com.ddd.api.mapper.StudentCriteriaProgressApiMapper;
 import com.ddd.application.dto.criteria.CriteriaProgressItemDto;
 import com.ddd.application.dto.criteria.StudentCriteriaProgressDto;
-import com.ddd.application.service.criteria.StudentCriteriaProgressCommandService;
-import com.ddd.application.service.criteria.StudentCriteriaProgressQueryService;
+import com.ddd.application.service.criteriaprogress.StudentCriteriaProgressCommandService;
+import com.ddd.application.service.criteriaprogress.StudentCriteriaProgressQueryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,19 +24,19 @@ public class StudentCriteriaProgressController {
     private final StudentCriteriaProgressCommandService progressCommandService;
     private final StudentCriteriaProgressApiMapper progressApiMapper;
 
-    @GetMapping("")
+    @GetMapping("/me/academic-years/{academicYearId}")
     public BaseResponse<StudentCriteriaProgressResponseDto> getProgress(
             Authentication authentication,
-            @RequestParam(required = false) Long academicYearId) {
+            @PathVariable Long academicYearId) {
         StudentCriteriaProgressDto progress = progressQueryService.getProgress(authentication.getName(), academicYearId);
         return BaseResponse.of(progressApiMapper.toResponseDto(progress));
     }
 
-    @GetMapping("/criteria/{criteriaId}")
+    @GetMapping("/me/criterias/{criteriaId}/academic-years/{academicYearId}")
     public BaseResponse<CriteriaProgressItemResponseDto> getCriteriaProgress(
             Authentication authentication,
             @PathVariable Long criteriaId,
-            @RequestParam(required = false) Long academicYearId) {
+            @PathVariable Long academicYearId) {
         CriteriaProgressItemDto progress = progressQueryService.getCriteriaProgress(
                 authentication.getName(),
                 criteriaId,
@@ -45,16 +45,4 @@ public class StudentCriteriaProgressController {
         return BaseResponse.of(progressApiMapper.toResponseDto(progress));
     }
 
-    @PostMapping("/me")
-    public BaseResponse<Void> setProgress(
-            Authentication authentication,
-            @Valid @RequestBody ManualCriteriaProgressRequestDto request) {
-        progressCommandService.setManualProgress(
-                authentication.getName(),
-                request.criteriaId(),
-                request.academicYearId(),
-                request.note()
-        );
-        return BaseResponse.ok();
-    }
 }
