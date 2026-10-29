@@ -656,31 +656,131 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_roles_updated_at BEFORE UPDATE ON roles FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_schools_updated_at BEFORE UPDATE ON schools FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_majors_updated_at BEFORE UPDATE ON majors FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_associations_updated_at BEFORE UPDATE ON associations FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_user_roles_updated_at BEFORE UPDATE ON user_roles FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_student_profiles_updated_at BEFORE UPDATE ON student_profiles FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_fanpage_admin_profiles_updated_at BEFORE UPDATE ON fanpage_admin_profiles FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_fanpages_updated_at BEFORE UPDATE ON fanpages FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_fanpage_members_updated_at BEFORE UPDATE ON fanpage_members FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_event_types_updated_at BEFORE UPDATE ON event_types FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_criterias_updated_at BEFORE UPDATE ON criterias FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_point_categories_updated_at BEFORE UPDATE ON point_categories FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_semesters_updated_at BEFORE UPDATE ON semesters FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_events_updated_at BEFORE UPDATE ON events FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_event_points_updated_at BEFORE UPDATE ON event_points FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_registrations_updated_at BEFORE UPDATE ON registrations FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_point_transactions_updated_at BEFORE UPDATE ON point_transactions FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_student_semester_points_updated_at BEFORE UPDATE ON student_semester_points FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_refresh_tokens_updated_at BEFORE UPDATE ON refresh_tokens FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_conversations_updated_at BEFORE UPDATE ON conversations FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_messages_updated_at BEFORE UPDATE ON messages FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_notifications_updated_at BEFORE UPDATE ON notifications FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_reports_updated_at BEFORE UPDATE ON reports FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_followings_updated_at BEFORE UPDATE ON followings FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_roles_updated_at
+    BEFORE UPDATE
+    ON roles
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_schools_updated_at
+    BEFORE UPDATE
+    ON schools
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_majors_updated_at
+    BEFORE UPDATE
+    ON majors
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_associations_updated_at
+    BEFORE UPDATE
+    ON associations
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_users_updated_at
+    BEFORE UPDATE
+    ON users
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_user_roles_updated_at
+    BEFORE UPDATE
+    ON user_roles
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_student_profiles_updated_at
+    BEFORE UPDATE
+    ON student_profiles
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_fanpage_admin_profiles_updated_at
+    BEFORE UPDATE
+    ON fanpage_admin_profiles
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_fanpages_updated_at
+    BEFORE UPDATE
+    ON fanpages
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_fanpage_members_updated_at
+    BEFORE UPDATE
+    ON fanpage_members
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_event_types_updated_at
+    BEFORE UPDATE
+    ON event_types
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_criterias_updated_at
+    BEFORE UPDATE
+    ON criterias
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_point_categories_updated_at
+    BEFORE UPDATE
+    ON point_categories
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_semesters_updated_at
+    BEFORE UPDATE
+    ON semesters
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_events_updated_at
+    BEFORE UPDATE
+    ON events
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_event_points_updated_at
+    BEFORE UPDATE
+    ON event_points
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_registrations_updated_at
+    BEFORE UPDATE
+    ON registrations
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_point_transactions_updated_at
+    BEFORE UPDATE
+    ON point_transactions
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_student_semester_points_updated_at
+    BEFORE UPDATE
+    ON student_semester_points
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_refresh_tokens_updated_at
+    BEFORE UPDATE
+    ON refresh_tokens
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_conversations_updated_at
+    BEFORE UPDATE
+    ON conversations
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_messages_updated_at
+    BEFORE UPDATE
+    ON messages
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_notifications_updated_at
+    BEFORE UPDATE
+    ON notifications
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_reports_updated_at
+    BEFORE UPDATE
+    ON reports
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_followings_updated_at
+    BEFORE UPDATE
+    ON followings
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
 
 -- ============================================================
 --  INDEXES

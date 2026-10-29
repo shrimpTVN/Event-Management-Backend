@@ -1,6 +1,7 @@
 package com.ddd.application.service.criteria.impl;
 
 import com.ddd.application.dto.criteria.CriteriaDto;
+import com.ddd.application.dto.criteria.CriteriaTreeNodeDto;
 import com.ddd.application.mapper.CriteriaDtoMapper;
 import com.ddd.application.service.criteria.CriteriaService;
 import com.ddd.domain.enums.CriteriaScopeEnum;
@@ -11,12 +12,19 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class CriteriaServiceImpl implements CriteriaService {
+    private static final Comparator<Criteria> CRITERIA_COMPARATOR =
+            Comparator.comparing(Criteria::getChildrenOrder, Comparator.nullsLast(Integer::compareTo))
+                    .thenComparing(Criteria::getId, Comparator.nullsLast(Long::compareTo));
+
     private final CriteriaRepository criteriaRepository;
     private final CriteriaDtoMapper criteriaDtoMapper;
 
@@ -88,6 +96,51 @@ public class CriteriaServiceImpl implements CriteriaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Criteria not found with id: " + id));
         criteria.setActive(!criteria.isActive());
         criteriaRepository.save(criteria);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CriteriaTreeNodeDto> getCriteriaTree() {
+        List<Criteria> activeCriteria = criteriaRepository.findAllByIsActive(true);
+        Map<Long, List<Criteria>> childrenByParent = activeCriteria.stream()
+                .filter(c -> c.getParentId() != null)
+                .collect(Collectors.groupingBy(Criteria::getParentId));
+
+        List<Criteria> roots = activeCriteria.stream()
+                .filter(c -> c.getParentId() == null)
+                .sorted(CRITERIA_COMPARATOR)
+                .toList();
+
+        // If a single container root exists, resolve its direct children as the top-level main criteria
+        List<Criteria> topLevelCriteria = (roots.size() == 1
+                && childrenByParent.containsKey(roots.get(0).getId())
+                && !childrenByParent.get(roots.get(0).getId()).isEmpty())
+                ? childrenByParent.get(roots.get(0).getId()).stream().sorted(CRITERIA_COMPARATOR).toList()
+                : roots;
+
+        return topLevelCriteria.stream()
+                .map(node -> buildTreeNodeTopDown(node, childrenByParent))
+                .toList();
+    }
+
+    private CriteriaTreeNodeDto buildTreeNodeTopDown(Criteria current,
+                                                     Map<Long, List<Criteria>> childrenByParent) {
+        List<Criteria> childEntities = childrenByParent.getOrDefault(current.getId(), List.of());
+        List<CriteriaTreeNodeDto> children = childEntities.stream()
+                .sorted(CRITERIA_COMPARATOR)
+                .map(child -> buildTreeNodeTopDown(child, childrenByParent))
+                .toList();
+
+        return new CriteriaTreeNodeDto(
+                current.getId(),
+                current.getName(),
+                current.getNote(),
+                current.getScope(),
+                current.getLevel(),
+                current.getChildrenOrder(),
+                current.getRequiredChildren(),
+                children
+        );
     }
 }
 

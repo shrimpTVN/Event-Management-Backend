@@ -1,7 +1,9 @@
 package com.ddd.application.mapper;
 
 import com.ddd.application.dto.criteria.CriteriaDto;
+import com.ddd.application.dto.criteria.CriteriaTransactionInfoDto;
 import com.ddd.domain.model.Criteria;
+import com.ddd.infrastructure.entity.StudentCriteriaTransactionJpaEntity;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -17,6 +19,13 @@ public interface CriteriaDtoMapper {
     @Mapping(source = "active", target = "isActive")
     CriteriaDto toDto(Criteria criteria);
 
+    @Mapping(target="eventName", source="event.name")
+    @Mapping(target="userId", source="user.id")
+    @Mapping(target="criteriaId", source="criteria.id")
+    @Mapping(target="academicYearId", source="academicYear.id")
+    @Mapping(target="eventId", source="event.id")
+    CriteriaTransactionInfoDto toCriteriaTransactionInfoDto(StudentCriteriaTransactionJpaEntity entity);
+
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(source = "isActive", target = "active")
     @Mapping(target = "description", ignore = true)
@@ -26,5 +35,7 @@ public interface CriteriaDtoMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
     void updateEntityFromDto(@MappingTarget Criteria criteria, CriteriaDto dto);
+
+
 }
 

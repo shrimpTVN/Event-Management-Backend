@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Arrays.stream;
+
 @Component
 @RequiredArgsConstructor
 public class CriteriaRepositoryImpl implements CriteriaRepository {
@@ -83,5 +85,13 @@ public class CriteriaRepositoryImpl implements CriteriaRepository {
     @Override
     public boolean hasChildren(Long criteriaId) {
         return criteriaJpaRepository.existsByParentIdAndIsActive(criteriaId, true);
+    }
+
+    @Override
+    public List<Criteria> findAllByIsActive(boolean b) {
+        return criteriaJpaRepository.findAllByIsActive(b, getDefaultSort())
+                .stream()
+                .map(criteriaMapper::toDomain)
+                .toList();
     }
 }

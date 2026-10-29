@@ -18,4 +18,10 @@ public interface StudentCriteriaProgressRepository {
     StudentCriteriaProgress save(StudentCriteriaProgress progress);
 
     List<StudentCriteriaProgress> saveAll(List<StudentCriteriaProgress> progresses);
+
+    boolean existByUserIdAndCriteriaIdAndAcademicYearId(Long userId, Long criteriaId, Long academicYearId);
+
+    List<StudentCriteriaProgress> findAllByUserIdAndAcademicYearId(Long userId, Long academicYearId);
+
+    List<StudentCriteriaProgress> findAllByUserIdsAndAcademicYearId(Collection<Long> userIds, Long academicYearId);
 }

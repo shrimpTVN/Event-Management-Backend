@@ -14,4 +14,6 @@ public interface CriteriaRepository {
     void delete(Criteria criteria);
 
     boolean hasChildren(Long criteriaId);
+
+    List<Criteria> findAllByIsActive(boolean b);
 }
