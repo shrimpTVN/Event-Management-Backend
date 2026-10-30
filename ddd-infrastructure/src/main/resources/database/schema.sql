@@ -539,6 +539,21 @@ CREATE TABLE reports
     CONSTRAINT pk_reports PRIMARY KEY (id)
 );
 
+CREATE TABLE otps
+(
+    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    email      VARCHAR(255) NOT NULL,
+    otp_code   VARCHAR(6)   NOT NULL,
+    expired_at TIMESTAMPTZ NOT NULL,
+    is_used    BOOLEAN     NOT NULL DEFAULT FALSE,
+    isActive   BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by BIGINT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by BIGINT,
+    CONSTRAINT pk_otps PRIMARY KEY (id)
+);
+
 -- ============================================================
 --  FOREIGN KEY CONSTRAINTS
 -- ============================================================
@@ -809,6 +824,13 @@ CREATE TRIGGER trg_stored_events_updated_at
     ON stored_events
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE TRIGGER trg_otps_updated_at
+    BEFORE UPDATE
+    ON otps
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+
 
 -- ============================================================
 --  INDEXES

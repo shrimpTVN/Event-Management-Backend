@@ -12,6 +12,7 @@ import org.springframework.http.ResponseCookie;
 
 public interface AuthService {
     LoginResult login(String email, String password);
+    LoginResult loginWithGoogle(String idToken);
     ResponseCookie getUserCookie(String jwtToken);
     ResponseCookie getLogoutCookie();
     ResponseCookie getRefreshCookie(String rawRefreshToken);
@@ -27,3 +28,4 @@ public interface AuthService {
     TokenRefreshResultDto refreshToken(String rawRefreshToken);
     void logout(String rawRefreshToken);
 }
+

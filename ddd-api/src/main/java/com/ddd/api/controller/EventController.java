@@ -87,8 +87,6 @@ public class EventController {
         return BaseResponse.of(eventInfoPage.map(eventApiMapper::toResponseDto));
     }
 
-
-
     @PutMapping({"/fanpage-member/{id}"})
     public BaseResponse<Void> updateEvent(
             @PathVariable Long id,
