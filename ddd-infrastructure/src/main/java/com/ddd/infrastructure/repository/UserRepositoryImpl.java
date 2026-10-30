@@ -42,7 +42,16 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public User save(User user, Set<String> roleNames) {
-        Set<RoleJpaEntity> roleJpaEntities = roleJpaRepository.findByNameIn(roleNames);
+        java.util.Set<String> searchNames = new java.util.HashSet<>();
+        for (String r : roleNames) {
+            searchNames.add(r);
+            if (r.startsWith("ROLE_")) {
+                searchNames.add(r.substring(5));
+            } else {
+                searchNames.add("ROLE_" + r);
+            }
+        }
+        Set<RoleJpaEntity> roleJpaEntities = roleJpaRepository.findByNameIn(searchNames);
         if (roleJpaEntities.isEmpty()) {
             throw new ResourceAccessException("Roles not found: " + roleNames);
         }
@@ -72,4 +81,14 @@ public class UserRepositoryImpl implements UserRepository {
         return userJpaRepository.findById(userId).map(userMapper::toDomain);
     }
 
+    @Override
+    public User update(User user) {
+        UserJpaEntity existing = userJpaRepository.findById(user.getId())
+                .orElseThrow(() -> new ResourceAccessException("User not found with id: " + user.getId()));
+        existing.setProviderId(user.getProviderId());
+        existing.setPassword(user.getPassword() != null ? user.getPassword() : existing.getPassword());
+        return userMapper.toDomain(userJpaRepository.save(existing));
+    }
+
 }
+

@@ -28,8 +28,11 @@ public class SecurityConstant {
             "/api/auth/register",
             "/api/auth/login",
             "/api/auth/register/fanpage-admin",
+            "/api/auth/send-otp",
+            "/api/auth/verify-otp",
             "/api/auth/refresh-token",
             "/api/auth/logout",
+            "/auth/**",
             "/api/semesters/**",
             "/api/fanpages/**",
             "/api/point-categories/**",
@@ -37,6 +40,8 @@ public class SecurityConstant {
             "/api/criterias/**",
             "/academic-years/**",
             "/api/academic-years/**",
+            "/api/auth/google",
+            "/google-test.html"
     };
 
     public static final String[] SECURE_ENDPOINTS = {

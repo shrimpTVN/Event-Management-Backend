@@ -81,7 +81,6 @@ public class EventCommandServiceImpl implements EventCommandService {
 
         Event event = eventRepository.findById(id);
 
-
         verifyUserFanpageMembership(event.getFanpageId(), email);
 
         event.setStatus(status.name());
