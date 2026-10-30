@@ -33,12 +33,7 @@ public class OtpCommandServiceImpl implements OtpCommandService {
         String otpCode = String.format("%06d", secureRandom.nextInt(1_000_000));
         Instant expiredAt = Instant.now().plus(Duration.ofMinutes(OTP_EXPIRATION_MINUTES));
 
-        Otp otp = new Otp();
-        otp.setEmail(email);
-        otp.setOtpCode(otpCode);
-        otp.setExpiredAt(expiredAt);
-        otp.setIsUsed(false);
-
+        Otp otp = new Otp(email, otpCode, expiredAt, false);
         otpRepository.save(otp);
         emailService.sendOtpEmail(email, otpCode);
 
@@ -52,6 +47,10 @@ public class OtpCommandServiceImpl implements OtpCommandService {
 
         Otp otp = otpRepository.findLatestValidOtp(email)
                 .orElseThrow(() -> new BusinessException("OTP not found or already used."));
+
+        if (otp.getIsUsed()) {
+            throw new BusinessException("OTP has already been used.");
+        }
 
         if (otp.getExpiredAt().isBefore(Instant.now())) {
             throw new BusinessException("OTP has expired. Please resend a new OTP.");

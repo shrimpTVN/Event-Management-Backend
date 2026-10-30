@@ -20,8 +20,6 @@ public class SecurityConstant {
             "/",
             "/swagger-ui/**",
             "/v3/api-docs/**",
-            "/auth/register",
-            "/auth/login",
             "/auth/register/fanpage-admin",
             "/auth/refresh-token",
             "/auth/logout",

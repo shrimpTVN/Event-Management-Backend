@@ -94,7 +94,8 @@ public class AuthController {
     }
 
     @PostMapping("/change-password")
-    public BaseResponse<Void> changePassword(@RequestBody ChangePasswordRequestDto changePasswordRequestDto, Authentication authentication) {
+    public BaseResponse<Void> changePassword(@RequestBody ChangePasswordRequestDto changePasswordRequestDto,
+                                             Authentication authentication) {
         String email = authentication.getName();
         authService.changePassword(changePasswordRequestDto.oldPassword(), changePasswordRequestDto.newPassword(), email);
 

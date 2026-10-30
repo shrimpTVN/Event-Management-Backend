@@ -3,284 +3,609 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google OAuth Test - Get ID Token</title>
+    <title>Auth & OTP Test Sandbox</title>
     <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --success-hover: #059669;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --code-bg: #0b1120;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: #0f172a;
-            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 24px;
         }
-        .card {
-            background: #1e293b;
-            border: 1px solid #334155;
+
+        .container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 16px;
-            padding: 40px;
-            max-width: 760px;
+            padding: 32px;
+            max-width: 860px;
             width: 100%;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
         }
+
+        header {
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+
         h1 {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #f8fafc;
-            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        p.subtitle {
-            color: #94a3b8;
+
+        p.description {
+            color: var(--text-sub);
             font-size: 0.9rem;
-            margin-bottom: 32px;
+            margin-top: 6px;
         }
-        .step {
+
+        /* Tabs */
+        .tabs {
             display: flex;
-            gap: 16px;
-            margin-bottom: 28px;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
         }
-        .step-num {
-            min-width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #3b82f6;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.85rem;
-            flex-shrink: 0;
-        }
-        .step-content h3 {
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
             font-size: 0.95rem;
-            color: #e2e8f0;
-            margin-bottom: 8px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
-        #google-signin-btn {
-            margin-top: 8px;
+
+        .tab-btn.active {
+            background: #1e3a8a;
+            color: #93c5fd;
         }
-        .token-box {
-            background: #0f172a;
-            border: 1px solid #334155;
+
+        .tab-btn:hover:not(.active) {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .config-box {
+            background: #172554;
+            border: 1px solid #1e40af;
             border-radius: 10px;
-            padding: 16px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.78rem;
-            color: #4ade80;
-            word-break: break-all;
-            min-height: 80px;
-            max-height: 180px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            margin-top: 8px;
-            line-height: 1.5;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: #bfdbfe;
         }
-        .token-box.empty {
-            color: #475569;
-            font-style: italic;
+
+        .config-box input {
+            width: 100%;
+            margin-top: 6px;
+            background: var(--code-bg);
+            border: 1px solid #3b82f6;
+            color: #93c5fd;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-family: monospace;
+            font-size: 0.82rem;
+        }
+
+        .flow-step {
+            margin-bottom: 20px;
+            padding: 18px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+        }
+
+        .step-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
+            justify-content: space-between;
         }
-        .copy-btn {
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-pending { background: #475569; color: #cbd5e1; }
+        .badge-success { background: #065f46; color: #6ee7b7; }
+        .badge-error { background: #7f1d1d; color: #fca5a5; }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .input-text {
+            width: 100%;
+            background: var(--code-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-text:focus {
+            border-color: var(--primary);
+        }
+
+        .input-otp {
+            letter-spacing: 8px;
+            font-size: 1.25rem;
+            text-align: center;
+            font-weight: 700;
+            color: #38bdf8;
+            max-width: 260px;
+        }
+
+        .btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
-            margin-top: 10px;
-            padding: 8px 18px;
-            background: #3b82f6;
+            padding: 9px 18px;
+            background: var(--primary);
             color: white;
             border: none;
             border-radius: 8px;
             font-size: 0.85rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
-            font-weight: 600;
+            transition: all 0.2s ease;
         }
-        .copy-btn:hover { background: #2563eb; }
-        .copy-btn:disabled { background: #475569; cursor: not-allowed; }
-        .copy-btn.copied { background: #16a34a; }
-        .postman-hint {
-            background: #172554;
-            border: 1px solid #1e40af;
-            border-radius: 10px;
-            padding: 16px;
-            margin-top: 8px;
-            font-size: 0.82rem;
-            color: #93c5fd;
-        }
-        .postman-hint code {
-            background: #1e3a8a;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            color: #bfdbfe;
-        }
-        .badge-success {
-            display: inline-block;
-            background: #14532d;
-            color: #86efac;
-            padding: 2px 10px;
-            border-radius: 999px;
+
+        .btn:hover:not(:disabled) { background: var(--primary-hover); }
+        .btn:disabled { background: #475569; cursor: not-allowed; opacity: 0.6; }
+        .btn-success { background: var(--success); }
+        .btn-success:hover:not(:disabled) { background: var(--success-hover); }
+
+        .output-box {
+            margin-top: 10px;
+            background: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
             font-size: 0.78rem;
-            font-weight: 600;
-            margin-left: 8px;
+            line-height: 1.5;
+            color: #38bdf8;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
         }
-        .user-info {
-            background: #0f172a;
+
+        .output-box.empty {
+            color: #64748b;
+            font-style: italic;
+        }
+
+        .user-preview {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-top: 12px;
+            padding: 12px;
+            background: #1e293b;
+            border-radius: 8px;
             border: 1px solid #334155;
-            border-radius: 10px;
-            padding: 12px 16px;
-            font-size: 0.84rem;
-            color: #94a3b8;
-            margin-top: 8px;
         }
-        .user-info strong { color: #e2e8f0; }
+
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+        }
+
+        .user-meta h4 { font-size: 0.9rem; color: #f8fafc; }
+        .user-meta p { font-size: 0.8rem; color: var(--text-sub); }
     </style>
 </head>
 <body>
-<div class="card">
-    <h1>🔑 Google OAuth – Lấy ID Token</h1>
-    <p class="subtitle">Trang test để lấy Google ID Token đúng với client_id của bạn, dùng thử API <code style="color:#7dd3fc">/api/auth/google</code></p>
 
-    <!-- Step 1 -->
-    <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-content" style="width:100%">
-            <h3>Đăng nhập bằng Google</h3>
-            <div id="google-signin-btn"></div>
-            <div id="user-info" class="user-info" style="display:none"></div>
-        </div>
+<div class="container">
+    <header>
+        <h1>🔐 Auth & OTP Test Sandbox</h1>
+        <p class="description">Live interactive testing for Google OAuth 2.0 & Email OTP Code Verification.</p>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('otpTab', this)">📧 Email OTP Flow</button>
+        <button class="tab-btn" onclick="switchTab('googleTab', this)">🌐 Google OAuth 2.0 Flow</button>
     </div>
 
-    <!-- Step 2 -->
-    <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-content" style="width:100%">
-            <h3>ID Token <span id="token-badge" style="display:none" class="badge-success">✓ Đã lấy được</span></h3>
-            <div id="token-display" class="token-box empty">Chưa có – hãy đăng nhập Google ở bước 1.</div>
-            <button id="copy-btn" class="copy-btn" disabled onclick="copyToken()">
-                📋 Copy ID Token
-            </button>
-        </div>
-    </div>
-
-    <!-- Step 3 -->
-    <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-content" style="width:100%">
-            <h3>Test API trực tiếp hoặc dùng Postman</h3>
-            <button id="send-api-btn" class="copy-btn" style="background:#059669;margin-bottom:12px" disabled onclick="sendToBackend()">
-                🚀 Gửi request POST /api/auth/google
-            </button>
-            <div id="api-result" style="display:none;background:#022c22;border:1px solid #059669;border-radius:10px;padding:12px;font-family:monospace;font-size:0.8rem;white-space:pre-wrap;color:#6ee7b7;margin-bottom:12px"></div>
-
-            <div class="postman-hint">
-                Hoặc copy token và dán vào Postman: <code>POST http://localhost:8080/api/auth/google</code><br><br>
-                Body → raw → JSON:
-                <pre style="margin-top:8px;color:#bfdbfe">{
-  "idToken": "&lt;paste token vào đây&gt;"
-}</pre>
+    <!-- ========================================== -->
+    <!-- TAB 1: OTP FLOW -->
+    <!-- ========================================== -->
+    <div id="otpTab" class="tab-content active">
+        <!-- Step 1: Request OTP -->
+        <div class="flow-step">
+            <div class="step-title">
+                <span>Step 1: Request OTP Code (<code>POST /api/auth/send-otp</code>)</span>
+                <span id="sendOtpBadge" class="badge badge-pending">Ready</span>
             </div>
+            
+            <div class="form-group">
+                <label for="otpEmailInput">Target Email Address:</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="email" id="otpEmailInput" class="input-text" placeholder="e.g. your-email@gmail.com" />
+                    <button id="sendOtpBtn" class="btn" onclick="handleSendOtp()">📩 Send OTP</button>
+                </div>
+            </div>
+
+            <div id="sendOtpResponse" class="output-box empty" style="display: none;"></div>
+        </div>
+
+        <!-- Step 2: Verify OTP -->
+        <div class="flow-step">
+            <div class="step-title">
+                <span>Step 2: Verify OTP Code (<code>POST /api/auth/verify-otp</code>)</span>
+                <span id="verifyOtpBadge" class="badge badge-pending">Waiting for code</span>
+            </div>
+            
+            <p style="font-size: 0.82rem; color: var(--text-sub); margin-bottom: 12px;">
+                Enter the 6-digit verification code received in your email (code is valid for 5 minutes).
+            </p>
+
+            <div class="form-group">
+                <label for="otpCodeInput">6-Digit OTP Code:</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="otpCodeInput" class="input-text input-otp" maxlength="6" placeholder="000000" />
+                    <button id="verifyOtpBtn" class="btn btn-success" onclick="handleVerifyOtp()">✅ Verify OTP</button>
+                </div>
+            </div>
+
+            <div id="verifyOtpResponse" class="output-box empty" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: GOOGLE OAUTH FLOW -->
+    <!-- ========================================== -->
+    <div id="googleTab" class="tab-content">
+        <!-- Client ID Configuration -->
+        <div class="config-box">
+            <label for="clientIdInput"><strong>Google Client ID:</strong></label>
+            <input type="text" id="clientIdInput" value="160718561900-cjq1bkd7krtp2snvk12mi5mplrki9gff.apps.googleusercontent.com" onchange="initGoogleClient()" />
+        </div>
+
+        <!-- Step 1: Sign in with Google -->
+        <div class="flow-step">
+            <div class="step-title">
+                <span>Step 1: Authenticate with Google</span>
+                <span id="step1Badge" class="badge badge-pending">Waiting for login</span>
+            </div>
+            <div id="googleBtnContainer" style="margin-top: 10px;"></div>
+            
+            <div id="userPreview" class="user-preview" style="display: none;">
+                <img id="userAvatarImg" class="user-avatar" src="" alt="Avatar" />
+                <div class="user-meta">
+                    <h4 id="userNameTxt"></h4>
+                    <p id="userEmailTxt"></p>
+                    <p id="userExpTxt" style="color: #fbbf24;"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Google ID Token Output -->
+        <div class="flow-step">
+            <div class="step-title">
+                <span>Step 2: Captured Google ID Token (JWT)</span>
+                <span id="step2Badge" class="badge badge-pending">No token</span>
+            </div>
+            <div id="tokenOutput" class="output-box empty">Sign in with Google above to obtain the ID Token...</div>
+            <div style="margin-top: 10px; display: flex; gap: 10px;">
+                <button id="copyTokenBtn" class="btn" disabled onclick="copyTokenToClipboard()">📋 Copy Token</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Backend Verification -->
+        <div class="flow-step">
+            <div class="step-title">
+                <span>Step 3: Test Backend Endpoint (<code>POST /api/auth/google</code>)</span>
+                <span id="step3Badge" class="badge badge-pending">Not tested</span>
+            </div>
+            <button id="sendBackendBtn" class="btn btn-success" disabled onclick="testBackendAuthentication()">🚀 Send to Backend</button>
+            <div id="backendResponse" class="output-box empty" style="display: none; margin-top: 12px;"></div>
         </div>
     </div>
 </div>
 
-<script src="https://accounts.google.com/gsi/client" async></script>
+<!-- Google Identity Services SDK -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <script>
-    const CLIENT_ID = '160718561900-cjq1bkd7krtp2snvk12mi5mplrki9gff.apps.googleusercontent.com';
-    let currentToken = '';
-
-    window.onload = function () {
-        google.accounts.id.initialize({
-            client_id: CLIENT_ID,
-            callback: handleCredentialResponse,
-            auto_select: false,
-            cancel_on_tap_outside: true
-        });
-
-        google.accounts.id.renderButton(
-            document.getElementById('google-signin-btn'),
-            {
-                theme: 'filled_blue',
-                size: 'large',
-                text: 'signin_with',
-                shape: 'rectangular',
-                logo_alignment: 'left',
-                width: 280
-            }
-        );
-    };
-
-    function handleCredentialResponse(response) {
-        currentToken = response.credential;
-
-        // Decode payload (không verify – chỉ để hiển thị)
-        const parts = currentToken.split('.');
-        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-
-        // Show user info
-        const userInfo = document.getElementById('user-info');
-        userInfo.style.display = 'block';
-        userInfo.innerHTML = `
-            <strong>Email:</strong> ${payload.email}<br>
-            <strong>Name:</strong> ${payload.name || 'N/A'}<br>
-            <strong>Expires:</strong> ${new Date(payload.exp * 1000).toLocaleTimeString('vi-VN')} 
-            <span style="color:#fbbf24;font-size:0.78rem">(~1 giờ)</span>
-        `;
-
-        // Show token
-        const display = document.getElementById('token-display');
-        display.classList.remove('empty');
-        display.textContent = currentToken;
-
-        // Enable buttons
-        const btn = document.getElementById('copy-btn');
-        btn.disabled = false;
-        const sendBtn = document.getElementById('send-api-btn');
-        if (sendBtn) sendBtn.disabled = false;
-
-        document.getElementById('token-badge').style.display = 'inline-block';
+    // Tab switching
+    function switchTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btn.classList.add('active');
     }
 
-    function copyToken() {
-        if (!currentToken) return;
-        navigator.clipboard.writeText(currentToken).then(() => {
-            const btn = document.getElementById('copy-btn');
-            btn.textContent = '✅ Đã copy!';
-            btn.classList.add('copied');
-            setTimeout(() => {
-                btn.textContent = '📋 Copy ID Token';
-                btn.classList.remove('copied');
-            }, 2500);
-        });
-    }
+    // ==========================================
+    // OTP Handlers
+    // ==========================================
+    async function handleSendOtp() {
+        const emailInput = document.getElementById('otpEmailInput');
+        const email = emailInput.value.trim();
+        const resBox = document.getElementById('sendOtpResponse');
+        const badge = document.getElementById('sendOtpBadge');
+        const sendBtn = document.getElementById('sendOtpBtn');
 
-    async function sendToBackend() {
-        if (!currentToken) return;
-        const resultBox = document.getElementById('api-result');
-        resultBox.style.display = 'block';
-        resultBox.textContent = '⏳ Đang gửi request tới /api/auth/google...';
+        if (!email) {
+            alert('Please enter a valid email address.');
+            emailInput.focus();
+            return;
+        }
+
+        resBox.style.display = 'block';
+        resBox.classList.remove('empty');
+        resBox.textContent = `⏳ Sending OTP to ${email}...`;
+        badge.className = 'badge badge-pending';
+        badge.textContent = 'Sending...';
+        sendBtn.disabled = true;
+
         try {
-            const res = await fetch('/api/auth/google', {
+            const response = await fetch('/api/auth/send-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: currentToken })
+                body: JSON.stringify({ email: email })
             });
-            const data = await res.json();
-            resultBox.style.background = res.ok ? '#022c22' : '#450a0a';
-            resultBox.style.borderColor = res.ok ? '#059669' : '#dc2626';
-            resultBox.style.color = res.ok ? '#6ee7b7' : '#fca5a5';
-            resultBox.textContent = `Status: ${res.status} ${res.statusText}\n\nResponse:\n${JSON.stringify(data, null, 2)}`;
-        } catch (err) {
-            resultBox.style.background = '#450a0a';
-            resultBox.style.borderColor = '#dc2626';
-            resultBox.style.color = '#fca5a5';
-            resultBox.textContent = `Error: ${err.message}`;
+
+            const data = await response.json();
+            resBox.textContent = `HTTP ${response.status} ${response.statusText}\n\n` + JSON.stringify(data, null, 2);
+
+            if (response.ok) {
+                resBox.style.color = '#34d399';
+                badge.className = 'badge badge-success';
+                badge.textContent = 'Sent Successfully';
+                // Focus on OTP input
+                document.getElementById('otpCodeInput').focus();
+            } else {
+                resBox.style.color = '#f87171';
+                badge.className = 'badge badge-error';
+                badge.textContent = `Failed (${response.status})`;
+            }
+        } catch (error) {
+            resBox.style.color = '#f87171';
+            resBox.textContent = 'Fetch failed: ' + error.message;
+            badge.className = 'badge badge-error';
+            badge.textContent = 'Network Error';
+        } finally {
+            sendBtn.disabled = false;
+        }
+    }
+
+    async function handleVerifyOtp() {
+        const email = document.getElementById('otpEmailInput').value.trim();
+        const otpCodeInput = document.getElementById('otpCodeInput');
+        const otpCode = otpCodeInput.value.trim();
+        const resBox = document.getElementById('verifyOtpResponse');
+        const badge = document.getElementById('verifyOtpBadge');
+        const verifyBtn = document.getElementById('verifyOtpBtn');
+
+        if (!email) {
+            alert('Please enter your email in Step 1 first.');
+            document.getElementById('otpEmailInput').focus();
+            return;
+        }
+
+        if (!otpCode || otpCode.length !== 6) {
+            alert('Please enter a 6-digit OTP code.');
+            otpCodeInput.focus();
+            return;
+        }
+
+        resBox.style.display = 'block';
+        resBox.classList.remove('empty');
+        resBox.textContent = `⏳ Verifying code ${otpCode} for ${email}...`;
+        badge.className = 'badge badge-pending';
+        badge.textContent = 'Verifying...';
+        verifyBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/auth/verify-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, otpCode: otpCode })
+            });
+
+            const data = await response.json();
+            resBox.textContent = `HTTP ${response.status} ${response.statusText}\n\n` + JSON.stringify(data, null, 2);
+
+            if (response.ok) {
+                resBox.style.color = '#34d399';
+                badge.className = 'badge badge-success';
+                badge.textContent = 'OTP Verified ✓';
+            } else {
+                resBox.style.color = '#f87171';
+                badge.className = 'badge badge-error';
+                badge.textContent = `Verification Failed (${response.status})`;
+            }
+        } catch (error) {
+            resBox.style.color = '#f87171';
+            resBox.textContent = 'Fetch failed: ' + error.message;
+            badge.className = 'badge badge-error';
+            badge.textContent = 'Network Error';
+        } finally {
+            verifyBtn.disabled = false;
+        }
+    }
+
+    // ==========================================
+    // Google OAuth Handlers
+    // ==========================================
+    let capturedIdToken = '';
+
+    window.onload = function () {
+        initGoogleClient();
+    };
+
+    function initGoogleClient() {
+        const clientId = document.getElementById('clientIdInput').value.trim();
+        if (!clientId) return;
+
+        if (window.google && google.accounts && google.accounts.id) {
+            google.accounts.id.initialize({
+                client_id: clientId,
+                callback: handleCredentialResponse,
+                auto_select: false,
+                cancel_on_tap_outside: true
+            });
+
+            google.accounts.id.renderButton(
+                document.getElementById('googleBtnContainer'),
+                {
+                    theme: 'filled_blue',
+                    size: 'large',
+                    text: 'signin_with',
+                    shape: 'rectangular',
+                    logo_alignment: 'left',
+                    width: 280
+                }
+            );
+        } else {
+            setTimeout(initGoogleClient, 200);
+        }
+    }
+
+    function handleCredentialResponse(response) {
+        capturedIdToken = response.credential;
+
+        try {
+            const base64Url = capturedIdToken.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const payload = JSON.parse(decodeURIComponent(escape(window.atob(base64))));
+
+            document.getElementById('userAvatarImg').src = payload.picture || 'https://via.placeholder.com/44';
+            document.getElementById('userNameTxt').textContent = payload.name || 'Anonymous User';
+            document.getElementById('userEmailTxt').textContent = payload.email || 'No email';
+            document.getElementById('userExpTxt').textContent = 'Token Exp: ' + new Date(payload.exp * 1000).toLocaleTimeString();
+            document.getElementById('userPreview').style.display = 'flex';
+
+            document.getElementById('step1Badge').className = 'badge badge-success';
+            document.getElementById('step1Badge').textContent = 'Authenticated';
+
+            // Also prefill email in the OTP tab for convenience
+            if (payload.email) {
+                document.getElementById('otpEmailInput').value = payload.email;
+            }
+        } catch (e) {
+            console.error('Failed to parse ID Token payload', e);
+        }
+
+        const tokenBox = document.getElementById('tokenOutput');
+        tokenBox.classList.remove('empty');
+        tokenBox.textContent = capturedIdToken;
+
+        document.getElementById('step2Badge').className = 'badge badge-success';
+        document.getElementById('step2Badge').textContent = 'Token Ready';
+        document.getElementById('copyTokenBtn').disabled = false;
+        document.getElementById('sendBackendBtn').disabled = false;
+    }
+
+    function copyTokenToClipboard() {
+        if (!capturedIdToken) return;
+        navigator.clipboard.writeText(capturedIdToken).then(() => {
+            const btn = document.getElementById('copyTokenBtn');
+            const originalText = btn.textContent;
+            btn.textContent = '✅ Copied!';
+            setTimeout(() => { btn.textContent = originalText; }, 2000);
+        });
+    }
+
+    async function testBackendAuthentication() {
+        if (!capturedIdToken) return;
+        const resBox = document.getElementById('backendResponse');
+        const badge = document.getElementById('step3Badge');
+        resBox.style.display = 'block';
+        resBox.classList.remove('empty');
+        resBox.textContent = '⏳ Sending POST /api/auth/google...';
+        badge.className = 'badge badge-pending';
+        badge.textContent = 'Testing...';
+
+        try {
+            const response = await fetch('/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: capturedIdToken })
+            });
+
+            const data = await response.json();
+            resBox.textContent = `HTTP ${response.status} ${response.statusText}\n\n` + JSON.stringify(data, null, 2);
+
+            if (response.ok) {
+                resBox.style.color = '#34d399';
+                badge.className = 'badge badge-success';
+                badge.textContent = 'HTTP 200 OK';
+            } else {
+                resBox.style.color = '#f87171';
+                badge.className = 'badge badge-error';
+                badge.textContent = `Error ${response.status}`;
+            }
+        } catch (error) {
+            resBox.style.color = '#f87171';
+            resBox.textContent = 'Fetch failed: ' + error.message;
+            badge.className = 'badge badge-error';
+            badge.textContent = 'Network Error';
         }
     }
 </script>
+
 </body>
 </html>
