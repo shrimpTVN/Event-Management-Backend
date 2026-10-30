@@ -28,8 +28,6 @@ public class StoredEventQueryServiceImpl implements StoredEventQueryService {
 
     @Override
     public StoredEventStatusDto isEventStored(Long eventId, String email) {
-        log.info("Checking stored status for event id: {} by user email: {}", eventId, email);
-
         User user = userRepository.findByEmail(email);
         if (user == null) {
             throw new ResourceNotFoundException("User not found with email: " + email);
@@ -41,8 +39,6 @@ public class StoredEventQueryServiceImpl implements StoredEventQueryService {
 
     @Override
     public Page<EventInfoDto> getStoredEvents(String email, Pageable pageable) {
-        log.info("Fetching stored events for user email: {}", email);
-
         User user = userRepository.findByEmail(email);
         if (user == null) {
             throw new ResourceNotFoundException("User not found with email: " + email);

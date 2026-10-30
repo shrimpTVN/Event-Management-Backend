@@ -26,8 +26,6 @@ public class StoredEventCommandServiceImpl implements StoredEventCommandService 
     @Override
     @Transactional
     public void storeEvent(Long eventId, String email) {
-        log.info("Storing event id: {} for user email: {}", eventId, email);
-
         User user = userRepository.findByEmail(email);
         if (user == null) {
             throw new ResourceNotFoundException("User not found with email: " + email);
@@ -51,8 +49,6 @@ public class StoredEventCommandServiceImpl implements StoredEventCommandService 
     @Override
     @Transactional
     public void unstoreEvent(Long eventId, String email) {
-        log.info("Unstoring event id: {} for user email: {}", eventId, email);
-
         User user = userRepository.findByEmail(email);
         if (user == null) {
             throw new ResourceNotFoundException("User not found with email: " + email);
