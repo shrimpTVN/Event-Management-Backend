@@ -23,5 +23,7 @@ public interface EventApiMapper {
 
     EventResponseDto toResponseDto(EventInfoDto eventInfoDto);
 
+    com.ddd.api.dto.event.res.StoredEventStatusResponseDto toStoredStatusResponseDto(StoredEventStatusDto dto);
+
     EventSearchCriteriaDto toEventSearchCriteriaDto(EventFilterRequestDto request);
 }
