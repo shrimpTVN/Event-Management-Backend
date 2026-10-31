@@ -25,6 +25,7 @@ public class SecurityConstant {
             "/auth/logout",
             "/api/auth/register",
             "/api/auth/login",
+            "/api/auth/login/google",
             "/api/auth/register/fanpage-admin",
             "/api/auth/send-otp",
             "/api/auth/verify-otp",
@@ -38,7 +39,6 @@ public class SecurityConstant {
             "/api/criterias/**",
             "/academic-years/**",
             "/api/academic-years/**",
-            "/api/auth/google",
             "/google-test.html"
     };
 

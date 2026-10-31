@@ -356,7 +356,7 @@
         <!-- Step 3: Backend Verification -->
         <div class="flow-step">
             <div class="step-title">
-                <span>Step 3: Test Backend Endpoint (<code>POST /api/auth/google</code>)</span>
+                <span>Step 3: Test Backend Endpoint (<code>POST /api/auth/login/google</code>)</span>
                 <span id="step3Badge" class="badge badge-pending">Not tested</span>
             </div>
             <button id="sendBackendBtn" class="btn btn-success" disabled onclick="testBackendAuthentication()">🚀 Send to Backend</button>
@@ -575,12 +575,12 @@
         const badge = document.getElementById('step3Badge');
         resBox.style.display = 'block';
         resBox.classList.remove('empty');
-        resBox.textContent = '⏳ Sending POST /api/auth/google...';
+        resBox.textContent = '⏳ Sending POST /api/auth/login/google...';
         badge.className = 'badge badge-pending';
         badge.textContent = 'Testing...';
 
         try {
-            const response = await fetch('/api/auth/google', {
+            const response = await fetch('/api/auth/login/google', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ idToken: capturedIdToken })

@@ -28,7 +28,7 @@ public class UserJpaEntity extends BaseEntityJpa {
     private String password;
 
     @Column(name = "provider_id", length = 255)
-    private String providerId="";
+    private String providerId;
 
     @Size(max = 100)
     @Column(name = "first_name", length = 100)

@@ -102,7 +102,7 @@ public class AuthController {
         return BaseResponse.ok();
     }
 
-    @PostMapping("/google")
+    @PostMapping("/login/google")
     public ResponseEntity<BaseResponse<LoginResponseDto>> loginWithGoogle(
             @RequestBody @Valid GoogleLoginRequestDto requestDto) {
         LoginResult loginResult = authService.loginWithGoogle(requestDto.idToken());
