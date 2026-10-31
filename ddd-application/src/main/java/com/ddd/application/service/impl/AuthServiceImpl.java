@@ -99,64 +99,25 @@ public class AuthServiceImpl implements AuthService {
         // 1. Verify Google ID Token and extract user info
         GoogleUserInfo googleUserInfo = googleTokenVerifier.verifyToken(idToken);
         String email = googleUserInfo.email();
-
-        // 2. Find or create the user
         User user = userRepository.findByEmail(email);
+
         if (user == null) {
-            log.info("New Google user: {} — auto-registering", email);
-            UserDto newUserDto = new UserDto(
-                    email,
-                    null,
-                    googleUserInfo.googleId(),
-                    googleUserInfo.firstName(),
-                    googleUserInfo.lastName(),
-                    null
-            );
-            Long newUserId = userCommandService.createUser(newUserDto, RoleEnum.STUDENT.name());
-
-            studentProfileCommandService.createGoogleStudentProfile(
-                    googleUserInfo.firstName(),
-                    googleUserInfo.lastName(),
-                    googleUserInfo.pictureUrl(),
-                    newUserId
-            );
-
-            user = userRepository.findByEmail(email);
-            if (user != null && googleUserInfo.pictureUrl() != null) {
-                user.setAvatarUrl(googleUserInfo.pictureUrl());
-                userRepository.update(user);
-            }
-        } else {
-            studentProfileCommandService.createGoogleStudentProfile(
-                    googleUserInfo.firstName(),
-                    googleUserInfo.lastName(),
-                    googleUserInfo.pictureUrl(),
-                    user.getId()
-            );
-            if (googleUserInfo.pictureUrl() != null && (user.getAvatarUrl() == null || user.getAvatarUrl().isBlank())) {
-                user.setAvatarUrl(googleUserInfo.pictureUrl());
-                userRepository.update(user);
-            }
+            throw new ResourceNotFoundException("User not found with email: " + email);
         }
 
-        // 3. Update providerId if not already set
         if (user.getProviderId() == null || user.getProviderId().isBlank()) {
             user.setProviderId(googleUserInfo.googleId());
             userRepository.update(user);
         }
 
-        // 4. Generate JWT & refresh token
+        log.info("Google user:{} logged in successfully", email);
         String jwtToken = jwtUtil.generateJwtTokenFromUser(user);
         String rawRefreshToken = createAndSaveRefreshToken(user.getId());
-
-        log.info("Google user:{} logged in successfully", email);
-
         LoginDto loginDto = new LoginDto(
                 user.getId(),
                 user.getEmail(),
                 user.getRoleNames()
         );
-
         return new LoginResult(loginDto, jwtToken, rawRefreshToken);
     }
 
@@ -262,4 +223,5 @@ public class AuthServiceImpl implements AuthService {
     public String extractRefreshToken(jakarta.servlet.http.HttpServletRequest request) {
         return jwtUtil.extractRefreshToken(request);
     }
+
 }

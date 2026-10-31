@@ -72,7 +72,7 @@ CREATE TABLE users
     id          BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
     email       VARCHAR(255) NOT NULL UNIQUE,
     password    VARCHAR(255),
-    provider_id VARCHAR(255)          DEFAULT '',
+    provider_id VARCHAR(255),
     first_name  VARCHAR(100),
     last_name   VARCHAR(100),
     gender      VARCHAR(10)           DEFAULT 'OTHER',
@@ -541,15 +541,15 @@ CREATE TABLE reports
 
 CREATE TABLE otps
 (
-    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    id         BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
     email      VARCHAR(255) NOT NULL,
     otp_code   VARCHAR(6)   NOT NULL,
-    expired_at TIMESTAMPTZ NOT NULL,
-    is_used    BOOLEAN     NOT NULL DEFAULT FALSE,
-    isActive   BOOLEAN     NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expired_at TIMESTAMPTZ  NOT NULL,
+    is_used    BOOLEAN      NOT NULL DEFAULT FALSE,
+    isActive   BOOLEAN      NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_by BIGINT,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_by BIGINT,
     CONSTRAINT pk_otps PRIMARY KEY (id)
 );

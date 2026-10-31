@@ -166,21 +166,5 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String generateJwtTokenForUser(UserDetailsCustom userDetails) {
-        String roles = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
-
-        return Jwts.builder()
-                .issuer("ddd-application")
-                .subject("JWT Token")
-                .claim("username", userDetails.getUsername())
-                .claim("userId", userDetails.getUserId())
-                .claim("roles", roles)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + getExpirationMs()))
-                .signWith(getSecretKey())
-                .compact();
-    }
 }
 
