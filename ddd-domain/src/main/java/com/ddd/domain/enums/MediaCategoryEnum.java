@@ -1,11 +1,11 @@
-package com.ddd.application.enums;
+package com.ddd.domain.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum MediaCategory {
+public enum MediaCategoryEnum {
     AVATAR("avatars"),
     FANPAGE("fanpages"),
     EVENT("events"),

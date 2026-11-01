@@ -12,10 +12,10 @@ public record CloudinaryProperties(
 ) {
     public CloudinaryProperties {
         if (folderPrefix == null || folderPrefix.isBlank()) {
-            folderPrefix = "event-management";
+            folderPrefix = "ctu-event";
         }
         if (uploadPreset == null || uploadPreset.isBlank()) {
-            uploadPreset = "upload-EventManagemen";
+            uploadPreset = "upload-CTUEvent";
         }
     }
 }

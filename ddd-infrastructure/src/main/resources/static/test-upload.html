@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Upload API Tester (Direct & Presigned)</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 30px 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 850px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #0f172a;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+
+        .section {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 18px;
+            margin-bottom: 20px;
+            background: #ffffff;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-weight: 500;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        @media (max-width: 640px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #334155;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 9px 12px;
+            font-size: 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+        }
+
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8fafc;
+        }
+
+        .drop-zone:hover {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .preview-container {
+            margin-top: 15px;
+            display: none;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: #f8fafc;
+        }
+
+        .preview-img {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: contain;
+            border-radius: 4px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.15s;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .step-item.active {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .step-item.done {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .log-box {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 14px;
+            border-radius: 6px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            max-height: 260px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-top: 12px;
+        }
+
+        .result-card {
+            display: none;
+            margin-top: 16px;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #bbf7d0;
+            background: #f0fdf4;
+        }
+
+        .result-img-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 6px;
+            margin-top: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 Image Upload API Tester</h1>
+    <p class="subtitle">Test both Presigned Direct Upload (Approach 2) and Direct Backend Upload (Approach 1)</p>
+
+    <!-- Configuration Section -->
+    <div class="section">
+        <div class="section-title">
+            <span>⚙️ API Configuration</span>
+        </div>
+        <div class="grid">
+            <div class="form-group">
+                <label for="apiUrl">Backend Base URL</label>
+                <input type="text" id="apiUrl" value="http://localhost:8080" placeholder="e.g. http://localhost:8080">
+            </div>
+            <div class="form-group">
+                <label for="jwtToken">Bearer Token (JWT - Optional if public/cookies)</label>
+                <input type="text" id="jwtToken" placeholder="Paste Bearer token here (without 'Bearer ')">
+            </div>
+        </div>
+    </div>
+
+    <!-- Presigned Upload Flow -->
+    <div class="section">
+        <div class="section-title">
+            <span>⚡ Approach 2: Presigned Direct Upload (Industry Standard)</span>
+            <span class="badge">Recommended</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
+            Step 1: Frontend asks backend for a signed ticket (<code>POST /media/presign</code>).<br>
+            Step 2: Frontend streams binary file directly to Cloudinary CDN edge. Zero backend RAM/bandwidth used.
+        </p>
+
+        <div class="grid">
+            <div class="form-group">
+                <label for="category">Media Category</label>
+                <select id="category">
+                    <option value="AVATAR">AVATAR (avatars/)</option>
+                    <option value="EVENT">EVENT (events/)</option>
+                    <option value="FANPAGE">FANPAGE (fanpages/)</option>
+                    <option value="EVIDENCE">EVIDENCE (evidence/)</option>
+                    <option value="CERTIFICATE">CERTIFICATE (certificates/)</option>
+                    <option value="GENERAL" selected>GENERAL (general/)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="fileInput">Choose Image</label>
+                <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display: none;">
+                <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                    📁 Click or drag an image here (PNG, JPG, WEBP, GIF)
+                </div>
+            </div>
+        </div>
+
+        <div class="preview-container" id="previewContainer">
+            <img id="previewImg" class="preview-img" alt="Preview">
+            <div style="font-size: 0.85rem;">
+                <div id="previewName" style="font-weight: 600;"></div>
+                <div id="previewSize" style="color: var(--text-muted);"></div>
+            </div>
+        </div>
+
+        <div style="margin-top: 16px;">
+            <button class="btn" id="uploadPresignedBtn" onclick="runPresignedUpload()" disabled>
+                Upload via Presigned Signature
+            </button>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="steps" id="stepsList" style="display: none;">
+            <div class="step-item" id="step1">⏳ 1. Requesting signature from backend (POST /media/presign)...</div>
+            <div class="step-item" id="step2">⏳ 2. Uploading binary directly to Cloudinary CDN...</div>
+            <div class="step-item" id="step3">⏳ 3. Finished!</div>
+        </div>
+
+        <!-- Result Card -->
+        <div class="result-card" id="resultCard">
+            <h3 style="color: #166534; font-size: 1rem; margin-bottom: 8px;">✅ Upload Succeeded!</h3>
+            <p style="font-size: 0.85rem; margin-bottom: 6px;"><strong>Public ID:</strong> <span id="resPublicId"></span></p>
+            <p style="font-size: 0.85rem; margin-bottom: 6px;"><strong>Secure URL:</strong> <a id="resUrl" href="#" target="_blank" style="color: #2563eb; word-break: break-all;"></a></p>
+            <p style="font-size: 0.85rem; margin-bottom: 6px;"><strong>Dimensions:</strong> <span id="resDimensions"></span></p>
+            <img id="resImg" class="result-img-preview" alt="Uploaded Result">
+        </div>
+    </div>
+
+    <!-- Deletion Section -->
+    <div class="section">
+        <div class="section-title">
+            <span>🗑️ Delete Image API</span>
+        </div>
+        <div class="grid" style="align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="deletePublicId">Public ID to Delete</label>
+                <input type="text" id="deletePublicId" placeholder="e.g. event-management/general/u_1_xyz">
+            </div>
+            <div>
+                <button class="btn btn-danger" onclick="deleteImage()">Delete from Cloudinary</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs -->
+    <div class="section">
+        <div class="section-title">
+            <span>📋 Activity & Network Logs</span>
+        </div>
+        <div class="log-box" id="logBox">Logs will appear here...</div>
+    </div>
+</div>
+
+<script>
+    let selectedFile = null;
+
+    // File selection & drag-and-drop
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const previewContainer = document.getElementById('previewContainer');
+    const previewImg = document.getElementById('previewImg');
+    const previewName = document.getElementById('previewName');
+    const previewSize = document.getElementById('previewSize');
+    const uploadPresignedBtn = document.getElementById('uploadPresignedBtn');
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#3b82f6';
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.style.borderColor = '#cbd5e1';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#cbd5e1';
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    function handleFile(file) {
+        selectedFile = file;
+        previewName.innerText = file.name;
+        previewSize.innerText = `${(file.size / 1024).toFixed(1)} KB | ${file.type}`;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImg.src = e.target.result;
+            previewContainer.style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+
+        uploadPresignedBtn.disabled = false;
+        log(`Selected file: ${file.name} (${file.size} bytes, type: ${file.type})`);
+    }
+
+    function log(message, data) {
+        const box = document.getElementById('logBox');
+        const timestamp = new Date().toLocaleTimeString();
+        let formatted = `[${timestamp}] ${message}`;
+        if (data) {
+            formatted += `\n` + (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+        }
+        box.textContent = formatted + `\n\n` + box.textContent;
+    }
+
+    function getAuthHeaders() {
+        const token = document.getElementById('jwtToken').value.trim();
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (token) {
+            headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+        }
+        return headers;
+    }
+
+    // Step-by-step presigned direct upload flow
+    async function runPresignedUpload() {
+        if (!selectedFile) {
+            alert('Please select an image first!');
+            return;
+        }
+
+        const baseUrl = document.getElementById('apiUrl').value.replace(/\/+$/, '');
+        const category = document.getElementById('category').value;
+        const fileExt = selectedFile.name.split('.').pop();
+
+        const stepsList = document.getElementById('stepsList');
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        const resultCard = document.getElementById('resultCard');
+
+        stepsList.style.display = 'flex';
+        resultCard.style.display = 'none';
+        step1.className = 'step-item active';
+        step2.className = 'step-item';
+        step3.className = 'step-item';
+        uploadPresignedBtn.disabled = true;
+
+        try {
+            // STEP 1: Ask Backend for presigned ticket
+            log(`STEP 1: Requesting signature from backend -> POST ${baseUrl}/media/presign`);
+            const presignPayload = {
+                category: category,
+                fileExtension: fileExt
+            };
+
+            const presignResponse = await fetch(`${baseUrl}/media/presign`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify(presignPayload)
+            });
+
+            if (!presignResponse.ok) {
+                const errText = await presignResponse.text();
+                throw new Error(`Presign failed (${presignResponse.status}): ${errText}`);
+            }
+
+            const presignResult = await presignResponse.json();
+            log('Presign Response received from Backend:', presignResult);
+
+            // Handle BaseResponse wrapper if present (data field)
+            const signData = presignResult.data || presignResult;
+
+            step1.className = 'step-item done';
+            step1.innerHTML = '✅ 1. Signature received from backend';
+            step2.className = 'step-item active';
+
+            // STEP 2: Upload direct to Cloudinary CDN edge
+            log(`STEP 2: Uploading directly to Cloudinary -> POST ${signData.uploadUrl}`);
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('api_key', signData.apiKey);
+            formData.append('timestamp', signData.timestamp);
+            formData.append('signature', signData.signature);
+            formData.append('folder', signData.folder);
+            if (signData.publicId) {
+                formData.append('public_id', signData.publicId);
+            }
+
+            const cloudResponse = await fetch(signData.uploadUrl, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!cloudResponse.ok) {
+                const cloudErr = await cloudResponse.text();
+                throw new Error(`Cloudinary upload failed (${cloudResponse.status}): ${cloudErr}`);
+            }
+
+            const cloudResult = await cloudResponse.json();
+            log('Cloudinary Upload Success Response:', cloudResult);
+
+            step2.className = 'step-item done';
+            step2.innerHTML = '✅ 2. File uploaded directly to Cloudinary';
+            step3.className = 'step-item done';
+            step3.innerHTML = '🎉 3. Complete! Zero bytes went through backend!';
+
+            // Display results
+            document.getElementById('resPublicId').textContent = cloudResult.public_id;
+            document.getElementById('resUrl').href = cloudResult.secure_url;
+            document.getElementById('resUrl').textContent = cloudResult.secure_url;
+            document.getElementById('resDimensions').textContent = `${cloudResult.width} x ${cloudResult.height} px (${(cloudResult.bytes / 1024).toFixed(1)} KB, ${cloudResult.format})`;
+            document.getElementById('resImg').src = cloudResult.secure_url;
+            resultCard.style.display = 'block';
+
+            // Auto-fill publicId into Delete input
+            document.getElementById('deletePublicId').value = cloudResult.public_id;
+
+        } catch (err) {
+            log('❌ ERROR:', err.message);
+            alert(`Error: ${err.message}`);
+        } finally {
+            uploadPresignedBtn.disabled = false;
+        }
+    }
+
+    // Delete Image Flow
+    async function deleteImage() {
+        const publicId = document.getElementById('deletePublicId').value.trim();
+        if (!publicId) {
+            alert('Please enter a publicId to delete!');
+            return;
+        }
+
+        const baseUrl = document.getElementById('apiUrl').value.replace(/\/+$/, '');
+        const token = document.getElementById('jwtToken').value.trim();
+        const headers = {};
+        if (token) {
+            headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+        }
+
+        log(`Deleting image: DELETE ${baseUrl}/media?publicId=${encodeURIComponent(publicId)}`);
+
+        try {
+            const response = await fetch(`${baseUrl}/media?publicId=${encodeURIComponent(publicId)}`, {
+                method: 'DELETE',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                const err = await response.text();
+                throw new Error(`Delete failed (${response.status}): ${err}`);
+            }
+
+            const resJson = await response.json().catch(() => ({}));
+            log('✅ Image successfully deleted!', resJson);
+            alert('Image deleted successfully!');
+        } catch (err) {
+            log('❌ Delete Error:', err.message);
+            alert(`Delete Error: ${err.message}`);
+        }
+    }
+</script>
+
+</body>
+</html>
