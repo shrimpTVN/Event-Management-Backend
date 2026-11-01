@@ -10,5 +10,6 @@ public record SemesterResponseDto(Integer number,
         LocalDate startDate,
         LocalDate endDate,
         SemesterStatusEnum status,
-        Long id) implements Serializable {
+        Long id,
+        Long academicYearId) implements Serializable {
 }

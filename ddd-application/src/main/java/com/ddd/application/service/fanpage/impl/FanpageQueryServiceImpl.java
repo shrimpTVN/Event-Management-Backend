@@ -22,6 +22,9 @@ import com.ddd.infrastructure.repository.jpaRepository.FanpageJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.FanpageMemberJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.RegistrationJpaRepository;
 import com.ddd.infrastructure.repository.specification.FanpageSpecification;
+import com.ddd.application.dto.fanpage.FanpageFollowCountDto;
+import com.ddd.domain.enums.FollowingStatusEnum;
+import com.ddd.infrastructure.repository.jpaRepository.FollowingJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +48,7 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
     private final FanpageRepository fanpageRepository;
     private final FanpageMemberRepository fanpageMemberRepository;
     private final UserRepository userRepository;
+    private final FollowingJpaRepository followingJpaRepository;
 
     @Override
     public List<FanpageMemberDto> getMembersOfFanpage(Long fanpageId) {
@@ -103,5 +107,48 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
 
         List<Fanpage> fanpages = fanpageRepository.findAllByIdsAndIsActive(managedFanpageIds, true);
         return fanpages.stream().map(fanpageDtoMapper::toInfoDto).toList();
+    }
+
+    @Override
+    public FanpageFollowCountDto getFollowerCount(Long fanpageId, String currentUserEmail) {
+        Fanpage fanpage = fanpageRepository.findByIdAndIsActive(fanpageId, true)
+                .orElseThrow(() -> new ResourceNotFoundException("Fanpage not found with id: " + fanpageId));
+
+        long count = followingJpaRepository.countByFanpage_IdAndFolStatusAndIsActive(
+                fanpageId,
+                FollowingStatusEnum.FOLLOWING,
+                true
+        );
+
+        Boolean isFollowing = null;
+        if (currentUserEmail != null && !currentUserEmail.isBlank()) {
+            User user = userRepository.findByEmail(currentUserEmail);
+            if (user != null) {
+                isFollowing = followingJpaRepository.existsByFanpage_IdAndUser_IdAndFolStatusAndIsActive(
+                        fanpageId,
+                        user.getId(),
+                        FollowingStatusEnum.FOLLOWING,
+                        true
+                );
+            }
+        }
+
+        return new FanpageFollowCountDto(fanpageId, count, isFollowing);
+    }
+
+    @Override
+    public Page<FanpageInfoDto> getFollowingFanpages(String currentUserEmail, Pageable pageable) {
+        User user = userRepository.findByEmail(currentUserEmail);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        Page<FanpageJpaEntity> fanpages = followingJpaRepository.findFollowingFanpagesByUserIdAndStatus(
+                user.getId(),
+                FollowingStatusEnum.FOLLOWING,
+                pageable
+        );
+
+        return fanpages.map(fanpageDtoMapper::toInfoDto);
     }
 }

@@ -14,6 +14,8 @@ public record CriteriaRequestDto(
         @NotNull
         @Positive(message = "Criteria level must be a positive integer")
         Integer childrenOrder,
+        @Positive(message = "Required children must be positive")
+        Integer requiredChildren,
         Long parentId
 ) {
     // Deprecated alias for backwards-compatibility

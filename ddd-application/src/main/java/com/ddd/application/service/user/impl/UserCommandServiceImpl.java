@@ -48,7 +48,9 @@ public class UserCommandServiceImpl implements UserCommandService {
         }
 
         var user = userDtoMapper.toUser(userDto);
-        user.setPassword(passwordEncoder.encode(userDto.password()));
+        if (userDto.password() != null && !userDto.password().isBlank()) {
+            user.setPassword(passwordEncoder.encode(userDto.password()));
+        }
         User savedUser = userRepository.save(user, roleNames);
         return savedUser.getId();
     }

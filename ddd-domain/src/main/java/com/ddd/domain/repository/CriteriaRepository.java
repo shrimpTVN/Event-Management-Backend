@@ -12,4 +12,8 @@ public interface CriteriaRepository {
     List<Criteria> findByParentId(Long parentId);
     List<Criteria> findByLevel(Integer level);
     void delete(Criteria criteria);
+
+    boolean hasChildren(Long criteriaId);
+
+    List<Criteria> findAllByIsActive(boolean b);
 }

@@ -72,7 +72,7 @@ CREATE TABLE users
     id          BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
     email       VARCHAR(255) NOT NULL UNIQUE,
     password    VARCHAR(255),
-    provider_id VARCHAR(255)          DEFAULT '',
+    provider_id VARCHAR(255),
     first_name  VARCHAR(100),
     last_name   VARCHAR(100),
     gender      VARCHAR(10)           DEFAULT 'OTHER',
@@ -178,6 +178,24 @@ CREATE TABLE fanpage_members
 );
 
 -- ============================================================
+--  10.1 FOLLOWING
+-- ============================================================
+CREATE TABLE followings
+(
+    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    fanpage_id BIGINT      NOT NULL,
+    user_id    BIGINT      NOT NULL,
+    fol_status VARCHAR(50) NOT NULL DEFAULT 'FOLLOWING',
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by BIGINT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by BIGINT,
+    CONSTRAINT pk_followings PRIMARY KEY (id),
+    CONSTRAINT uq_followings_fanpage_user UNIQUE (fanpage_id, user_id)
+);
+
+-- ============================================================
 --  11. EVENT_TYPE
 -- ============================================================
 CREATE TABLE event_types
@@ -262,7 +280,6 @@ CREATE TABLE semesters
 (
     id               BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
     number           INTEGER     NOT NULL,
-    academic_year    VARCHAR(20) NOT NULL,
     academic_year_id BIGINT,
     start_date       DATE        NOT NULL,
     end_date         DATE        NOT NULL,
@@ -346,6 +363,23 @@ CREATE TABLE registrations
 );
 
 -- ============================================================
+--  18.1 STORED_EVENTS
+-- ============================================================
+CREATE TABLE stored_events
+(
+    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    user_id    BIGINT      NOT NULL,
+    event_id   BIGINT      NOT NULL,
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by BIGINT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by BIGINT,
+    CONSTRAINT pk_stored_events PRIMARY KEY (id),
+    CONSTRAINT uq_stored_events_user_event UNIQUE (user_id, event_id)
+);
+
+-- ============================================================
 --  19. STUDENT_CRITERIA_PROGRESS
 -- ============================================================
 CREATE TABLE student_criteria_progress
@@ -366,6 +400,11 @@ CREATE TABLE student_criteria_progress
     CONSTRAINT pk_student_criteria_progress PRIMARY KEY (id),
     CONSTRAINT uq_student_criteria_progress UNIQUE (user_id, criteria_id, academic_year_id)
 );
+
+ALTER TABLE student_criteria_progress
+    DROP COLUMN completed_at,
+    DROP COLUMN is_completed,
+    ADD COLUMN note TEXT default '';
 
 -- ============================================================
 --  20. POINT_TRANSACTION
@@ -500,6 +539,21 @@ CREATE TABLE reports
     CONSTRAINT pk_reports PRIMARY KEY (id)
 );
 
+CREATE TABLE otps
+(
+    id         BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
+    email      VARCHAR(255) NOT NULL,
+    otp_code   VARCHAR(6)   NOT NULL,
+    expired_at TIMESTAMPTZ  NOT NULL,
+    is_used    BOOLEAN      NOT NULL DEFAULT FALSE,
+    isActive   BOOLEAN      NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_by BIGINT,
+    updated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_by BIGINT,
+    CONSTRAINT pk_otps PRIMARY KEY (id)
+);
+
 -- ============================================================
 --  FOREIGN KEY CONSTRAINTS
 -- ============================================================
@@ -528,6 +582,12 @@ ALTER TABLE fanpage_members
     ADD CONSTRAINT fk_fanpage_members_fanpages
         FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE CASCADE,
     ADD CONSTRAINT fk_fanpage_members_users
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
+
+ALTER TABLE followings
+    ADD CONSTRAINT fk_followings_fanpages
+        FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE CASCADE,
+    ADD CONSTRAINT fk_followings_users
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
 
 ALTER TABLE criterias
@@ -565,14 +625,14 @@ ALTER TABLE registrations
         FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE;
 
 ALTER TABLE student_criteria_progress
+    ADD CONSTRAINT fk_progress_event
+        FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE SET NULL,
     ADD CONSTRAINT fk_progress_users
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     ADD CONSTRAINT fk_progress_criteria
         FOREIGN KEY (criteria_id) REFERENCES criterias (id) ON DELETE CASCADE,
     ADD CONSTRAINT fk_progress_academic_year
-        FOREIGN KEY (academic_year_id) REFERENCES academic_years (id) ON DELETE RESTRICT,
-    ADD CONSTRAINT fk_progress_event
-        FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE SET NULL;
+        FOREIGN KEY (academic_year_id) REFERENCES academic_years (id) ON DELETE RESTRICT;
 
 ALTER TABLE point_transactions
     ADD CONSTRAINT fk_point_transactions_users
@@ -615,6 +675,12 @@ ALTER TABLE reports
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     ADD CONSTRAINT fk_reports_fanpages
         FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE CASCADE;
+
+ALTER TABLE stored_events
+    ADD CONSTRAINT fk_stored_events_events
+        FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE,
+    ADD CONSTRAINT fk_stored_events_users
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
 
 -- ============================================================
 --  AUTO-UPDATE updated_at VIA TRIGGER
@@ -693,11 +759,6 @@ CREATE TRIGGER trg_point_categories_updated_at
     ON point_categories
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_academic_years_updated_at
-    BEFORE UPDATE
-    ON academic_years
-    FOR EACH ROW
-EXECUTE FUNCTION fn_set_updated_at();
 CREATE TRIGGER trg_semesters_updated_at
     BEFORE UPDATE
     ON semesters
@@ -716,11 +777,6 @@ EXECUTE FUNCTION fn_set_updated_at();
 CREATE TRIGGER trg_registrations_updated_at
     BEFORE UPDATE
     ON registrations
-    FOR EACH ROW
-EXECUTE FUNCTION fn_set_updated_at();
-CREATE TRIGGER trg_student_criteria_progress_updated_at
-    BEFORE UPDATE
-    ON student_criteria_progress
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
 CREATE TRIGGER trg_point_transactions_updated_at
@@ -758,6 +814,23 @@ CREATE TRIGGER trg_reports_updated_at
     ON reports
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_followings_updated_at
+    BEFORE UPDATE
+    ON followings
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_stored_events_updated_at
+    BEFORE UPDATE
+    ON stored_events
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE TRIGGER trg_otps_updated_at
+    BEFORE UPDATE
+    ON otps
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+
 
 -- ============================================================
 --  INDEXES
@@ -775,7 +848,6 @@ CREATE INDEX idx_registrations_status ON registrations (status);
 CREATE INDEX idx_notifications_user_id ON notifications (user_id);
 CREATE INDEX idx_notifications_status ON notifications (status);
 CREATE INDEX idx_messages_conversation ON messages (conversation_id);
-CREATE INDEX idx_semesters_academic_year ON semesters (academic_year);
 CREATE INDEX idx_pct_parent ON point_categories (parent_category_id);
 CREATE INDEX idx_criterias_parent ON criterias (parent_id);
 CREATE INDEX idx_progress_user_year ON student_criteria_progress (user_id, academic_year_id);
@@ -783,3 +855,8 @@ CREATE INDEX idx_progress_criteria ON student_criteria_progress (criteria_id);
 CREATE INDEX idx_point_transactions_user ON point_transactions (user_id, semester_id);
 CREATE INDEX idx_refresh_tokens_token ON refresh_tokens (token);
 CREATE INDEX idx_refresh_tokens_user ON refresh_tokens (user_id);
+CREATE INDEX idx_followings_fanpage ON followings (fanpage_id);
+CREATE INDEX idx_followings_user ON followings (user_id);
+CREATE INDEX idx_followings_status ON followings (fol_status);
+CREATE INDEX idx_stored_events_user ON stored_events (user_id);
+CREATE INDEX idx_stored_events_event ON stored_events (event_id);

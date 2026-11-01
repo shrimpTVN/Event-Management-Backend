@@ -12,5 +12,4 @@ public interface UserMapper {
     UserJpaEntity toEntity(User user);
 
     User toDomain(UserJpaEntity entity);
-
 }

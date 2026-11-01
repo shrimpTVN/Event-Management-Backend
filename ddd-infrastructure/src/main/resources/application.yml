@@ -24,11 +24,17 @@ spring:
       enabled: ${DOCKER_COMPOSE_ENABLED:true}
       file: ${DOCKER_COMPOSE_FILE:compose.yaml}
       lifecycle-management: ${DOCKER_COMPOSE_LIFECYCLE:start-only}
-  servlet:
-    multipart:
-      enabled: true
-      max-file-size: 10MB
-      max-request-size: 20MB
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 logging:
   pattern:
@@ -49,3 +55,5 @@ cloudinary:
   folder-prefix: ${CLOUDINARY_FOLDER_PREFIX:ctu-event}
   upload-preset: ${CLOUDINARY_UPLOAD_PRESET:upload-CTUEvent}
 
+google:
+  client-id: ${GOOGLE_CLIENT_ID:160718561900-cjq1bkd7krtp2snvk12mi5mplrki9gff.apps.googleusercontent.com}

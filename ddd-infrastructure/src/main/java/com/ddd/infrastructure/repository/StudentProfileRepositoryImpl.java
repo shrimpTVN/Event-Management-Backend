@@ -30,9 +30,16 @@ public class StudentProfileRepositoryImpl implements StudentProfileRepository {
     }
 
     @Override
+    public boolean existsByUserId(Long userId) {
+        return studentProfileJpaRepository.existsByUserId(userId);
+    }
+
+    @Override
     public void save(StudentProfile studentProfile, Long userId) {
-        MajorJpaEntity majorJpaEntity = majorJpaRepository.findById(studentProfile.getMajorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Major not found with id: " + studentProfile.getMajorId()));
+        MajorJpaEntity majorJpaEntity = studentProfile.getMajorId() != null
+                ? majorJpaRepository.findById(studentProfile.getMajorId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Major not found with id: " + studentProfile.getMajorId()))
+                : null;
         UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 

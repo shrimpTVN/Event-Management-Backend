@@ -72,3 +72,4 @@ public class User extends BaseModel {
         this.provider = providerId;
     }
 }
+

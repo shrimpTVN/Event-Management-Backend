@@ -13,13 +13,17 @@ import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.Fanpage;
 import com.ddd.domain.model.FanpageMember;
 import com.ddd.domain.model.User;
+import com.ddd.domain.model.Following;
 import com.ddd.domain.repository.FanpageMemberRepository;
 import com.ddd.domain.repository.FanpageRepository;
+import com.ddd.domain.repository.FollowingRepository;
 import com.ddd.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +34,7 @@ public class FanpageServiceImpl implements FanpageService {
     private final FanpageMemberRepository fanpageMemberRepository;
     private final FanpageDtoMapper fanpageDtoMapper;
     private final UserRepository userRepository;
+    private final FollowingRepository followingRepository;
 
 
     @Override
@@ -156,5 +161,59 @@ public class FanpageServiceImpl implements FanpageService {
         // Deactivate all members of this fanpage
         fanpageMemberRepository.deactivateAllMembersByFanpageId(fanpageId);
         log.info("Fanpage id: {} soft deleted by admin", fanpageId);
+    }
+
+    @Override
+    public void followFanpage(Long fanpageId, String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        Fanpage fanpage = fanpageRepository.findByIdAndIsActive(fanpageId, true)
+                .orElseThrow(() -> new ResourceNotFoundException("Fanpage not found with id: " + fanpageId));
+
+        if (!FanpageStatusEnum.ACTIVE.name().equalsIgnoreCase(fanpage.getStatus())) {
+            throw new BusinessException("Just can follow fanpage has status (ACTIVE)");
+        }
+
+        Optional<Following> existingOpt = followingRepository.findByFanpageIdAndUserId(fanpageId, user.getId());
+        if (existingOpt.isPresent()) {
+            Following existing = existingOpt.get();
+            if (existing.isFollowing()) {
+                log.info("User {} is already following fanpage {}", user.getId(), fanpageId);
+                return;
+            }
+            existing.follow();
+            existing.setActive(true);
+            followingRepository.save(existing);
+        } else {
+            Following newFollowing = new Following(fanpageId, user.getId());
+            followingRepository.save(newFollowing);
+        }
+        log.info("User {} followed fanpage {}", user.getId(), fanpageId);
+    }
+
+    @Override
+    public void unfollowFanpage(Long fanpageId, String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        if (fanpageRepository.findByIdAndIsActive(fanpageId, true).isEmpty()) {
+            throw new ResourceNotFoundException("Fanpage not found with id: " + fanpageId);
+        }
+
+        Following following = followingRepository.findByFanpageIdAndUserId(fanpageId, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("You not have followed this fanpage"));
+
+        if (!following.isFollowing()) {
+            throw new ResourceNotFoundException("You not have followed this fanpage");
+        }
+
+        following.unfollow();
+        followingRepository.save(following);
+        log.info("User {} unfollowed fanpage {}", user.getId(), fanpageId);
     }
 }

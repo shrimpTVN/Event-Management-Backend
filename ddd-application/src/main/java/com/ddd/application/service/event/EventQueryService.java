@@ -11,4 +11,6 @@ public interface EventQueryService {
     Page<EventInfoDto> getAllEvents(int page, int size, String sortBy, String sortDir);
 
     Page<EventInfoDto> searchAndFilterEvents(EventSearchCriteriaDto eventSearchCriteriaDto);
+
+    Page<EventInfoDto> getRecommendEvents(String email);
 }

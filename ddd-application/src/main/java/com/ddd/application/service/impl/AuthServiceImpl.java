@@ -1,5 +1,6 @@
 package com.ddd.application.service.impl;
 
+import com.ddd.application.dto.auth.GoogleUserInfo;
 import com.ddd.application.dto.auth.LoginDto;
 import com.ddd.application.dto.auth.LoginResult;
 import com.ddd.application.dto.auth.TokenRefreshResultDto;
@@ -18,6 +19,7 @@ import com.ddd.domain.model.User;
 import com.ddd.domain.repository.RefreshTokenRepository;
 import com.ddd.domain.repository.UserRepository;
 import com.ddd.infrastructure.config.security.custom.UserDetailsCustom;
+import com.ddd.application.service.googleTokenVerifier.GoogleTokenVerifier;
 import com.ddd.infrastructure.utils.JwtUtil;
 import com.ddd.infrastructure.utils.TokenHashUtil;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +44,7 @@ public class AuthServiceImpl implements AuthService {
     private final StudentProfileCommandService studentProfileCommandService;
     private final FanpageAdminProfileCommandService fanpageAdminProfileCommandService;
     private final JwtUtil jwtUtil;
+    private final GoogleTokenVerifier googleTokenVerifier;
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenHashUtil tokenHashUtil;
     private final UserRepository userRepository;
@@ -87,6 +90,34 @@ public class AuthServiceImpl implements AuthService {
         //generate refresh token and save to database
         String rawRefreshToken = createAndSaveRefreshToken(fetchedUser.getUserId());
 
+        return new LoginResult(loginDto, jwtToken, rawRefreshToken);
+    }
+
+    @Transactional
+    @Override
+    public LoginResult loginWithGoogle(String idToken) {
+        // 1. Verify Google ID Token and extract user info
+        GoogleUserInfo googleUserInfo = googleTokenVerifier.verifyToken(idToken);
+        String email = googleUserInfo.email();
+        User user = userRepository.findByEmail(email);
+
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with email: " + email);
+        }
+
+        if (user.getProviderId() == null || user.getProviderId().isBlank()) {
+            user.setProviderId(googleUserInfo.googleId());
+            userRepository.update(user);
+        }
+
+        log.info("Google user:{} logged in successfully", email);
+        String jwtToken = jwtUtil.generateJwtTokenFromUser(user);
+        String rawRefreshToken = createAndSaveRefreshToken(user.getId());
+        LoginDto loginDto = new LoginDto(
+                user.getId(),
+                user.getEmail(),
+                user.getRoleNames()
+        );
         return new LoginResult(loginDto, jwtToken, rawRefreshToken);
     }
 
@@ -192,4 +223,5 @@ public class AuthServiceImpl implements AuthService {
     public String extractRefreshToken(jakarta.servlet.http.HttpServletRequest request) {
         return jwtUtil.extractRefreshToken(request);
     }
+
 }

@@ -17,5 +17,9 @@ public interface UserRepository {
 
     User save(User user);
 
+    default User update(User user) {
+        return save(user);
+    }
     Optional<User> findById(Long userId);
 }
+

@@ -1,0 +1,85 @@
+# ==============================================================================
+# Security & Sensitive Files (Prevent secret leakage into LLM context)
+# ==============================================================================
+.env
+.env.*
+*.env
+*.pem
+*.key
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.crt
+id_rsa*
+id_ed25519*
+secrets/
+*secret*
+*credentials*.json
+service-account*.json
+application-local.yml
+application-local.properties
+application-secret*.yml
+application-secret*.properties
+
+# ==============================================================================
+# Build Artifacts & Bytecode (Massive token waste & binary files)
+# ==============================================================================
+target/
+**/target/
+build/
+**/build/
+out/
+bin/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/wrapper/maven-wrapper.jar
+
+# ==============================================================================
+# Database Volumes & Local Data Stores
+# ==============================================================================
+postgres-data/
+**/postgres-data/
+*.rdb
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.sql.gz
+
+# ==============================================================================
+# Logs & Temporary Files
+# ==============================================================================
+logs/
+**/logs/
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+
+# ==============================================================================
+# Agent Internal & Index Storage
+# ==============================================================================
+.codegraph/
+.gemini/
+.system_generated/
+
+# ==============================================================================
+# IDE & System Files
+# ==============================================================================
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.settings/
+.classpath
+.project
+.factorypath
+.apt_generated
+.sts4-cache
+.DS_Store
+Thumbs.db
