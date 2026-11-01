@@ -44,6 +44,8 @@ public class SecurityConstant {
 
     public static final String[] SECURE_ENDPOINTS = {
             "/api/events/fanpage-member/**",
+            "/api/media/**",
+            "/media/**"
             "/api/fanpages/*/follow",
             "/api/fanpages/*/unfollow",
             "/api/fanpages/following",
@@ -59,6 +61,7 @@ public class SecurityConstant {
     public static final String[] CORS_ALLOW_ORIGINS = {
             "http://localhost:*",
             "https://localhost:*",
+            "null"
     };
 
     public static final String[] CORS_ALLOWED_HEADERS = {"*"};

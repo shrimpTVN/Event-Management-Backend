@@ -48,5 +48,12 @@ jwt:
   refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
   refresh-cookie-name: ${JWT_REFRESH_COOKIE_NAME:ddd_refresh}
 
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
+  folder-prefix: ${CLOUDINARY_FOLDER_PREFIX:ctu-event}
+  upload-preset: ${CLOUDINARY_UPLOAD_PRESET:upload-CTUEvent}
+
 google:
   client-id: ${GOOGLE_CLIENT_ID:160718561900-cjq1bkd7krtp2snvk12mi5mplrki9gff.apps.googleusercontent.com}

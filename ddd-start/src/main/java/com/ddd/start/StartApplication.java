@@ -1,5 +1,6 @@
 package com.ddd.start;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
@@ -14,7 +15,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication(scanBasePackages = "com.ddd")
 public class StartApplication {
     public static void main(String[] args) {
-        System.out.print("Hello and welcome!");
+        Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+        dotenv.entries().forEach(entry -> {
+            if (System.getProperty(entry.getKey()) == null) {
+                System.setProperty(entry.getKey(), entry.getValue());
+            }
+        });
 
         SpringApplication.run(StartApplication.class, args);
     }
