@@ -26,4 +26,6 @@ public interface FanpageService {
     void followFanpage(Long fanpageId, String email);
 
     void unfollowFanpage(Long fanpageId, String email);
+
+    void appointFanpageAdmin(Long fanpageId, String memberEmail);
 }

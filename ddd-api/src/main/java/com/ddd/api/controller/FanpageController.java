@@ -156,6 +156,15 @@ public class FanpageController {
         return BaseResponse.ok();
     }
 
+
+    @PatchMapping("/fanpage-admin/{fanpageId}/appoint-fanpage-admin")
+    public BaseResponse<?> appointFanpageAdmin(@PathVariable Long fanpageId,
+                                              @RequestParam(required = true) String memberEmail) {
+        fanpageService.appointFanpageAdmin(fanpageId, memberEmail);
+        return BaseResponse.ok();
+    }
+
+
     @PostMapping("/{fanpageId}/follow")
     public BaseResponse<Void> followFanpage(
             @PathVariable Long fanpageId,

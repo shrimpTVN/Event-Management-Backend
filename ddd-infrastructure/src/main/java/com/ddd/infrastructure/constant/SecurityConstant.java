@@ -45,7 +45,7 @@ public class SecurityConstant {
     public static final String[] SECURE_ENDPOINTS = {
             "/api/events/fanpage-member/**",
             "/api/media/**",
-            "/media/**"
+            "/media/**",
             "/api/fanpages/*/follow",
             "/api/fanpages/*/unfollow",
             "/api/fanpages/following",

@@ -12,7 +12,7 @@ This document provides complete, production-ready specifications for Frontend De
 - **Port**: `8080` (configured in `application.yml` via `${SERVER_PORT:8080}`).
 
 > [!IMPORTANT]
-> Note on Route Prefixing: Most controllers mount directly on root paths (e.g. `/auth`, `/users`, `/events`, `/registrations`, `/fanpages`, `/schools`, `/majors`, `/associations`, `/event-types`, `/semesters`, `/point-categories`, `/point-transactions`, `/student-semester-points`, `/criterias`), while `RoleController` is explicitly prefixed at `/api/v1/roles`.
+> Note on Route Prefixing: Most controllers mount directly on root paths (e.g. `/auth`, `/users`, `/events`, `/registrations`, `/fanpages`, `/schools`, `/majors`, `/associations`, `/event-types`, `/semesters`, `/point-categories`, `/point-transactions`, `/student-semester-points`, `/criterias`, `/criteria-progress`, `/criteria-transactions`, `/media`), while `RoleController` is explicitly prefixed at `/api/v1/roles`.
 
 ---
 
@@ -292,6 +292,77 @@ export interface PageResponse<T> {
 ```json
 {
   "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.1.7 Send OTP
+- **Endpoint**: `POST /auth/send-otp`
+- **Access**: `PUBLIC`
+- **Description**: Sends a 6-digit one-time password (OTP) verification email to the user.
+- **Request Body**:
+```json
+{
+  "email": "student@university.edu.vn"
+}
+```
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.1.8 Verify OTP
+- **Endpoint**: `POST /auth/verify-otp`
+- **Access**: `PUBLIC`
+- **Description**: Verifies the 6-digit OTP code sent to the given email address.
+- **Request Body**:
+```json
+{
+  "email": "student@university.edu.vn",
+  "otpCode": "123456"
+}
+```
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.1.9 Google OAuth2 Login
+- **Endpoint**: `POST /auth/login/google`
+- **Access**: `PUBLIC`
+- **Description**: Authenticate using a Google OAuth2 ID Token. On success, sets `ddd_jwt` and `ddd_refresh` HttpOnly cookies and returns the user login profile payload.
+- **Request Body**:
+```json
+{
+  "idToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6..."
+}
+```
+- **Response Headers**:
+  - `Set-Cookie: ddd_jwt=...; Path=/; HttpOnly; Max-Age=...; SameSite=Lax`
+  - `Set-Cookie: ddd_refresh=...; Path=/; HttpOnly; Max-Age=...; SameSite=Lax`
+- **Response `200 OK`**:
+```json
+{
+  "data": {
+    "userId": 1,
+    "email": "student@university.edu.vn",
+    "role": "STUDENT"
+  },
   "message": "Success",
   "exceptionCode": null
 }
@@ -1023,6 +1094,109 @@ export interface PageResponse<T> {
 
 ---
 
+#### 2.5.11 Follow Fanpage
+- **Endpoint**: `POST /fanpages/{fanpageId}/follow`
+- **Access**: `AUTHENTICATED`
+- **Description**: Follow a specific fanpage.
+- **Path Variable**: `fanpageId` (Long)
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.5.12 Unfollow Fanpage
+- **Endpoints**:
+  - `DELETE /fanpages/{fanpageId}/follow`
+  - `POST /fanpages/{fanpageId}/unfollow` (convenience alias)
+- **Access**: `AUTHENTICATED`
+- **Description**: Unfollow a specific fanpage.
+- **Path Variable**: `fanpageId` (Long)
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.5.13 Get Follower Count & Status
+- **Endpoint**: `GET /fanpages/{fanpageId}/followers/count`
+- **Access**: `PUBLIC` / `AUTHENTICATED` (If authenticated, `isFollowing` reflects the current user's follow status)
+- **Path Variable**: `fanpageId` (Long)
+- **Response `200 OK`**:
+```json
+{
+  "data": {
+    "fanpageId": 1,
+    "followerCount": 128,
+    "isFollowing": true
+  },
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.5.14 Get Followed Fanpages
+- **Endpoint**: `GET /fanpages/following`
+- **Access**: `AUTHENTICATED`
+- **Description**: Retrieve paginated list of fanpages currently followed by the authenticated user.
+- **Query Parameters**:
+  - `page` (integer, default `0`)
+  - `size` (integer, default `10`)
+  - `sortBy` (string, default `createdAt`)
+  - `sortDir` (string, default `DESC`)
+- **Response `200 OK`**: `BaseResponse<PageResponse<FanpageResponseDto>>`
+```json
+{
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "name": "Google Developer Student Clubs",
+        "description": "Tech student community",
+        "avatarUrl": "https://cdn.example.com/gdsc.png",
+        "coverUrl": "https://cdn.example.com/cover.png",
+        "contactEmail": "gdsc@university.edu.vn",
+        "status": "ACTIVE",
+        "orgType": "CLUB",
+        "createdAt": "2026-01-10T08:00:00Z"
+      }
+    ],
+    "pageable": {
+      "pageNumber": 0,
+      "pageSize": 10,
+      "sort": { "sorted": true, "empty": false, "unsorted": false },
+      "offset": 0,
+      "paged": true,
+      "unpaged": false
+    },
+    "totalElements": 1,
+    "totalPages": 1,
+    "last": true,
+    "size": 10,
+    "number": 0,
+    "numberOfElements": 1,
+    "first": true,
+    "empty": false
+  },
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
 ### 2.6 Semesters (`SemesterController` - `/semesters`)
 
 #### 2.6.1 Get Active Semesters
@@ -1364,37 +1538,218 @@ export interface PageResponse<T> {
 
 ---
 
-### 2.14 Student Criteria Progress (`StudentCriteriaProgressController` - `/student`)
+### 2.14 Student Criteria Progress (`StudentCriteriaProgressController` - `/criteria-progress`)
+
+All endpoints in this controller require the user to have the `ROLE_STUDENT` authority.
 
 #### 2.14.1 Get Student Criteria Progress Tree
-- **Endpoint**: `GET /student/criteria-progress`
-- **Access**: `STUDENT` (requires JWT cookie)
-- **Query Parameter**: `academicYearId` (optional; defaults to current active academic year)
+- **Endpoint**: `GET /criteria-progress/me/academic-years/{academicYearId}`
+- **Access**: `ROLE_STUDENT` (requires JWT cookie)
+- **Path Variable**: `academicYearId` (Long, required)
 - **Response `200 OK`**: `BaseResponse<StudentCriteriaProgressResponseDto>`
-- **Description**: Returns hierarchical criteria tree with completion statuses evaluated based on child criteria and student check-ins.
+- **Description**: Returns the hierarchical evaluation criteria tree and completion statistics for the authenticated student in the specified academic year.
+- **Response Example**:
+```json
+{
+  "data": {
+    "academicYearId": 1,
+    "academicYear": "2026-2027",
+    "completedMainCriteria": 2,
+    "totalMainCriteria": 5,
+    "criterias": [
+      {
+        "id": 1,
+        "name": "Đạo đức tốt",
+        "note": "Tiêu chuẩn rèn luyện đạo đức tác phong",
+        "scope": "FACULTY",
+        "level": 1,
+        "childrenOrder": 1,
+        "requiredChildren": 2,
+        "completedChildrenCount": 2,
+        "isCompleted": true,
+        "children": [
+          {
+            "id": 11,
+            "name": "Điểm rèn luyện đạt loại Tốt trở lên",
+            "note": null,
+            "scope": "FACULTY",
+            "level": 2,
+            "childrenOrder": 1,
+            "requiredChildren": null,
+            "completedChildrenCount": 0,
+            "isCompleted": true,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
 
 #### 2.14.2 Get Specific Criterion Progress Node
-- **Endpoint**: `GET /student/criteria/{criteriaId}/progress`
-- **Access**: `STUDENT` (requires JWT cookie)
-- **Query Parameter**: `academicYearId` (optional; defaults to current active academic year)
-- **Response `200 OK`**: `BaseResponse<CriteriaProgressNodeResponseDto>`
-- **Description**: Evaluates and returns the status, completed children count, and source for a specific node in the criteria tree.
+- **Endpoint**: `GET /criteria-progress/me/criterias/{criteriaId}/academic-years/{academicYearId}`
+- **Access**: `ROLE_STUDENT` (requires JWT cookie)
+- **Path Variables**:
+  - `criteriaId` (Long, required)
+  - `academicYearId` (Long, required)
+- **Response `200 OK`**: `BaseResponse<CriteriaProgressItemResponseDto>`
+- **Description**: Retrieves detailed evaluation progress for an individual criterion node (and its sub-criteria tree) for the authenticated student.
+- **Response Example**:
+```json
+{
+  "data": {
+    "id": 11,
+    "name": "Điểm rèn luyện đạt loại Tốt trở lên",
+    "note": null,
+    "scope": "FACULTY",
+    "level": 2,
+    "childrenOrder": 1,
+    "requiredChildren": null,
+    "completedChildrenCount": 0,
+    "isCompleted": true,
+    "children": []
+  },
+  "message": "Success",
+  "exceptionCode": null
+}
+```
 
-#### 2.14.3 Manually Complete or Uncomplete Leaf Criterion
-- **Endpoint**: `PATCH /student/criteria/{criteriaId}/progress`
-- **Access**: `STUDENT` (requires JWT cookie)
+---
+
+### 2.15 Criteria Transactions (`CriteriaTransactionController` - `/criteria-transactions`)
+
+#### 2.15.1 Create Criteria Transaction (Student Self-Report / Submission)
+- **Endpoint**: `POST /criteria-transactions/me`
+- **Access**: `AUTHENTICATED` (Student)
+- **Description**: Submit a criteria progress transaction / evidence note for a specific criterion in an academic year.
 - **Request Body**:
 ```json
 {
+  "criteriaId": 11,
   "academicYearId": 1,
-  "completed": true
+  "note": "Participated in faculty youth volunteer cleanup project"
 }
 ```
-- **Rules**:
-  - Only leaf criteria can be toggled manually.
-  - Inactive criteria cannot be toggled.
-  - Criteria verified via `EVENT_CHECKOUT` cannot be manually unchecked or downgraded to `MANUAL`.
-- **Response `200 OK`**: `BaseResponse<Void>`
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.15.2 Get Criteria Transactions for Student
+- **Endpoint**: `GET /criteria-transactions/me/criterias/{criteriaId}/academic-years/{academicYearId}`
+- **Access**: `AUTHENTICATED` (Student)
+- **Path Variables**:
+  - `criteriaId` (Long, required)
+  - `academicYearId` (Long, required)
+- **Response `200 OK`**: `BaseResponse<List<CriteriaTransactionResponseDto>>`
+- **Response Example**:
+```json
+{
+  "data": [
+    {
+      "id": 101,
+      "userId": 1,
+      "criteriaId": 11,
+      "academicYearId": 1,
+      "eventId": 50,
+      "eventName": "Youth Spring Campaign 2026",
+      "completionSource": "EVENT_CHECKOUT",
+      "note": "Attendance checked out automatically",
+      "isActive": true,
+      "createdAt": "2026-03-20T10:00:00Z"
+    }
+  ],
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+### 2.16 Media & Direct Cloud Uploads (`MediaController` - `/media`)
+
+#### 2.16.1 Request Presigned Upload Parameters
+- **Endpoint**: `POST /media/presign`
+- **Access**: `PUBLIC` / `AUTHENTICATED`
+- **Description**: Generate signed parameters and authorization credentials to directly upload images/files to Cloudinary from frontend clients without routing heavy binary payloads through the application server.
+- **Request Body** (optional):
+```json
+{
+  "category": "AVATAR",
+  "fileExtension": "png"
+}
+```
+  - `category` (enum): `AVATAR`, `FANPAGE`, `EVENT`, `EVIDENCE`, `CERTIFICATE`, `GENERAL`
+  - `fileExtension` (string, optional): e.g. `png`, `jpg`, `webp`
+- **Response `200 OK`**:
+```json
+{
+  "data": {
+    "uploadUrl": "https://api.cloudinary.com/v1_1/cloud_name/image/upload",
+    "apiKey": "123456789012345",
+    "timestamp": 1793673600,
+    "signature": "b1b2c3d4e5f67890...",
+    "folder": "avatars",
+    "assetFolder": "avatars",
+    "publicId": "avatars/abc-123-uuid",
+    "cloudName": "cloud_name"
+  },
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+#### Uploading to Cloudinary with Presigned Payload (Frontend Example):
+```typescript
+const presignRes = await apiClient.post('/media/presign', {
+  category: 'AVATAR',
+  fileExtension: 'png'
+});
+const { uploadUrl, apiKey, timestamp, signature, folder, publicId } = presignRes.data.data;
+
+const formData = new FormData();
+formData.append('file', fileObject);
+formData.append('api_key', apiKey);
+formData.append('timestamp', timestamp.toString());
+formData.append('signature', signature);
+formData.append('folder', folder);
+formData.append('public_id', publicId);
+
+const uploadRes = await fetch(uploadUrl, {
+  method: 'POST',
+  body: formData
+});
+const cloudinaryData = await uploadRes.json();
+const finalImageUrl = cloudinaryData.secure_url;
+```
+
+---
+
+#### 2.16.2 Delete Uploaded Media
+- **Endpoint**: `DELETE /media`
+- **Access**: `PUBLIC` / `AUTHENTICATED`
+- **Description**: Delete an uploaded media asset from Cloudinary storage by its `publicId`.
+- **Query Parameter**:
+  - `publicId` (string, required): The Cloudinary public ID (e.g. `avatars/abc-123-uuid`).
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
 
 ---
 
@@ -1413,6 +1768,19 @@ export interface LoginResponseDto {
   userId: number;
   email: string;
   role: 'ADMIN' | 'FANPAGE_ADMIN' | 'STUDENT';
+}
+
+export interface SendOtpRequestDto {
+  email: string;
+}
+
+export interface VerifyOtpRequestDto {
+  email: string;
+  otpCode: string;
+}
+
+export interface GoogleLoginRequestDto {
+  idToken: string;
 }
 
 // User Profile
@@ -1453,6 +1821,12 @@ export interface FanpageResponseDto {
   createdAt: string;
   status: 'ACTIVE' | 'PENDING' | 'BANNED';
   isActive: boolean;
+}
+
+export interface FanpageFollowCountResponseDto {
+  fanpageId: number;
+  followerCount: number;
+  isFollowing: boolean;
 }
 
 export interface FanpageMemberResponseDto {
@@ -1628,34 +2002,63 @@ export interface AcademicYearResponseDto {
 }
 
 // Student Criteria Progress
-export interface CriteriaProgressNodeResponseDto {
-  criteriaId: number;
+export interface CriteriaProgressItemResponseDto {
+  id: number;
   name: string;
   note?: string | null;
   scope?: string | null;
   level: number;
   childrenOrder: number;
   requiredChildren?: number | null;
+  completedChildrenCount: number;
   isCompleted: boolean;
-  completedChildren: number;
-  totalChildren: number;
-  completionSource?: 'MANUAL' | 'EVENT_CHECKOUT' | 'SYSTEM' | null;
-  completedAt?: string | null;
-  children: CriteriaProgressNodeResponseDto[];
+  children: CriteriaProgressItemResponseDto[];
 }
 
 export interface StudentCriteriaProgressResponseDto {
   academicYearId: number;
   academicYear: string;
-  completedLeafCriteria: number;
-  totalLeafCriteria: number;
   completedMainCriteria: number;
   totalMainCriteria: number;
-  criteria: CriteriaProgressNodeResponseDto[];
+  criterias: CriteriaProgressItemResponseDto[];
 }
 
-export interface ManualCriteriaProgressRequestDto {
+// Criteria Transactions
+export interface CriteriaTransactionRequestDto {
+  criteriaId: number;
   academicYearId: number;
-  completed: boolean;
+  note: string;
+}
+
+export interface CriteriaTransactionResponseDto {
+  id: number;
+  userId: number;
+  criteriaId: number;
+  academicYearId: number;
+  eventId?: number | null;
+  eventName?: string | null;
+  completionSource: string;
+  note?: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+// Media
+export type MediaCategoryEnum = 'AVATAR' | 'FANPAGE' | 'EVENT' | 'EVIDENCE' | 'CERTIFICATE' | 'GENERAL';
+
+export interface PresignedRequestDto {
+  category?: MediaCategoryEnum;
+  fileExtension?: string;
+}
+
+export interface PresignedResponseDto {
+  uploadUrl: string;
+  apiKey: string;
+  timestamp: number;
+  signature: string;
+  folder: string;
+  assetFolder: string;
+  publicId: string;
+  cloudName: string;
 }
 ```
