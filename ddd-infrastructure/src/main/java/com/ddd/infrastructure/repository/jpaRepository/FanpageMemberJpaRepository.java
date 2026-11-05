@@ -33,4 +33,7 @@ public interface FanpageMemberJpaRepository extends JpaRepository<FanpageMemberJ
     void deactivateAllMembersByFanpageId(@Param("fanpageId") Long fanpageId);
 
     boolean existsByIdAndIsActive(FanpageMemberJpaEntityId id, boolean b);
+
+    @EntityGraph(attributePaths = {"fanpage", "fanpage.name", "fanpage.description", "fanpage.avatarUrl", "fanpage.orgName"})
+    List<FanpageMemberJpaEntity> findAllByUserIdAndIsActive(Long currentUserId, boolean b);
 }

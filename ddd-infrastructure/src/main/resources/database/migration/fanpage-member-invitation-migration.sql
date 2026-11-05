@@ -13,6 +13,9 @@ CREATE TABLE fanpage_member_invitations
     CONSTRAINT fk_invitation_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+ALTER TABLE fanpage_member_invitations
+    ADD COLUMN inviter_name VARCHAR(255) NOT NULL;
+
 CREATE TRIGGER trg_fanpage_member_invitation_updated_at
     BEFORE UPDATE
     ON fanpage_member_invitations

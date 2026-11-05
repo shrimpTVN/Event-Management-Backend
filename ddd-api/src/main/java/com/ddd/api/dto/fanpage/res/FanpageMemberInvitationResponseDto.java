@@ -12,6 +12,7 @@ public record FanpageMemberInvitationResponseDto(
         String userFirstName,
         String userLastName,
         String userAvatarUrl,
+        String inviterName,
         String status,
         Instant createdAt,
         Instant updatedAt
