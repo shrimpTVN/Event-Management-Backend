@@ -59,7 +59,7 @@ public final class EventSpecification {
             }
 
             if (dateHappenFrom != null && dateHappenTo != null){
-                Predicate dateHappenMatch = cb.between(root.get("dataHappen"), dateHappenFrom, dateHappenTo);
+                Predicate dateHappenMatch = cb.between(root.get("dateHappen"), dateHappenFrom, dateHappenTo);
                 predicates.add(dateHappenMatch);
             }
 

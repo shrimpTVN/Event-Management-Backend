@@ -82,21 +82,9 @@ public class FanpageMemberRepositoryImpl implements FanpageMemberRepository {
     }
 
     @Override
-    public boolean isFanpageAdmin(Long userId, Long fanpageId) {
-        return fanpageMemberJpaRepository.existsByFanpageIdAndUserIdAndRoleAndIsActive(fanpageId, userId, FanpageRoleEnum.ADMIN.name(), true);
-    }
+    public boolean isActiveMember(Long fanpageId, Long memberId) {
+        FanpageMemberJpaEntityId id = new FanpageMemberJpaEntityId(fanpageId, memberId);
 
-    @Override
-    public boolean isFanpageMember(Long id, Long fanpageId) {
-        return fanpageMemberJpaRepository.existsByFanpageIdAndUserIdAndIsActive(fanpageId, id, true);
-    }
-
-    @Override
-    public FanpageMember findByFanpageIdAndUserId(Long fanpageId, Long userId) {
-        FanpageMemberJpaEntityId id = new FanpageMemberJpaEntityId(fanpageId, userId);
-        FanpageMemberJpaEntity fanpageMemberJpaEntity = fanpageMemberJpaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User is not a member of the fanpage or does not exist"));
-
-        return fanpageMemberMapper.toDomain(fanpageMemberJpaEntity);
+        return fanpageMemberJpaRepository.existsByIdAndIsActive(id, true);
     }
 }

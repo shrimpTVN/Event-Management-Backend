@@ -20,9 +20,5 @@ public interface FanpageMemberRepository {
 
     void deactivateAllMembersByFanpageId(Long fanpageId);
 
-    boolean isFanpageAdmin(Long userId, Long fanpageId);
-
-    boolean isFanpageMember(Long id, Long fanpageId);
-
-    FanpageMember findByFanpageIdAndUserId(Long fanpageId, Long userId);
+    boolean isActiveMember(Long fanpageId, Long id);
 }

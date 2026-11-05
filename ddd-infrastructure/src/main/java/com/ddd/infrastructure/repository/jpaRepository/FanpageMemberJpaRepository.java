@@ -29,4 +29,6 @@ public interface FanpageMemberJpaRepository extends JpaRepository<FanpageMemberJ
     @Modifying
     @Query("UPDATE FanpageMemberJpaEntity fm SET fm.isActive = false WHERE fm.id.fanpageId = :fanpageId")
     void deactivateAllMembersByFanpageId(@Param("fanpageId") Long fanpageId);
+
+    boolean existsByIdAndIsActive(FanpageMemberJpaEntityId id, boolean b);
 }

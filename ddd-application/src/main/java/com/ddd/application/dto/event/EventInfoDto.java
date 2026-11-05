@@ -3,7 +3,6 @@ package com.ddd.application.dto.event;
 import com.ddd.application.dto.SemesterDto;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 
 public record EventInfoDto(
@@ -11,9 +10,9 @@ public record EventInfoDto(
         String name,
         String description,
         String location,
-        LocalDate dateOpen,
-        LocalDate dateClose,
-        LocalDate dateHappen,
+        Instant dateOpen,
+        Instant dateClose,
+        Instant dateHappen,
         Integer capacity,
         Integer maleQuantity,
         Integer femaleQuantity,

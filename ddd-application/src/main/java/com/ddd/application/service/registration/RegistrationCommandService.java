@@ -7,15 +7,11 @@ public interface RegistrationCommandService {
 
     void cancelRegistration(String email, Long eventId, String reason);
 
-    void checkIn(String email, Long eventId, String proofUrl);
+    void checkIn(Long eventId, String proofUrl);
 
-    void checkOut(String email, Long eventId, String proofUrl);
+    void checkOut(Long eventId, String proofUrl);
 
-    void fanpageMemberCheckIn(String adminEmail, Long eventId, Long studentUserId);
+    void fanpageMemberCheckIn(Long eventId, List<Long> studentUserIds);
 
-    void fanpageMemberCheckIn(String adminEmail, Long eventId, List<Long> studentUserIds);
-
-    void fanpageMemberCheckOut(String adminEmail, Long eventId, Long studentUserId);
-
-    void fanpageMemberCheckOut(String adminEmail, Long eventId, List<Long> studentUserIds);
+    void fanpageMemberCheckOut(Long eventId, List<Long> studentUserIds);
 }

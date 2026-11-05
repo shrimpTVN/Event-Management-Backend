@@ -1,6 +1,5 @@
 package com.ddd.application.service.registration.impl;
 
-import com.ddd.application.service.criteriaprogress.StudentCriteriaProgressCommandService;
 import com.ddd.application.service.criteriaprogress.StudentCriteriaTransactionCommandService;
 import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.domain.enums.EventStatusEnum;
@@ -12,13 +11,13 @@ import com.ddd.domain.exception.DuplicateResourceException;
 import com.ddd.domain.exception.EventAttendanceException;
 import com.ddd.domain.exception.EventRegistrationException;
 import com.ddd.domain.model.*;
+import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +35,8 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final EventPointRepository eventPointRepository;
     private final PointTransactionRepository pointTransactionRepository;
     private final StudentSemesterPointRepository studentSemesterPointRepository;
-    private final StudentCriteriaProgressCommandService studentCriteriaProgressService;
     private final StudentCriteriaTransactionCommandService studentCriteriaTransactionCommandService;
+    private final SecurityContextPort securityContextPort;
 
     private Registration isRegistered(User user, Long userId, Long eventId) {
         if (registrationRepository.isRegistered(user.getId(), eventId)) {
@@ -56,9 +55,10 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         User user = userRepository.findByEmail(email);
 
         Event event = eventRepository.findById(eventId);
+        Instant now = Instant.now();
         if (!EventStatusEnum.PUBLISHED.name().equalsIgnoreCase(event.getStatus())
-                || event.getDateClose().isBefore(LocalDate.now())
-                || event.getDateOpen().isAfter(LocalDate.now())) {
+                || (event.getDateClose() != null && event.getDateClose().isBefore(now))
+                || (event.getDateOpen() != null && event.getDateOpen().isAfter(now))) {
             throw new EventRegistrationException("The event registration is not open yet or has already closed!");
         }
 
@@ -70,12 +70,12 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
 
     @Override
     public void cancelRegistration(String email, Long eventId, String reason) {
-        User user = userRepository.findByEmail(email);
+        Long userId = securityContextPort.getCurrentUserId();
         Event event = eventRepository.findById(eventId);
-        Registration reg = registrationRepository.findByUserAndEvent(user.getId(), eventId);
+        Registration reg = registrationRepository.findByUserAndEvent(userId, eventId);
 
         if (event.getDateClose() != null &&
-                LocalDate.now().isAfter(event.getDateClose())) {
+                Instant.now().isAfter(event.getDateClose())) {
             throw new EventRegistrationException("You can not CANCEL registration after event close");
         }
 
@@ -86,96 +86,114 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         reg.setStatus(RegistrationStatusEnum.CANCELLED);
         reg.setReason(reason);
 
-        registrationRepository.save(reg, user.getId(), eventId);
+        registrationRepository.save(reg, userId, eventId);
+    }
+
+    private void validateEventAttendanceReadiness(Event event) {
+        if (!event.isActive() || !EventStatusEnum.PUBLISHED.name().equalsIgnoreCase(event.getStatus())) {
+            throw new EventAttendanceException("Cannot attend an event that is not active or published");
+        }
+        if (event.getDateHappen() == null) {
+            throw new BusinessException("Event date has not been set");
+        }
+        if (Instant.now().isBefore(event.getDateHappen())) {
+            throw new EventAttendanceException("This event has not started yet");
+        }
     }
 
     @Override
-    public void checkIn(String email, Long eventId, String proofUrl) {
-        User user = userRepository.findByEmail(email);
+    public void checkIn(Long eventId, String proofUrl) {
+        Long userId = securityContextPort.getCurrentUserId();
         Event event = eventRepository.findById(eventId);
-        Registration registration = registrationRepository.findByUserAndEvent(user.getId(), eventId);
+        validateEventAttendanceReadiness(event);
 
+        Registration registration = registrationRepository.findByUserAndEvent(userId, eventId);
 
-        if (!LocalDate.now().isEqual(event.getDateHappen())) {
-            throw new EventAttendanceException("This event has not started yet");
+        if (registration.getStatus() == RegistrationStatusEnum.CHECKED_IN) {
+            throw new EventAttendanceException("You are already checked in");
         }
-
+        if (registration.getStatus() == RegistrationStatusEnum.COMPLETED) {
+            throw new EventAttendanceException("You have already completed attendance for this event");
+        }
+        if (registration.getStatus() == RegistrationStatusEnum.CANCELLED) {
+            throw new EventAttendanceException("Your registration for this event was cancelled");
+        }
         if (registration.getStatus() != RegistrationStatusEnum.REGISTERED) {
-            throw new EventAttendanceException("You have not registered");
+            throw new EventAttendanceException("Invalid registration status for check-in: " + registration.getStatus());
         }
 
         registration.setCheckInAt(Instant.now());
-        registration.setStatus(RegistrationStatusEnum.CHECKED_IN);
-        registration.setCheckInBy(user.getId());
+        registration.setCheckInBy(userId);
         registration.setCheckInEvidenceUrl(proofUrl);
+        registration.setStatus(RegistrationStatusEnum.CHECKED_IN);
 
-        registrationRepository.save(registration, user.getId(), eventId);
+        registrationRepository.save(registration, userId, eventId);
     }
 
     @Override
-    public void checkOut(String email, Long eventId, String proofUrl) {
-        User user = userRepository.findByEmail(email);
+    public void checkOut(Long eventId, String proofUrl) {
+        Long userId = securityContextPort.getCurrentUserId();
         Event event = eventRepository.findById(eventId);
-        Registration registration = registrationRepository.findByUserAndEvent(user.getId(), eventId);
+        validateEventAttendanceReadiness(event);
+
+        Registration registration = registrationRepository.findByUserAndEvent(userId, eventId);
 
         Instant now = Instant.now();
-        validateAndCompleteRegistration(registration, user.getId(), user.getId(), proofUrl, now);
-        registrationRepository.save(registration, user.getId(), eventId);
+        validateAndCompleteRegistration(registration, userId, userId, proofUrl, now);
+        registrationRepository.save(registration, userId, eventId);
 
-        awardPointsForStudents(event, List.of(user.getId()), now);
-        studentCriteriaTransactionCommandService.createTransactionFromEvent(user.getId(), eventId);
+        awardPointsForStudents(event, List.of(userId), now);
+        if (event.getCriteriaId() != null) {
+            studentCriteriaTransactionCommandService.createTransactionFromEvent(userId, eventId);
+        }
     }
 
-    private void validateFanpageMemberPermission(User adminUser, Event event) {
-        if (!LocalDate.now().isEqual(event.getDateHappen())) {
+    private void validateFanpageMemberPermission(Long memberId, Event event) {
+        if (!event.isActive() || !EventStatusEnum.PUBLISHED.name().equalsIgnoreCase(event.getStatus())) {
+            throw new EventAttendanceException("Cannot manage attendance for an event that is not active or published");
+        }
+        if (event.getDateHappen() != null && Instant.now().isBefore(event.getDateHappen())) {
             throw new EventAttendanceException("This event has not started yet");
         }
-        FanpageMember fanpageMember = fanpageMemberRepository.findById(event.getFanpageId(), adminUser.getId())
-                .orElseThrow(() -> new EventAttendanceException("You not have permission to manage this event"));
-        if (!fanpageMember.isActive()) {
-            throw new BusinessException("Your account has been suspended");
+
+        if (!fanpageMemberRepository.isActiveMember(event.getFanpageId(), memberId)) {
+            throw new EventAttendanceException("You not have permission to manage this event");
         }
     }
 
     @Override
-    public void fanpageMemberCheckIn(String fanpageMemberEmail, Long eventId, Long studentUserId) {
-        fanpageMemberCheckIn(fanpageMemberEmail, eventId, List.of(studentUserId));
-    }
-
-    @Override
-    public void fanpageMemberCheckOut(String fanpageMemberEmail, Long eventId, Long studentUserId) {
-        fanpageMemberCheckOut(fanpageMemberEmail, eventId, List.of(studentUserId));
-    }
-
-    @Override
-    public void fanpageMemberCheckIn(String fanpageMemberEmail, Long eventId, List<Long> studentUserIds) {
+    public void fanpageMemberCheckIn(Long eventId, List<Long> studentUserIds) {
         if (studentUserIds == null || studentUserIds.isEmpty()) {
             return;
         }
 
-        User fanpageMember = userRepository.findByEmail(fanpageMemberEmail);
+        List<Long> distinctStudentUserIds = studentUserIds.stream().distinct().toList();
+        Long fanpageMemberId = securityContextPort.getCurrentUserId();
         Event event = eventRepository.findById(eventId);
-        validateFanpageMemberPermission(fanpageMember, event);
+        validateFanpageMemberPermission(fanpageMemberId, event);
 
-        List<Registration> registrations = registrationRepository.findAllByUserIdsAndEvent(studentUserIds, eventId);
+        List<Registration> registrations = registrationRepository.findAllByUserIdsAndEvent(distinctStudentUserIds, eventId);
         Map<Long, Registration> registrationMap = registrations.stream()
                 .collect(Collectors.toMap(Registration::getUserId, r -> r));
 
         Instant now = Instant.now();
-        for (Long studentUserId : studentUserIds) {
+        for (Long studentUserId : distinctStudentUserIds) {
             Registration registration = registrationMap.get(studentUserId);
             if (registration == null) {
                 throw new EventAttendanceException("Student ID " + studentUserId + " has not registered for this event!");
             }
+            if (registration.getStatus() == RegistrationStatusEnum.CHECKED_IN) {
+                throw new EventAttendanceException("Student ID " + studentUserId + " is already checked in!");
+            }
             if (registration.getStatus() == RegistrationStatusEnum.COMPLETED) {
-                throw new EventAttendanceException("Student ID " + studentUserId + " has already completed check-out!");
+                throw new EventAttendanceException("Student ID " + studentUserId + " has already completed attendance!");
             }
             if (registration.getStatus() != RegistrationStatusEnum.REGISTERED) {
-                throw new EventAttendanceException("Student ID " + studentUserId + " cannot check out! Current status is: " +
+                throw new EventAttendanceException("Student ID " + studentUserId + " cannot check in! Current status is: " +
                         registration.getStatus());
             }
             registration.setCheckInAt(now);
-            registration.setCheckInBy(fanpageMember.getId());
+            registration.setCheckInBy(fanpageMemberId);
             registration.setStatus(RegistrationStatusEnum.CHECKED_IN);
         }
 
@@ -183,34 +201,41 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     }
 
     @Override
-    public void fanpageMemberCheckOut(String fanpageMemberEmail, Long eventId, List<Long> studentUserIds) {
+    public void fanpageMemberCheckOut(Long eventId, List<Long> studentUserIds) {
         if (studentUserIds == null || studentUserIds.isEmpty()) {
             return;
         }
 
-        User fanpageMember = userRepository.findByEmail(fanpageMemberEmail);
+        List<Long> distinctStudentUserIds = studentUserIds.stream().distinct().toList();
+        Long fanpageMemberId = securityContextPort.getCurrentUserId();
         Event event = eventRepository.findById(eventId);
-        validateFanpageMemberPermission(fanpageMember, event);
+        validateFanpageMemberPermission(fanpageMemberId, event);
 
-        List<Registration> registrations = registrationRepository.findAllByUserIdsAndEvent(studentUserIds, eventId);
+        List<Registration> registrations = registrationRepository.findAllByUserIdsAndEvent(distinctStudentUserIds, eventId);
         Map<Long, Registration> registrationMap = registrations.stream()
                 .collect(Collectors.toMap(Registration::getUserId, Function.identity()));
 
         Instant now = Instant.now();
-        for (Long studentUserId : studentUserIds) {
+        for (Long studentUserId : distinctStudentUserIds) {
             validateAndCompleteRegistration(registrationMap.get(studentUserId),
-                    studentUserId, fanpageMember.getId(), null, now);
+                    studentUserId, fanpageMemberId, null, now);
         }
 
         registrationRepository.saveAll(registrations, eventId);
-        awardPointsForStudents(event, studentUserIds, now);
-        studentCriteriaTransactionCommandService.createTransactionFromEvent(studentUserIds, eventId);
+        awardPointsForStudents(event, distinctStudentUserIds, now);
+
+        if (event.getCriteriaId() != null) {
+            studentCriteriaTransactionCommandService.createTransactionFromEvent(distinctStudentUserIds, eventId);
+        }
     }
 
     private void validateAndCompleteRegistration(Registration registration, Long studentUserId, Long checkedOutById,
                                                  String proofUrl, Instant now) {
         if (registration == null) {
             throw new EventAttendanceException("Student ID " + studentUserId + " has not registered for the event!");
+        }
+        if (registration.getStatus() == RegistrationStatusEnum.COMPLETED) {
+            throw new EventAttendanceException("Student ID " + studentUserId + " has already completed check-out!");
         }
         if (!registration.getStatus().equals(RegistrationStatusEnum.CHECKED_IN)) {
             throw new EventAttendanceException("Student ID " + studentUserId + " has not checked in!");
@@ -242,7 +267,6 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
                 ));
 
         List<PointTransaction> pointTransactions = new ArrayList<>();
-
 
         for (Long studentUserId : studentUserIds) {
             for (EventPoint eventPoint : eventPoints) {

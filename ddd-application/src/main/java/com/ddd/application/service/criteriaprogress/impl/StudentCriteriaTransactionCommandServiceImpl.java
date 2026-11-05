@@ -85,7 +85,7 @@ public class StudentCriteriaTransactionCommandServiceImpl implements StudentCrit
                 .orElseThrow(() -> new ResourceNotFoundException("Criteria not found for event"));
         boolean isLeaf = !criteriaRepository.hasChildren(criteria.getId());
 
-        if (isLeaf) {
+        if (!isLeaf) {
             throw new BusinessException("Only leaf criteria can be completed from event");
         }
 
