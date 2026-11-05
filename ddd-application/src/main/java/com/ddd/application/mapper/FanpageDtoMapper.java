@@ -19,6 +19,7 @@ public interface FanpageDtoMapper {
 
     FanpageInfoDto toInfoDto(FanpageJpaEntity entity);
 
+    @Mapping(target="fanpageId", source="fanpage.id")
     @Mapping(target="fanpageName", source="fanpage.name")
     @Mapping(target="fanpageDescription", source="fanpage.description")
     @Mapping(target="fanpageAvatarUrl", source="fanpage.avatarUrl")
