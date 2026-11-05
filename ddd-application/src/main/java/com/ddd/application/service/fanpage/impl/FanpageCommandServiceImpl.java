@@ -85,11 +85,15 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
         }
 
         Long fanpageAdminId = securityContextPort.getCurrentUserId();
+        User fanpageAdmin = userRepository.findById(fanpageAdminId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fanpage admin not found"));
         if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, fanpageAdminId)) {
             throw new AuthException("You are not admin of the fanpage");
         }
 
-              FanpageMemberInvitation invitation = new FanpageMemberInvitation(fanpageId, member.getId());
+        String inviterName = fanpageAdmin.getFullName();
+
+        FanpageMemberInvitation invitation = new FanpageMemberInvitation(fanpageId, member.getId(), inviterName);
         fanpageMemberInvitationRepository.save(invitation);
 
         log.info("Member invited to fanpage successfully: {}", member.getEmail());

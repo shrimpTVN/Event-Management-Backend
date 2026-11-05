@@ -71,5 +71,9 @@ public class User extends BaseModel {
     public void setProviderId(String providerId) {
         this.provider = providerId;
     }
+
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 }
 

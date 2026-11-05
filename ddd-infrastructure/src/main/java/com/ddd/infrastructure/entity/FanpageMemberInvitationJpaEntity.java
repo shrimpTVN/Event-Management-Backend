@@ -40,6 +40,9 @@ public class FanpageMemberInvitationJpaEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserJpaEntity user;
 
+    @Column(name="inviter_name", nullable = false, length = 255)
+    private String inviterName;
+
     @Enumerated(EnumType.STRING)
     @NotNull
     @Column(name = "status", nullable = false, length = 20)

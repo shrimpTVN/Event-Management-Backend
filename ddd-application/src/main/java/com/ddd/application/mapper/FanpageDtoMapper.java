@@ -1,11 +1,9 @@
 package com.ddd.application.mapper;
 
-import com.ddd.application.dto.fanpage.FanpageAdminUpdateDto;
-import com.ddd.application.dto.fanpage.FanpageInfoDto;
-import com.ddd.application.dto.fanpage.FanpageRegisterDto;
-import com.ddd.application.dto.fanpage.FanpageSystemAdminUpdateDto;
+import com.ddd.application.dto.fanpage.*;
 import com.ddd.domain.model.Fanpage;
 import com.ddd.infrastructure.entity.FanpageJpaEntity;
+import com.ddd.infrastructure.entity.FanpageMemberJpaEntity;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -20,6 +18,12 @@ public interface FanpageDtoMapper {
     FanpageInfoDto toInfoDto(Fanpage fanpage);
 
     FanpageInfoDto toInfoDto(FanpageJpaEntity entity);
+
+    @Mapping(target="fanpageName", source="fanpage.name")
+    @Mapping(target="fanpageDescription", source="fanpage.description")
+    @Mapping(target="fanpageAvatarUrl", source="fanpage.avatarUrl")
+    @Mapping(target="fanpageOrgName", source="fanpage.orgName")
+    ManagedFanpageInfoDto toManagedInfoDto(FanpageMemberJpaEntity fanpageMemberJpaEntity);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
