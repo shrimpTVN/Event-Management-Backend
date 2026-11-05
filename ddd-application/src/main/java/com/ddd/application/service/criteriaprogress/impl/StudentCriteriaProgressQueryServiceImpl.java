@@ -67,17 +67,30 @@ public class StudentCriteriaProgressQueryServiceImpl implements StudentCriteriaP
     }
 
     /**
-     * Recursively traverses the tree top-down and computes node completion status.
+     * Recursively traverses the tree top-down and computes node completion status with rollup.
      */
     private CriteriaProgressItemDto attachProgress(CriteriaTreeNodeDto node,
                                                    Map<Long, StudentCriteriaProgressJpaEntity> progressMap) {
 
         // Recursively build children first so their completion statuses are known
-        List<CriteriaProgressItemDto> childDtos = node.children()
-                .stream().map(child -> attachProgress(child, progressMap)).toList();
+        List<CriteriaProgressItemDto> childDtos = node.children() == null ? List.of() :
+                node.children().stream().map(child -> attachProgress(child, progressMap)).toList();
 
-        int completedChildrenCount = progressMap.get(node.id()) != null ? progressMap.get(node.id()).getCompletedChildrenCount() : 0;
-        boolean isCompleted = progressMap.get(node.id()) != null ? progressMap.get(node.id()).getIsCompleted() : false;
+        StudentCriteriaProgressJpaEntity progressEntity = progressMap.get(node.id());
+        boolean dbCompleted = progressEntity != null && Boolean.TRUE.equals(progressEntity.getIsCompleted());
+        int completedChildrenCount = progressEntity != null && progressEntity.getCompletedChildrenCount() != null
+                ? progressEntity.getCompletedChildrenCount()
+                : 0;
+
+        boolean isCompleted = dbCompleted;
+        if (!childDtos.isEmpty()) {
+            long completedChildren = childDtos.stream().filter(CriteriaProgressItemDto::isCompleted).count();
+            completedChildrenCount = Math.max(completedChildrenCount, (int) completedChildren);
+            int required = (node.requiredChildren() != null && node.requiredChildren() > 0)
+                    ? node.requiredChildren()
+                    : childDtos.size();
+            isCompleted = dbCompleted || (completedChildren >= required);
+        }
 
         return new CriteriaProgressItemDto(
                 node.id(),

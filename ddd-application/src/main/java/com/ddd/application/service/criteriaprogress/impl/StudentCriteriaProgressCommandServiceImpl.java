@@ -161,6 +161,9 @@ public class StudentCriteriaProgressCommandServiceImpl implements StudentCriteri
                     // Continue propagation to grandparent
                     currentParentId = parentCriteria.getParentId();
                 } else {
+                    if (parentProgress.getIsCompleted() == null) {
+                        parentProgress.setIsCompleted(false);
+                    }
                     // Threshold not reached or parent already completed, stop propagation
                     currentParentId = null;
                 }

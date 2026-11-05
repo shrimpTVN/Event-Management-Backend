@@ -22,7 +22,9 @@ public interface FanpageMemberRepository {
 
     boolean isActiveMember(Long fanpageId, Long memberId);
 
-    boolean isFanpageAdmin(Long userId, Long fanpageId);
+    default boolean isFanpageAdmin(Long userId, Long fanpageId) {
+        return isAdminOfFanpage(fanpageId, userId);
+    }
 
     FanpageMember findByFanpageIdAndUserId(Long fanpageId, Long userId);
 }
