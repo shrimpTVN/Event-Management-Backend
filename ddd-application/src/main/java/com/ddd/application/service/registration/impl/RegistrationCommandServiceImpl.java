@@ -38,7 +38,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final StudentCriteriaTransactionCommandService studentCriteriaTransactionCommandService;
     private final SecurityContextPort securityContextPort;
 
-    private Registration isRegistered(User user, Long userId, Long eventId) {
+    private Registration isRegistered(User user,  Long eventId) {
         if (registrationRepository.isRegistered(user.getId(), eventId)) {
             Registration registration = registrationRepository.findByUserAndEvent(user.getId(), eventId);
             if (registration.getStatus() == RegistrationStatusEnum.CANCELLED) {
@@ -51,9 +51,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     }
 
     @Override
-    public void registerEvent(String email, Long eventId) {
-        User user = userRepository.findByEmail(email);
-
+    public void registerEvent(Long eventId) {
         Event event = eventRepository.findById(eventId);
         Instant now = Instant.now();
         if (!EventStatusEnum.PUBLISHED.name().equalsIgnoreCase(event.getStatus())
@@ -62,14 +60,16 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
             throw new EventRegistrationException("The event registration is not open yet or has already closed!");
         }
 
-        Registration reg = isRegistered(user, user.getId(), eventId);
+        String email = securityContextPort.getCurrentUserEmail();
+        User user = userRepository.findByEmail(email);
+        Registration reg = isRegistered(user, eventId);
         reg.setRegDate(Instant.now());
         reg.setStatus(RegistrationStatusEnum.REGISTERED);
         registrationRepository.save(reg, user.getId(), eventId);
     }
 
     @Override
-    public void cancelRegistration(String email, Long eventId, String reason) {
+    public void cancelRegistration(Long eventId, String reason) {
         Long userId = securityContextPort.getCurrentUserId();
         Event event = eventRepository.findById(eventId);
         Registration reg = registrationRepository.findByUserAndEvent(userId, eventId);

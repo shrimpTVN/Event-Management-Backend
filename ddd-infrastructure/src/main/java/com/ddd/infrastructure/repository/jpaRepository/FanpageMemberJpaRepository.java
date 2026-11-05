@@ -20,7 +20,9 @@ public interface FanpageMemberJpaRepository extends JpaRepository<FanpageMemberJ
 
     boolean existsByFanpageIdAndUserIdAndIsActive(Long fanpageId, Long userId, boolean isActive);
 
-    @EntityGraph(attributePaths = {"user"})
+    @EntityGraph(attributePaths = {"user",
+            "user.studentProfile",
+            "user.studentProfile.major"})
     List<FanpageMemberJpaEntity> findAllByFanpageIdAndIsActive(Long fanpageId, boolean isActive);
 
     @Query("SELECT fm.id.fanpageId FROM FanpageMemberJpaEntity fm WHERE fm.id.userId = :userId AND fm.role = :role AND fm.isActive = true")

@@ -87,4 +87,17 @@ public class FanpageMemberRepositoryImpl implements FanpageMemberRepository {
 
         return fanpageMemberJpaRepository.existsByIdAndIsActive(id, true);
     }
+
+    @Override
+    public boolean isFanpageAdmin(Long userId, Long fanpageId) {
+        return fanpageMemberJpaRepository
+                .existsByFanpageIdAndUserIdAndRoleAndIsActive(fanpageId, userId, FanpageRoleEnum.ADMIN.name(), true);
+    }
+
+    @Override
+    public FanpageMember findByFanpageIdAndUserId(Long fanpageId, Long userId) {
+        return fanpageMemberJpaRepository.findById(new FanpageMemberJpaEntityId(fanpageId, userId))
+                .map(fanpageMemberMapper::toDomain)
+                .orElseThrow(() -> new ResourceNotFoundException("Fanpage member not found for fanpageId: " + fanpageId + " and userId: " + userId));
+    }
 }

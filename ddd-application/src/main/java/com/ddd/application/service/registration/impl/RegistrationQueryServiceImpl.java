@@ -6,6 +6,7 @@ import com.ddd.application.mapper.RegistrationDtoMapper;
 import com.ddd.application.service.registration.RegistrationQueryService;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.model.User;
+import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.UserRepository;
 import com.ddd.infrastructure.entity.RegistrationJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
@@ -31,12 +32,13 @@ public class RegistrationQueryServiceImpl implements RegistrationQueryService {
     private final RegistrationDtoMapper registrationDtoMapper;
     private final FanpageMemberJpaRepository fanpageMemberJpaRepository;
     private final EventJpaRepository eventJpaRepository;
+    private final SecurityContextPort securityContextPort;
 
 
     @Override
-    public Page<AttendeeInfoDto> getAttendeesOfEvent(String fanpageMemberEmail, Long fanpageId, Long eventId,
+    public Page<AttendeeInfoDto> getAttendeesOfEvent(Long fanpageId, Long eventId,
                                                      int page, int size, String sortBy, String sortDir) {
-       verifyFanpageMember(fanpageMemberEmail, fanpageId, eventId);
+       verifyFanpageMember(fanpageId, eventId);
 
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ?
                 Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
@@ -48,35 +50,33 @@ public class RegistrationQueryServiceImpl implements RegistrationQueryService {
     }
 
     @Override
-    public Page<RegistrationDto> getHistory(String email, int page, int size) {
-        User user = userRepository.findByEmail(email);
+    public Page<RegistrationDto> getHistory(int page, int size) {
+        Long userId = securityContextPort.getCurrentUserId();
         Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<RegistrationJpaEntity> entityPage = registrationJpaRepository.findAllByUserId(user.getId(), pageable);
+        Page<RegistrationJpaEntity> entityPage = registrationJpaRepository.findAllByUserId(userId, pageable);
 
         return entityPage.map(registrationDtoMapper::toDto);
 
     }
 
     @Override
-    public List<RegistrationDto> getUpcoming(String email) {
-        User user = userRepository.findByEmail(email);
-
-        List<RegistrationJpaEntity> upcomingList = registrationJpaRepository.findUpcomingRegisteredEvents(user.getId());
+    public List<RegistrationDto> getUpcoming() {
+        Long userId = securityContextPort.getCurrentUserId();
+        List<RegistrationJpaEntity> upcomingList = registrationJpaRepository.findUpcomingRegisteredEvents(userId);
 
         return upcomingList.stream()
                 .map(registrationDtoMapper::toDto)
                 .toList();
     }
 
-    private void verifyFanpageMember(String fanpageMemberEmail, Long fanpageId, Long eventId) {
-        User user = userRepository.findByEmail(fanpageMemberEmail);
+    private void verifyFanpageMember( Long fanpageId, Long eventId) {
+       Long memberId = securityContextPort.getCurrentUserId();
 
-        if (!fanpageMemberJpaRepository.existsByFanpageIdAndUserIdAndIsActive(fanpageId, user.getId(),  true)) {
+        if (!fanpageMemberJpaRepository.existsByFanpageIdAndUserIdAndIsActive(fanpageId, memberId,  true)) {
             throw new BusinessException("User is not a member of the specified fanpage");
         }
-
        if (!eventJpaRepository.existsByIdAndFanpageId(eventId, fanpageId)) {
             throw new BusinessException("Event does not belong to the specified fanpage");
         }

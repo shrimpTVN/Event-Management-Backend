@@ -24,5 +24,8 @@ public interface RegistrationDtoMapper {
     @Mapping(target="email", source="user.email")
     @Mapping(target="gender", source="user.gender")
     @Mapping(target="avatarUrl", source="user.avatarUrl")
+    @Mapping(target="studentId", source="user.studentProfile.studentId")
+    @Mapping(target="KNumber", source="user.studentProfile.KNumber")
+    @Mapping(target="majorName", source="user.studentProfile.major.name")
     AttendeeInfoDto toAttendeeInfoDto(RegistrationJpaEntity entity);
 }
