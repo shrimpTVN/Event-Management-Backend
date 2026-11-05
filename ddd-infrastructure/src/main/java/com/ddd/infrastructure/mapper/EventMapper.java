@@ -37,6 +37,11 @@ public interface EventMapper {
     EventJpaEntity toJpaEntity(Event domain);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "eventPoints", ignore = true)
     @Mapping(target = "dateOpen", source = "dateOpen", qualifiedByName = "localDateToInstant")
     @Mapping(target = "dateClose", source = "dateClose", qualifiedByName = "localDateToInstant")

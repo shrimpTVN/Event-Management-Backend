@@ -7,6 +7,11 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -15,6 +20,7 @@ import java.time.OffsetDateTime;
 @Setter
 @Entity
 @Table(name = "student_semester_points")
+@EntityListeners(AuditingEntityListener.class)
 public class StudentSemesterPointJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,21 +53,19 @@ public class StudentSemesterPointJpaEntity {
     @Column(name = "finalized_at")
     private Instant finalizedAt;
 
-    @NotNull
-    @ColumnDefault("now()")
-    @Column(name = "created_at", nullable = false)
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(name = "created_by")
+    @CreatedBy
+    @Column(name = "created_by", updatable = false)
     private Long createdBy;
 
-    @NotNull
-    @ColumnDefault("now()")
+    @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @LastModifiedBy
     @Column(name = "updated_by")
     private Long updatedBy;
-
-
 }

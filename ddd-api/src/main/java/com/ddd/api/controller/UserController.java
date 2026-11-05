@@ -113,9 +113,4 @@ public class UserController {
         return BaseResponse.ok();
     }
 
-
-    //accept fanpage  member invite
-
-
-    //decline fanpage member invite
 }

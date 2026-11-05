@@ -2,12 +2,14 @@ package com.ddd.infrastructure.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
 @Entity
 @Table(name = "conversations")
+@EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -26,7 +28,7 @@ public class ConversationJpaEntity {
     @JoinColumn(name = "fanpage_id", nullable = false)
     private FanpageJpaEntity fanpage;
 
-    @Column(name = "created_at", updatable = false)
-    @CreationTimestamp
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 }

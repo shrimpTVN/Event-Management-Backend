@@ -170,7 +170,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
             if (registration.getStatus() == RegistrationStatusEnum.COMPLETED) {
                 throw new EventAttendanceException("Student ID " + studentUserId + " has already completed check-out!");
             }
-            if (registration.getStatus() != RegistrationStatusEnum.CHECKED_IN) {
+            if (registration.getStatus() != RegistrationStatusEnum.REGISTERED) {
                 throw new EventAttendanceException("Student ID " + studentUserId + " cannot check out! Current status is: " +
                         registration.getStatus());
             }
