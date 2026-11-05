@@ -12,7 +12,7 @@ import java.util.Set;
 
 @Repository
 public interface RoleJpaRepository extends JpaRepository<RoleJpaEntity, Long> {
-    Optional<RoleJpaEntity> findByName(String name);
+    RoleJpaEntity findByName(String name);
 
     Set<RoleJpaEntity> findByNameIn(Collection<String> names);
 

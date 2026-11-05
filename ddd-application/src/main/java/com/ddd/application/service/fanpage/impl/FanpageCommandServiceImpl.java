@@ -4,20 +4,16 @@ import com.ddd.application.dto.fanpage.FanpageAdminUpdateDto;
 import com.ddd.application.dto.fanpage.FanpageRegisterDto;
 import com.ddd.application.dto.fanpage.FanpageSystemAdminUpdateDto;
 import com.ddd.application.mapper.FanpageDtoMapper;
-import com.ddd.application.service.fanpage.FanpageService;
+import com.ddd.application.service.fanpage.FanpageCommandService;
 import com.ddd.domain.enums.FanpageRoleEnum;
 import com.ddd.domain.enums.FanpageStatusEnum;
+import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.DuplicateResourceException;
 import com.ddd.domain.exception.ResourceNotFoundException;
-import com.ddd.domain.model.Fanpage;
-import com.ddd.domain.model.FanpageMember;
-import com.ddd.domain.model.User;
-import com.ddd.domain.model.Following;
-import com.ddd.domain.repository.FanpageMemberRepository;
-import com.ddd.domain.repository.FanpageRepository;
-import com.ddd.domain.repository.FollowingRepository;
-import com.ddd.domain.repository.UserRepository;
+import com.ddd.domain.model.*;
+import com.ddd.domain.model.port.security.SecurityContextPort;
+import com.ddd.domain.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,12 +25,16 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
-public class FanpageServiceImpl implements FanpageService {
+public class FanpageCommandServiceImpl implements FanpageCommandService {
     private final FanpageRepository fanpageRepository;
     private final FanpageMemberRepository fanpageMemberRepository;
+    private final FanpageMemberInvitationRepository fanpageMemberInvitationRepository;
+    private final RoleRepository roleRepository;
     private final FanpageDtoMapper fanpageDtoMapper;
     private final UserRepository userRepository;
     private final FollowingRepository followingRepository;
+    private final SecurityContextPort securityContextPort;
+
 
 
     @Override
@@ -78,31 +78,37 @@ public class FanpageServiceImpl implements FanpageService {
     }
 
     @Override
-    public void addMemberToFanpage(Long fanpageId, Long userId, String email) {
-        User member = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        User fanpageAdmin = userRepository.findByEmail(email);
-
-        if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, fanpageAdmin.getId())) {
-            throw new BusinessException("User email: " + email + " is not an admin of the fanpage");
+    public void inviteMemberToFanpage(Long fanpageId, String memberEmail) {
+        User member = userRepository.findByEmail(memberEmail);
+        if (member == null) {
+            throw new IllegalArgumentException("User not found");
         }
 
-        FanpageMember fanpageMember = new FanpageMember(fanpageId, member.getId(), FanpageRoleEnum.MEMBER.name());
-        fanpageMemberRepository.save(fanpageMember);
-        log.info("Member added to fanpage successfully: {}", member.getEmail());
+        Long fanpageAdminId = securityContextPort.getCurrentUserId();
+        if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, fanpageAdminId)) {
+            throw new AuthException("You are not admin of the fanpage");
+        }
+
+              FanpageMemberInvitation invitation = new FanpageMemberInvitation(fanpageId, member.getId());
+        fanpageMemberInvitationRepository.save(invitation);
+
+        log.info("Member invited to fanpage successfully: {}", member.getEmail());
     }
 
     @Override
-    public void removeMemberFromFanpage(Long fanpageId, Long userId, String email) {
-        User member = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        User fanpageAdmin = userRepository.findByEmail(email);
-
-        if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, fanpageAdmin.getId())) {
-            throw new BusinessException("User email: " + email + " is not an admin of the fanpage");
+    public void removeMemberFromFanpage(Long fanpageId, String memberEmail) {
+        User member = userRepository.findByEmail(memberEmail);
+        if (member == null) {
+            throw new IllegalArgumentException("User not found");
         }
 
-        fanpageMemberRepository.removeFanpageMember(fanpageId, userId);
+        Long fanpageAdminId = securityContextPort.getCurrentUserId();
+
+        if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, fanpageAdminId)) {
+            throw new AuthException("You are not admin of the fanpage");
+        }
+
+        fanpageMemberRepository.removeFanpageMember(fanpageId, member.getId());
         log.info("Member removed from fanpage successfully: {}", member.getEmail());
     }
 
@@ -121,7 +127,7 @@ public class FanpageServiceImpl implements FanpageService {
             throw new ResourceNotFoundException("User not found");
         }
         if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, user.getId())) {
-            throw new BusinessException("User email: " + email + " is not an admin of the fanpage");
+            throw new AuthException("You are not admin of the fanpage");
         }
 
         Fanpage fanpage = fanpageRepository.findByIdAndIsActive(fanpageId, true)
@@ -215,5 +221,35 @@ public class FanpageServiceImpl implements FanpageService {
         following.unfollow();
         followingRepository.save(following);
         log.info("User {} unfollowed fanpage {}", user.getId(), fanpageId);
+    }
+
+    @Override
+    public void appointFanpageAdmin(Long fanpageId, String memberEmail) {
+        Long userId = securityContextPort.getCurrentUserId();
+        if (!fanpageMemberRepository.isFanpageAdmin(userId, fanpageId)){
+            throw new AuthException("You are not allowed to appoint fanpage admin. Only admins can appoint fanpage admin");
+        }
+
+        User member = userRepository.findByEmail(memberEmail);
+        if (member == null) {
+            throw new ResourceNotFoundException("User not found with email: " + memberEmail);
+        }
+
+        if (!fanpageMemberRepository.isFanpageMember(member.getId(), fanpageId)){
+            throw new IllegalArgumentException("Member with email: " + memberEmail + " is not fanpage member of fanpage with id: " + fanpageId);
+        }
+
+        FanpageMember currentAdminRole = fanpageMemberRepository.findByFanpageIdAndUserId(fanpageId, userId);
+        currentAdminRole.setRole(FanpageRoleEnum.MEMBER.name());
+        fanpageMemberRepository.save(currentAdminRole);
+
+        FanpageMember currentMemberRole = fanpageMemberRepository.findByFanpageIdAndUserId(fanpageId, member.getId());
+        currentMemberRole.setRole(FanpageRoleEnum.ADMIN.name());
+        fanpageMemberRepository.save(currentMemberRole);
+
+        Role adminRole = roleRepository.findByName(FanpageRoleEnum.ADMIN.name());
+        member.addRole(adminRole);
+        userRepository.save(member);
+        log.info("Appointment fanpage admin of fanpage {} from userId: {} to userId: {}", fanpageId, userId, member.getId());
     }
 }
