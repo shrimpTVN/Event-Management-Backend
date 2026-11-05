@@ -1,15 +1,15 @@
 package com.ddd.application.dto.event;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 
 public record EventUpdateDto(
         String name,
         String description,
         String location,
-        LocalDate dateOpen,
-        LocalDate dateClose,
-        LocalDate dateHappen,
+        Instant dateOpen,
+        Instant dateClose,
+        Instant dateHappen,
         Integer capacity,
         Integer maleQuantity,
         Integer femaleQuantity,

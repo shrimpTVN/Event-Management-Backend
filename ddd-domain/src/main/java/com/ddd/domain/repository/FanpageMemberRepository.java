@@ -19,4 +19,6 @@ public interface FanpageMemberRepository {
     List<Long> findFanpageIdsByUserIdAndRole(Long userId, String role);
 
     void deactivateAllMembersByFanpageId(Long fanpageId);
+
+    boolean isActiveMember(Long fanpageId, Long id);
 }

@@ -80,4 +80,11 @@ public class FanpageMemberRepositoryImpl implements FanpageMemberRepository {
     public void deactivateAllMembersByFanpageId(Long fanpageId) {
         fanpageMemberJpaRepository.deactivateAllMembersByFanpageId(fanpageId);
     }
+
+    @Override
+    public boolean isActiveMember(Long fanpageId, Long memberId) {
+        FanpageMemberJpaEntityId id = new FanpageMemberJpaEntityId(fanpageId, memberId);
+
+        return fanpageMemberJpaRepository.existsByIdAndIsActive(id, true);
+    }
 }
