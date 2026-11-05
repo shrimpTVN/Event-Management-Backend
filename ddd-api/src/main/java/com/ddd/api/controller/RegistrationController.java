@@ -48,7 +48,6 @@ public class RegistrationController {
                                                                   @RequestParam(defaultValue = "10") int size) {
 
         var summaryPage = registrationQueryService.getHistory(page, size);
-
         return BaseResponse.of(summaryPage.map(registrationApiMapper::toResponseDto));
     }
 
@@ -56,11 +55,9 @@ public class RegistrationController {
     @GetMapping("/me/upcoming")
     public BaseResponse<List<RegistrationResponseDto>> getUpcoming() {
         var summaryList = registrationQueryService.getUpcoming();
-
         List<RegistrationResponseDto> responseList = summaryList.stream()
                 .map(registrationApiMapper::toResponseDto)
                 .toList();
-
         return BaseResponse.of(responseList);
     }
 
