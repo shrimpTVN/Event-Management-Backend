@@ -2,6 +2,7 @@ package com.ddd.application.service.registration.impl;
 
 import com.ddd.application.dto.fanpage.AttendeeInfoDto;
 import com.ddd.application.dto.registration.RegistrationDto;
+import com.ddd.application.dto.registration.RegistrationInfoDto;
 import com.ddd.application.mapper.RegistrationDtoMapper;
 import com.ddd.application.service.registration.RegistrationQueryService;
 import com.ddd.domain.exception.BusinessException;
@@ -28,7 +29,6 @@ import java.util.List;
 public class RegistrationQueryServiceImpl implements RegistrationQueryService {
 
     private final RegistrationJpaRepository registrationJpaRepository;
-    private final UserRepository userRepository;
     private final RegistrationDtoMapper registrationDtoMapper;
     private final FanpageMemberJpaRepository fanpageMemberJpaRepository;
     private final EventJpaRepository eventJpaRepository;
@@ -50,24 +50,24 @@ public class RegistrationQueryServiceImpl implements RegistrationQueryService {
     }
 
     @Override
-    public Page<RegistrationDto> getHistory(int page, int size) {
+    public Page<RegistrationInfoDto> getHistory(int page, int size) {
         Long userId = securityContextPort.getCurrentUserId();
         Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<RegistrationJpaEntity> entityPage = registrationJpaRepository.findAllByUserId(userId, pageable);
 
-        return entityPage.map(registrationDtoMapper::toDto);
+        return entityPage.map(registrationDtoMapper::toInfoDto);
 
     }
 
     @Override
-    public List<RegistrationDto> getUpcoming() {
+    public List<RegistrationInfoDto> getUpcoming() {
         Long userId = securityContextPort.getCurrentUserId();
         List<RegistrationJpaEntity> upcomingList = registrationJpaRepository.findUpcomingRegisteredEvents(userId);
 
         return upcomingList.stream()
-                .map(registrationDtoMapper::toDto)
+                .map(registrationDtoMapper::toInfoDto)
                 .toList();
     }
 

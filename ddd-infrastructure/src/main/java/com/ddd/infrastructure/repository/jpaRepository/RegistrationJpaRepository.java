@@ -2,13 +2,13 @@ package com.ddd.infrastructure.repository.jpaRepository;
 
 import com.ddd.infrastructure.entity.RegistrationJpaEntity;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import org.springframework.data.domain.Pageable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -25,8 +25,13 @@ public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpa
             "AND r.user.id IN :userIds")
     List<RegistrationJpaEntity> findByEventIdAndUserIdIn(@Param("eventId") Long eventId, @Param("userIds") Collection<Long> userIds);
 
+    @EntityGraph(attributePaths = {"event", "event.eventType", "event.criteria",
+            "event.fanpage", "event.semester", "event.eventPoints"})
     Page<RegistrationJpaEntity> findAllByUserId(Long userId, Pageable pageable);
 
+
+    @EntityGraph(attributePaths = {"event", "event.eventType", "event.criteria",
+            "event.fanpage", "event.semester", "event.eventPoints"})
     @Query("SELECT r FROM RegistrationJpaEntity r JOIN FETCH r.event e " +
             "WHERE r.user.id = :userId " +
             "AND r.status = RegistrationStatusEnum.REGISTERED " +
