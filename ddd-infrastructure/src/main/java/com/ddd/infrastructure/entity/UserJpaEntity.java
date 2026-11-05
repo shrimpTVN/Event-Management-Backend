@@ -3,8 +3,6 @@ package com.ddd.infrastructure.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -53,4 +51,9 @@ public class UserJpaEntity extends BaseEntityJpa {
     )
     private Set<RoleJpaEntity> roles = new HashSet<>();
 
+    @OneToOne(mappedBy="user", fetch = FetchType.LAZY)
+    private StudentProfileJpaEntity studentProfile;
+
+    @OneToOne(mappedBy="user", fetch = FetchType.LAZY)
+    private FanpageAdminProfileJpaEntity fanpageAdminProfile;
 }

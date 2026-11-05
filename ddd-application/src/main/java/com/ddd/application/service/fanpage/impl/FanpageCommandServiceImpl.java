@@ -235,7 +235,7 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
             throw new ResourceNotFoundException("User not found with email: " + memberEmail);
         }
 
-        if (!fanpageMemberRepository.isFanpageMember(member.getId(), fanpageId)){
+        if (!fanpageMemberRepository.isActiveMember( fanpageId, member.getId())){
             throw new IllegalArgumentException("Member with email: " + memberEmail + " is not fanpage member of fanpage with id: " + fanpageId);
         }
 

@@ -43,7 +43,7 @@ public class FanpageMemberInvitationCommandServiceImpl implements FanpageMemberI
 
         Long fanpageId = invitation.getFanpageId();
 
-        if (!fanpageMemberRepository.isFanpageMember(userId, fanpageId)) {
+        if (!fanpageMemberRepository.isActiveMember( fanpageId, userId)) {
             FanpageMember newMember = new FanpageMember(fanpageId, userId, "MEMBER");
             fanpageMemberRepository.save(newMember);
         }

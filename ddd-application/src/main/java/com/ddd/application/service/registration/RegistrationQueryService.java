@@ -6,8 +6,9 @@ import org.springframework.data.domain.Page;
 import java.util.List;
 
 public interface RegistrationQueryService {
-   Page<AttendeeInfoDto> getAttendeesOfEvent(String fanpageMemberEmail, Long fanpageId, Long eventId, int page, int size, String sortBy, String sortDir);
+   Page<AttendeeInfoDto> getAttendeesOfEvent(Long fanpageId,
+                                             Long eventId, int page, int size, String sortBy, String sortDir);
 
-    Page<RegistrationDto> getHistory(String email, int page, int size);
-    List<RegistrationDto> getUpcoming(String email);
+    Page<RegistrationDto> getHistory(int page, int size);
+    List<RegistrationDto> getUpcoming();
 }

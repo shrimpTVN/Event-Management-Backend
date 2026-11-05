@@ -28,40 +28,34 @@ public class RegistrationController {
     private final RegistrationApiMapper registrationApiMapper;
 
     @PostMapping("/me/events/{eventId}")
-    public BaseResponse<Void> registerEvent(Authentication authentication,
-                                            @PathVariable Long eventId) {
-        String email = authentication.getName();
-        registrationCommandService.registerEvent(email, eventId);
+    public BaseResponse<Void> registerEvent(@PathVariable Long eventId) {
+        registrationCommandService.registerEvent(eventId);
         return BaseResponse.ok();
     }
 
     @PatchMapping("/me/events/{eventId}/cancel")
-    public BaseResponse<Void> cancelRegistration(Authentication authentication,
-                                                 @PathVariable Long eventId,
+    public BaseResponse<Void> cancelRegistration(@PathVariable Long eventId,
                                                  @RequestBody Map<String, String> body) {
-        String email = authentication.getName();
         String reason = body.getOrDefault("reason", "");
 
-        registrationCommandService.cancelRegistration(email, eventId, reason);
+        registrationCommandService.cancelRegistration(eventId, reason);
         return BaseResponse.ok();
     }
 
 
     @GetMapping("/me/history")
-    public BaseResponse<Page<RegistrationResponseDto>> getHistory(Authentication authentication,
-                                                                  @RequestParam(defaultValue = "0") int page,
+    public BaseResponse<Page<RegistrationResponseDto>> getHistory(@RequestParam(defaultValue = "0") int page,
                                                                   @RequestParam(defaultValue = "10") int size) {
-        String email = authentication.getName();
-        var summaryPage = registrationQueryService.getHistory(email, page, size);
+
+        var summaryPage = registrationQueryService.getHistory(page, size);
 
         return BaseResponse.of(summaryPage.map(registrationApiMapper::toResponseDto));
     }
 
 
     @GetMapping("/me/upcoming")
-    public BaseResponse<List<RegistrationResponseDto>> getUpcoming(Authentication authentication) {
-        String email = authentication.getName();
-        var summaryList = registrationQueryService.getUpcoming(email);
+    public BaseResponse<List<RegistrationResponseDto>> getUpcoming() {
+        var summaryList = registrationQueryService.getUpcoming();
 
         List<RegistrationResponseDto> responseList = summaryList.stream()
                 .map(registrationApiMapper::toResponseDto)
@@ -87,15 +81,15 @@ public class RegistrationController {
     }
 
     @GetMapping("/fanpage-member/fanpages/{fanpageId}/events/{eventId}/attendees")
-    public BaseResponse<List<AttendeeResponseDto>> getAttendeesOfEvent(Authentication authentication,
+    public BaseResponse<List<AttendeeResponseDto>> getAttendeesOfEvent(
                                                                        @PathVariable Long eventId,
                                                                        @PathVariable Long fanpageId,
                                                                        @RequestParam(defaultValue = "0") int page,
                                                                        @RequestParam(defaultValue = "10") int size,
                                                                        @RequestParam(defaultValue = "regDate") String sortBy,
-                                                                       @RequestParam(defaultValue = "asc") String sortDir) {
-        String fanpageMemberEmail = authentication.getName();
-        Page<AttendeeInfoDto> attendees = registrationQueryService.getAttendeesOfEvent(fanpageMemberEmail, fanpageId, eventId, page, size, sortBy, sortDir);
+                                                                       @RequestParam(defaultValue = "desc") String sortDir) {
+        Page<AttendeeInfoDto> attendees = registrationQueryService
+                .getAttendeesOfEvent(fanpageId, eventId, page, size, sortBy, sortDir);
         return BaseResponse.of(attendees.stream().map(registrationApiMapper::toAttendeeResponseDto).toList());
     }
 
@@ -112,23 +106,5 @@ public class RegistrationController {
         registrationCommandService.fanpageMemberCheckOut(eventId, request.studentUserIds());
         return BaseResponse.ok();
     }
-//
-//    @PatchMapping("/fanpage-member/events/{eventId}/users/{studentUserId}/check-in")
-//    public BaseResponse<Void> fanpageMemberCheckIn(Authentication authentication,
-//                                                   @PathVariable Long eventId,
-//                                                   @PathVariable Long studentUserId) {
-//        String adminEmail = authentication.getName();
-//        registrationCommandService.fanpageMemberCheckIn(adminEmail, eventId, studentUserId);
-//        return BaseResponse.ok();
-//    }
-//
-//    @PatchMapping("/fanpage-member/events/{eventId}/users/{studentUserId}/check-out")
-//    public BaseResponse<Void> fanpageMemberCheckOut(Authentication authentication,
-//                                                    @PathVariable Long eventId,
-//                                                    @PathVariable Long studentUserId) {
-//        String adminEmail = authentication.getName();
-//        registrationCommandService.fanpageMemberCheckOut(adminEmail, eventId, studentUserId);
-//        return BaseResponse.ok();
-//    }
 
 }
