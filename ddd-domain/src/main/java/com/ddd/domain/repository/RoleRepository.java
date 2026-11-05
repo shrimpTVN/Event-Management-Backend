@@ -1,9 +1,9 @@
 package com.ddd.domain.repository;
 
 import com.ddd.domain.model.Role;
-import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface RoleRepository {
 
@@ -16,4 +16,6 @@ public interface RoleRepository {
     Role findById(Long id);
 
     Role saveRole(Role role);
+
+    Role findByName(String name);
 }

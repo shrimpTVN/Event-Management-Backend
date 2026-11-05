@@ -13,6 +13,11 @@ public interface SchoolMapper {
     SchoolJpaEntity toJpaEntity(School school);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
     @Mapping(source = "active", target = "isActive")
     void updateJpaEntity(School school, @MappingTarget SchoolJpaEntity schoolJpaEntity);
 

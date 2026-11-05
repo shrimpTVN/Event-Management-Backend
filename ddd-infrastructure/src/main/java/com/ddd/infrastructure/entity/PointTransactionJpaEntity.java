@@ -10,6 +10,11 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -18,6 +23,7 @@ import java.time.OffsetDateTime;
 @Setter
 @Entity
 @Table(name = "point_transactions")
+@EntityListeners(AuditingEntityListener.class)
 public class PointTransactionJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -67,30 +73,19 @@ public class PointTransactionJpaEntity {
     @Column(name = "description", length = Integer.MAX_VALUE)
     private String description;
 
-    @NotNull
-    @ColumnDefault("now()")
-    @Column(name = "created_at")
-    private Instant createdAt = Instant.now();
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 
-    @Column(name = "created_by")
+    @CreatedBy
+    @Column(name = "created_by", updatable = false)
     private Long createdBy;
 
-    @NotNull
-    @ColumnDefault("now()")
-    @Column(name = "updated_at")
-    private Instant updatedAt = Instant.now();
+    @LastModifiedDate
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 
+    @LastModifiedBy
     @Column(name = "updated_by")
     private Long updatedBy;
-
-    @PrePersist
-    protected void onPrePersist() {
-        if (createdAt == null) {
-            createdAt = Instant.now();
-        }
-        if (updatedAt == null) {
-            updatedAt = Instant.now();
-        }
-    }
-
 }

@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -43,6 +44,12 @@ public class RoleRepositoryImpl implements RoleRepository {
     public Role saveRole(Role role){
         RoleJpaEntity roleJpaEntity = roleMapper.toJpaEntity(role);
         return roleMapper.toDomainModel(roleJpaRepository.save(roleJpaEntity));
+    }
+
+    @Override
+    public Role findByName(String name) {
+        return roleMapper.toDomainModel(roleJpaRepository.findByName(name));
+
     }
 
     @Override

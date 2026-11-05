@@ -5,6 +5,7 @@ import com.ddd.api.dto.fanpage.req.FanpageFilterRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageRegisterRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageSystemAdminUpdateRequestDto;
 import com.ddd.api.dto.fanpage.res.FanpageFollowCountResponseDto;
+import com.ddd.api.dto.fanpage.res.FanpageMemberInvitationResponseDto;
 import com.ddd.api.dto.fanpage.res.FanpageMemberResponseDto;
 import com.ddd.api.dto.fanpage.res.FanpageResponseDto;
 import com.ddd.api.dto.registration.res.AttendeeResponseDto;
@@ -25,4 +26,6 @@ public interface FanpageApiMapper {
     FanpageSystemAdminUpdateDto toSystemAdminUpdateDto(FanpageSystemAdminUpdateRequestDto requestDto);
 
     FanpageFollowCountResponseDto toFollowCountResponseDto(FanpageFollowCountDto dto);
+
+    FanpageMemberInvitationResponseDto toInvitationResponseDto(FanpageMemberInvitationInfoDto dto);
 }
