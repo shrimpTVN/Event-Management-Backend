@@ -1,8 +1,10 @@
 package com.ddd.application.dto.fanpage;
 
-public record ManagedFanpageInfoDto(String fanpageName,
-                                    String fanpageDescription,
-                                    String fanpageAvatarUrl,
-                                    String fanpageOrgName,
-                                    String role) {
+public record ManagedFanpageInfoDto(
+        Long fanpageId,
+        String fanpageName,
+        String fanpageDescription,
+        String fanpageAvatarUrl,
+        String fanpageOrgName,
+        String role) {
 }
