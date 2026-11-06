@@ -7,6 +7,7 @@ import com.ddd.application.mapper.FanpageDtoMapper;
 import com.ddd.application.service.fanpage.FanpageCommandService;
 import com.ddd.domain.enums.FanpageRoleEnum;
 import com.ddd.domain.enums.FanpageStatusEnum;
+import com.ddd.domain.enums.RoleEnum;
 import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.DuplicateResourceException;
@@ -247,7 +248,7 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
         currentMemberRole.setRole(FanpageRoleEnum.ADMIN.name());
         fanpageMemberRepository.save(currentMemberRole);
 
-        Role adminRole = roleRepository.findByName(FanpageRoleEnum.ADMIN.name());
+        Role adminRole = roleRepository.findByName(RoleEnum.FANPAGE_ADMIN.name());
         member.addRole(adminRole);
         userRepository.save(member);
         log.info("Appointment fanpage admin of fanpage {} from userId: {} to userId: {}", fanpageId, userId, member.getId());
