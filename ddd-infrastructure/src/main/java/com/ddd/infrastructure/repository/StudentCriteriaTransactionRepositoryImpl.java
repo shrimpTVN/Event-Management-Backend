@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -37,6 +38,23 @@ public class StudentCriteriaTransactionRepositoryImpl implements StudentCriteria
             entities.add(transactionEntity);
         });
         jpaRepository.saveAll(entities);
+    }
+
+    @Override
+    public boolean existsByIdAndUserIdAndCompletionSource(Long criteriaTransactionId, Long userId, String completionSource) {
+        return jpaRepository.existsByIdAndUserIdAndCompletionSource(criteriaTransactionId, userId, completionSource);
+    }
+
+    @Override
+    public Optional<StudentCriteriaTransaction> findById(Long criteriaTransactionId) {
+        return jpaRepository.findById(criteriaTransactionId)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public void delete(StudentCriteriaTransaction transaction) {
+        var transactionEntity = mapper.toEntity(transaction);
+        jpaRepository.delete(transactionEntity);
     }
 
     private void assignReferences(StudentCriteriaTransaction transaction,

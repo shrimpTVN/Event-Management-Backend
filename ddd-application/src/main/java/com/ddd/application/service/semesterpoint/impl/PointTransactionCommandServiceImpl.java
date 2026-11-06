@@ -9,6 +9,7 @@ import com.ddd.domain.enums.PointTransactionTypeEnum;
 import com.ddd.domain.model.PointTransaction;
 import com.ddd.domain.model.StudentSemesterPoint;
 import com.ddd.domain.model.User;
+import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.PointTransactionRepository;
 import com.ddd.domain.repository.StudentSemesterPointRepository;
 import com.ddd.domain.repository.UserRepository;
@@ -23,23 +24,24 @@ public class PointTransactionCommandServiceImpl implements PointTransactionComma
     private final PointTransactionRepository pointTransactionRepository;
     private final UserRepository userRepository;
     private final StudentSemesterPointRepository studentSemesterPointRepository;
+    private final SecurityContextPort securityContextPort;
 
 
     @Override
     @Transactional
-    public void createPointTransactionForStudent(String email, PointTransactionRequestInfoDto pointTransactionRequestInfoDto) {
-        User user = userRepository.findByEmail(email);
-        PointTransaction pointTransaction = createPointTransaction(pointTransactionRequestInfoDto, user);
-        StudentSemesterPoint studentSemesterPoint = createStudentSemesterPoint(pointTransactionRequestInfoDto, user);
+    public void createPointTransactionForStudent(PointTransactionRequestInfoDto pointTransactionRequestInfoDto) {
+       Long userId = securityContextPort.getCurrentUserId();
+        PointTransaction pointTransaction = createPointTransaction(pointTransactionRequestInfoDto, userId);
+        StudentSemesterPoint studentSemesterPoint = createStudentSemesterPoint(pointTransactionRequestInfoDto, userId);
 
         pointTransactionRepository.save(pointTransaction);
         //update student semester point
         studentSemesterPointRepository.save(studentSemesterPoint);
     }
 
-    private PointTransaction createPointTransaction(PointTransactionRequestInfoDto pointTransactionRequestInfoDto, User user){
+    private PointTransaction createPointTransaction(PointTransactionRequestInfoDto pointTransactionRequestInfoDto, Long userId){
         PointTransaction pointTransaction = pointTransactionDtoMapper.toDomain(pointTransactionRequestInfoDto);
-        pointTransaction.setUserId(user.getId());
+        pointTransaction.setUserId(userId);
         pointTransaction.setType(PointTransactionTypeEnum.MANUAL.name());
         pointTransaction.setDescription( pointTransaction.getDescription() == null ?
                 "Manual point transaction" : pointTransaction.getDescription());
@@ -47,13 +49,13 @@ public class PointTransactionCommandServiceImpl implements PointTransactionComma
         return pointTransaction;
     }
 
-    private StudentSemesterPoint createStudentSemesterPoint( PointTransactionRequestInfoDto pointTransactionRequestInfoDto, User user) {
-        StudentSemesterPoint studentSemesterPoint = studentSemesterPointRepository.findByUserIdAndSemesterIdAndPointCategoryId(user.getId(),
+    private StudentSemesterPoint createStudentSemesterPoint( PointTransactionRequestInfoDto pointTransactionRequestInfoDto, Long userId) {
+        StudentSemesterPoint studentSemesterPoint = studentSemesterPointRepository.findByUserIdAndSemesterIdAndPointCategoryId(userId,
                 pointTransactionRequestInfoDto.semesterId(), pointTransactionRequestInfoDto.pointCategoryId());
 
         if (studentSemesterPoint == null) {
             studentSemesterPoint = new StudentSemesterPoint();
-            studentSemesterPoint.setUserId(user.getId());
+            studentSemesterPoint.setUserId(userId);
             studentSemesterPoint.setSemesterId(pointTransactionRequestInfoDto.semesterId());
             studentSemesterPoint.setPointCategoryId(pointTransactionRequestInfoDto.pointCategoryId());
             studentSemesterPoint.setTotalPoint(pointTransactionRequestInfoDto.points());

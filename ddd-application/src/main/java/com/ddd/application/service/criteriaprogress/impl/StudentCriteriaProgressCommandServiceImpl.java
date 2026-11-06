@@ -13,21 +13,14 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Command service handling write mutations and business rules for student criteria progress.
- */
+
 @Service
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
 public class StudentCriteriaProgressCommandServiceImpl implements StudentCriteriaProgressCommandService {
-
-    private final UserRepository userRepository;
     private final CriteriaRepository criteriaRepository;
     private final StudentCriteriaProgressRepository progressRepository;
-    private final AcademicYearRepository academicYearRepository;
-    private final EventRepository eventRepository;
-    private final SemesterRepository semesterRepository;
 
 
     @Override
@@ -43,7 +36,6 @@ public class StudentCriteriaProgressCommandServiceImpl implements StudentCriteri
         if (userIds == null || userIds.isEmpty() || criteriaId == null || academicYearId == null) {
             return;
         }
-
         //Identify and skip students who already completed this criteria
         List<Long> eligibleUserIds = getEligibleUserIds(userIds, criteriaId, academicYearId);
         if (eligibleUserIds.isEmpty()) {
@@ -72,6 +64,15 @@ public class StudentCriteriaProgressCommandServiceImpl implements StudentCriteri
             log.info("Batch updated {} parent criteria progress records for {} users",
                     updatedProgressList.size(), eligibleUserIds.size());
         }
+    }
+
+    @Override
+    public void markUncompleted(Long userId, Long criteriaId, Long academicYearId) {
+        //delete the leaf criteria progress for the user
+
+        //update the parent criteria progress for the user and criteria
+
+        //save all update;
     }
 
     private List<Long> getEligibleUserIds(List<Long> userIds, Long criteriaId, Long academicYearId) {
