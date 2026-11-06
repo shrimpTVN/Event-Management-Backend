@@ -91,13 +91,15 @@ public class FanpageMemberRepositoryImpl implements FanpageMemberRepository {
     }
 
     @Override
-    public boolean isFanpageAdmin(Long userId, Long fanpageId) {
-        return fanpageMemberJpaRepository.existsByFanpageIdAndUserIdAndRoleAndIsActive(fanpageId, userId, FanpageRoleEnum.ADMIN.name(), true);
+    public boolean isActiveMember(Long fanpageId, Long memberId) {
+        FanpageMemberJpaEntityId id = new FanpageMemberJpaEntityId(fanpageId, memberId);
+
+        return fanpageMemberJpaRepository.existsByIdAndIsActive(id, true);
     }
 
     @Override
-    public boolean isFanpageMember(Long id, Long fanpageId) {
-        return fanpageMemberJpaRepository.existsByFanpageIdAndUserIdAndIsActive(fanpageId, id, true);
+    public boolean isFanpageAdmin(Long userId, Long fanpageId) {
+        return isAdminOfFanpage(fanpageId, userId);
     }
 
     @Override

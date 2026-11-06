@@ -8,10 +8,12 @@ import com.ddd.api.dto.fanpage.req.FanpageSystemAdminUpdateRequestDto;
 import com.ddd.api.dto.fanpage.res.FanpageFollowCountResponseDto;
 import com.ddd.api.dto.fanpage.res.FanpageMemberResponseDto;
 import com.ddd.api.dto.fanpage.res.FanpageResponseDto;
+import com.ddd.api.dto.fanpage.res.ManagedFanpageResponseDto;
 import com.ddd.api.mapper.FanpageApiMapper;
 import com.ddd.application.dto.fanpage.FanpageFollowCountDto;
 import com.ddd.application.dto.fanpage.FanpageInfoDto;
 import com.ddd.application.dto.fanpage.FanpageMemberDto;
+import com.ddd.application.dto.fanpage.ManagedFanpageInfoDto;
 import com.ddd.application.service.fanpage.FanpageQueryService;
 import com.ddd.application.utils.ServiceUtil;
 import org.springframework.data.domain.Pageable;
@@ -66,20 +68,14 @@ public class FanpageController {
     }
 
     @GetMapping("/{fanpageId}")
-    public BaseResponse<FanpageResponseDto> getFanpageDetail(
-            @PathVariable Long fanpageId,
-            Authentication authentication) {
-        String email = authentication != null ? authentication.getName() : null;
-        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        FanpageInfoDto fanpageInfo = fanpageQueryService.getFanpageById(fanpageId, email, isAdmin);
+    public BaseResponse<FanpageResponseDto> getFanpageDetail(@PathVariable Long fanpageId) {
+        FanpageInfoDto fanpageInfo = fanpageQueryService.getFanpageById(fanpageId);
         return BaseResponse.of(fanpageApiMapper.toResponseDto(fanpageInfo));
     }
 
     @GetMapping({"/fanpage-admin/my-fanpages", "/my-fanpages"})
-    public BaseResponse<List<FanpageResponseDto>> getMyManagedFanpages(Authentication authentication) {
-        String email = authentication.getName();
-        List<FanpageInfoDto> fanpages = fanpageQueryService.getMyManagedFanpages(email);
+    public BaseResponse<List<ManagedFanpageResponseDto>> getMyManagedFanpages() {
+        List<ManagedFanpageInfoDto> fanpages = fanpageQueryService.getMyManagedFanpages();
         return BaseResponse.of(fanpages.stream().map(fanpageApiMapper::toResponseDto).toList());
     }
 
@@ -191,24 +187,19 @@ public class FanpageController {
     }
 
     @GetMapping("/{fanpageId}/followers/count")
-    public BaseResponse<FanpageFollowCountResponseDto> getFollowerCount(
-            @PathVariable Long fanpageId,
-            Authentication authentication) {
-        String email = authentication != null ? authentication.getName() : null;
-        FanpageFollowCountDto dto = fanpageQueryService.getFollowerCount(fanpageId, email);
+    public BaseResponse<FanpageFollowCountResponseDto> getFollowerCount(@PathVariable Long fanpageId) {
+        FanpageFollowCountDto dto = fanpageQueryService.getFollowerCount(fanpageId);
         return BaseResponse.of(fanpageApiMapper.toFollowCountResponseDto(dto));
     }
 
     @GetMapping("/following")
     public BaseResponse<Page<FanpageResponseDto>> getFollowingFanpages(
-            Authentication authentication,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDir) {
-        String email = authentication.getName();
         Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
-        Page<FanpageInfoDto> fanpages = fanpageQueryService.getFollowingFanpages(email, pageable);
+        Page<FanpageInfoDto> fanpages = fanpageQueryService.getFollowingFanpages(pageable);
         return BaseResponse.of(fanpages.map(fanpageApiMapper::toResponseDto));
     }
 

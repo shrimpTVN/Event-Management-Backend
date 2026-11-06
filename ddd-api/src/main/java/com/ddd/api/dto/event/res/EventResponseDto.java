@@ -3,7 +3,6 @@ package com.ddd.api.dto.event.res;
 import com.ddd.api.dto.semester.SemesterResponseDto;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 
 public record EventResponseDto(
@@ -11,9 +10,9 @@ public record EventResponseDto(
                 String name,
                 String description,
                 String location,
-                LocalDate dateOpen,
-                LocalDate dateClose,
-                LocalDate dateHappen,
+                Instant dateOpen,
+                Instant dateClose,
+                Instant dateHappen,
                 Integer capacity,
                 Integer maleQuantity,
                 Integer femaleQuantity,

@@ -13,9 +13,6 @@ import com.ddd.application.dto.event.EventUpdateDto;
 import com.ddd.infrastructure.entity.SemesterJpaEntity;
 import org.mapstruct.*;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.List;
 
 @Mapper(componentModel = "spring")
@@ -53,16 +50,7 @@ public interface EventDtoMapper {
     @Mapping(target = "fanpageId", source = "fanpage.id")
     @Mapping(target = "semester", source = "semester")
     @Mapping(target = "isActive", source = "isActive")
-    @Mapping(target = "dateOpen", source = "dateOpen", qualifiedByName = "instantToLocalDate")
-    @Mapping(target = "dateClose", source = "dateClose", qualifiedByName = "instantToLocalDate")
-    @Mapping(target = "dateHappen", source = "dateHappen", qualifiedByName = "instantToLocalDate")
     @Mapping(target = "eventPoints", source = "eventPoints")
     @Mapping(target = "status", source = "status")
     EventInfoDto toInfoDto(EventJpaEntity entity);
-
-    @Named("instantToLocalDate")
-    default LocalDate mapInstantToLocalDate(Instant instant) {
-        if (instant == null) return LocalDate.now();
-        return instant.atZone(ZoneOffset.UTC).toLocalDate();
-    }
 }

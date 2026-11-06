@@ -82,15 +82,19 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
     public void inviteMemberToFanpage(Long fanpageId, String memberEmail) {
         User member = userRepository.findByEmail(memberEmail);
         if (member == null) {
-            throw new IllegalArgumentException("User not found");
+            throw new ResourceNotFoundException("User not found with email: " + memberEmail);
         }
 
         Long fanpageAdminId = securityContextPort.getCurrentUserId();
+        User fanpageAdmin = userRepository.findById(fanpageAdminId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fanpage admin not found"));
         if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, fanpageAdminId)) {
             throw new AuthException("You are not admin of the fanpage");
         }
 
-              FanpageMemberInvitation invitation = new FanpageMemberInvitation(fanpageId, member.getId());
+        String inviterName = fanpageAdmin.getFullName();
+
+        FanpageMemberInvitation invitation = new FanpageMemberInvitation(fanpageId, member.getId(), inviterName);
         fanpageMemberInvitationRepository.save(invitation);
 
         log.info("Member invited to fanpage successfully: {}", member.getEmail());
@@ -100,7 +104,7 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
     public void removeMemberFromFanpage(Long fanpageId, String memberEmail) {
         User member = userRepository.findByEmail(memberEmail);
         if (member == null) {
-            throw new IllegalArgumentException("User not found");
+            throw new ResourceNotFoundException("User not found with email: " + memberEmail);
         }
 
         Long fanpageAdminId = securityContextPort.getCurrentUserId();
@@ -227,7 +231,7 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
     @Override
     public void appointFanpageAdmin(Long fanpageId, String memberEmail) {
         Long userId = securityContextPort.getCurrentUserId();
-        if (!fanpageMemberRepository.isFanpageAdmin(userId, fanpageId)){
+        if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, userId)){
             throw new AuthException("You are not allowed to appoint fanpage admin. Only admins can appoint fanpage admin");
         }
 
@@ -236,8 +240,8 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
             throw new ResourceNotFoundException("User not found with email: " + memberEmail);
         }
 
-        if (!fanpageMemberRepository.isFanpageMember(member.getId(), fanpageId)){
-            throw new IllegalArgumentException("Member with email: " + memberEmail + " is not fanpage member of fanpage with id: " + fanpageId);
+        if (!fanpageMemberRepository.isActiveMember(fanpageId, member.getId())){
+            throw new BusinessException("Member with email: " + memberEmail + " is not fanpage member of fanpage with id: " + fanpageId);
         }
 
         FanpageMember currentAdminRole = fanpageMemberRepository.findByFanpageIdAndUserId(fanpageId, userId);

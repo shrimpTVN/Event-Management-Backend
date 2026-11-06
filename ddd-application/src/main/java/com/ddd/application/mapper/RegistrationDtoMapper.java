@@ -2,21 +2,19 @@ package com.ddd.application.mapper;
 
 import com.ddd.application.dto.fanpage.AttendeeInfoDto;
 import com.ddd.application.dto.registration.RegistrationDto;
+import com.ddd.application.dto.registration.RegistrationInfoDto;
 import com.ddd.infrastructure.entity.RegistrationJpaEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {EventDtoMapper.class})
 public interface RegistrationDtoMapper {
 
-    @Mapping(target = "eventId", source = "event.id")
-    @Mapping(target = "eventName", source = "event.name")
-    @Mapping(target = "location", source = "event.location")
-    @Mapping(target = "dateOpen", source = "event.dateOpen")
-    @Mapping(target = "dateClose", source = "event.dateClose")
-    @Mapping(target = "dateHappen", source = "event.dateHappen")
-    @Mapping(target = "bannerUrl", source = "event.bannerUrl")
-    RegistrationDto toDto(RegistrationJpaEntity entity);
+
+    @Mapping(target="eventInfo", source="event")
+    @Mapping(target="userId", source="user.id")
+    @Mapping(target="eventId", source="event.id")
+    RegistrationInfoDto toInfoDto(RegistrationJpaEntity entity);
 
     @Mapping(target = "userId", source = "user.id")
     @Mapping(target="firstName", source="user.firstName")
@@ -24,5 +22,8 @@ public interface RegistrationDtoMapper {
     @Mapping(target="email", source="user.email")
     @Mapping(target="gender", source="user.gender")
     @Mapping(target="avatarUrl", source="user.avatarUrl")
+    @Mapping(target="studentId", source="user.studentProfile.studentId")
+    @Mapping(target="KNumber", source="user.studentProfile.KNumber")
+    @Mapping(target="majorName", source="user.studentProfile.major.name")
     AttendeeInfoDto toAttendeeInfoDto(RegistrationJpaEntity entity);
 }

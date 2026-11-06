@@ -3,7 +3,7 @@ package com.ddd.domain.model;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,9 +13,9 @@ public class Event extends BaseModel {
     private String name;
     private String description;
     private String location;
-    private LocalDate dateOpen;
-    private LocalDate dateClose;
-    private LocalDate dateHappen;
+    private Instant dateOpen;
+    private Instant dateClose;
+    private Instant dateHappen;
     private Integer capacity;
     private Integer maleQuantity;
     private Integer femaleQuantity;
@@ -28,8 +28,8 @@ public class Event extends BaseModel {
     private List<EventPoint> eventPoints = new ArrayList<>();
 
     public void validateEventDates() {
-        LocalDate today = LocalDate.now();
-        if (dateOpen.isBefore(today)) {
+        Instant now = Instant.now();
+        if (dateOpen.isBefore(now)) {
             throw new IllegalArgumentException("Registration open date cannot be in the past");
         }
         if (dateOpen.isAfter(dateClose)) {
