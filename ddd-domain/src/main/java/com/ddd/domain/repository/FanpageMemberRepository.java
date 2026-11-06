@@ -16,6 +16,8 @@ public interface FanpageMemberRepository {
 
     void removeFanpageMember(Long fanpageId, Long userId);
 
+    void removeFanpageMember(FanpageMember fanpageMember);
+
     List<Long> findFanpageIdsByUserIdAndRole(Long userId, String role);
 
     void deactivateAllMembersByFanpageId(Long fanpageId);
@@ -25,4 +27,6 @@ public interface FanpageMemberRepository {
     boolean isFanpageMember(Long id, Long fanpageId);
 
     FanpageMember findByFanpageIdAndUserId(Long fanpageId, Long userId);
+
+
 }
