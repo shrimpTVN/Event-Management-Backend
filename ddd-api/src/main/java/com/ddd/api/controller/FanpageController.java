@@ -143,7 +143,7 @@ public class FanpageController {
         return BaseResponse.ok();
     }
 
-    @PostMapping("/fanpage-admin/{fanpageId}/remove-member")
+    @DeleteMapping("/fanpage-admin/{fanpageId}/remove-member")
     public BaseResponse<?> removeMemberFromFanpage(@PathVariable Long fanpageId,
                                                    @RequestParam (required = true) String email) {
 
