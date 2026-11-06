@@ -248,8 +248,8 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
         currentMemberRole.setRole(FanpageRoleEnum.ADMIN.name());
         fanpageMemberRepository.save(currentMemberRole);
 
-        Role adminRole = roleRepository.findByName(RoleEnum.FANPAGE_ADMIN.name());
-        member.addRole(adminRole);
+        Role fanpageAdminRole = roleRepository.findByName(RoleEnum.FANPAGE_ADMIN.name());
+        member.addRole(fanpageAdminRole);
         userRepository.save(member);
         log.info("Appointment fanpage admin of fanpage {} from userId: {} to userId: {}", fanpageId, userId, member.getId());
     }
