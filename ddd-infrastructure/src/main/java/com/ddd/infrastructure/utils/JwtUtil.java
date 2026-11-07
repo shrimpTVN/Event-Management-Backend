@@ -58,6 +58,12 @@ public class JwtUtil {
                 }
             }
         }
+
+        // 3. Fallback to query parameter (e.g., EventSource / SSE connections)
+        String queryToken = request.getParameter("token");
+        if (queryToken != null && !queryToken.isBlank()) {
+            return queryToken.trim();
+        }
         return null;
     }
 

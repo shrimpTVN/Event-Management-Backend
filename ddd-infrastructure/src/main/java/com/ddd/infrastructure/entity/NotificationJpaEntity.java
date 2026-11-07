@@ -1,10 +1,14 @@
 package com.ddd.infrastructure.entity;
 
+import com.ddd.domain.enums.NotificationStatusEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "notifications", indexes = {
+        @Index(name = "idx_notifications_user_status", columnList = "user_id, status"),
+        @Index(name = "idx_notifications_user_created", columnList = "user_id, created_at")
+})
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -21,8 +25,9 @@ public class NotificationJpaEntity extends BaseEntityJpa {
     @Column(name = "message", columnDefinition = "TEXT")
     private String message;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 50)
-    private String status = "SENT";
+    private NotificationStatusEnum status = NotificationStatusEnum.UNREAD;
 
     @Column(name = "icon_url", columnDefinition = "TEXT")
     private String iconUrl;
