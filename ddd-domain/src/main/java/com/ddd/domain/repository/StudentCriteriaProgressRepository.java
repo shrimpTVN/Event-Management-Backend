@@ -24,4 +24,6 @@ public interface StudentCriteriaProgressRepository {
     List<StudentCriteriaProgress> findAllByUserIdAndAcademicYearId(Long userId, Long academicYearId);
 
     List<StudentCriteriaProgress> findAllByUserIdsAndAcademicYearId(Collection<Long> userIds, Long academicYearId);
+
+    void delete(StudentCriteriaProgress leafProgress);
 }
