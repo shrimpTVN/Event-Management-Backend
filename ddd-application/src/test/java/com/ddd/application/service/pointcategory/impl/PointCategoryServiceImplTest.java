@@ -46,7 +46,8 @@ class PointCategoryServiceImplTest {
                                 100,
                                 LocalDate.now(),
                                 null,
-                                1);
+                                1,
+                                false);
 
                 PointCategory entity = new PointCategory();
                 entity.setName("Academics");
@@ -67,7 +68,8 @@ class PointCategoryServiceImplTest {
                                 0,
                                 null,
                                 true,
-                                1);
+                                1,
+                                false);
 
                 when(pointCategoryDtoMapper.toEntity(createDto)).thenReturn(entity);
                 when(pointCategoryRepository.save(entity)).thenReturn(savedEntity);
@@ -91,7 +93,8 @@ class PointCategoryServiceImplTest {
                                 50,
                                 LocalDate.now(),
                                 1L,
-                                2);
+                                2,
+                                false);
 
                 PointCategory entity = new PointCategory();
                 entity.setName("Scientific Research");
@@ -118,7 +121,8 @@ class PointCategoryServiceImplTest {
                                 1,
                                 1L,
                                 true,
-                                2);
+                                2,
+                                false);
 
                 when(pointCategoryDtoMapper.toEntity(createDto)).thenReturn(entity);
                 when(pointCategoryRepository.findById(1L)).thenReturn(Optional.of(parentEntity));
@@ -143,7 +147,8 @@ class PointCategoryServiceImplTest {
                                 50,
                                 LocalDate.now(),
                                 999L,
-                                1);
+                                1,
+                                false);
 
                 PointCategory entity = new PointCategory();
                 entity.setName("Scientific Research");
@@ -180,12 +185,13 @@ class PointCategoryServiceImplTest {
                                 0,
                                 null,
                                 true,
-                                1);
+                                1,
+                                false);
 
                 List<PointCategory> entities = List.of(entity);
                 List<PointCategoryInfoDto> expectedDtos = List.of(infoDto);
 
-                when(pointCategoryRepository.findAll()).thenReturn(entities);
+                when(pointCategoryRepository.findAllActive()).thenReturn(entities);
                 when(pointCategoryDtoMapper.toInfoDtoList(entities)).thenReturn(expectedDtos);
 
                 List<PointCategoryInfoDto> result = pointCategoryService.getAllPointCategories();
@@ -193,7 +199,7 @@ class PointCategoryServiceImplTest {
                 assertNotNull(result);
                 assertEquals(1, result.size());
                 assertEquals(expectedDtos, result);
-                verify(pointCategoryRepository).findAll();
+                verify(pointCategoryRepository).findAllActive();
                 verify(pointCategoryDtoMapper).toInfoDtoList(entities);
         }
 }

@@ -8,9 +8,13 @@ import java.util.List;
 public interface StudentSemesterPointRepository {
     StudentSemesterPoint findByUserIdAndSemesterIdAndPointCategoryId(Long userId, Long semesterId, Long pointCategoryId);
 
+    List<StudentSemesterPoint> findAllByUserIdAndSemesterId(Long userId, Long semesterId);
+
+    List<StudentSemesterPoint> findAllByUserIdsAndSemesterId(List<Long> userIds, Long semesterId);
+
     List<StudentSemesterPoint> findAllIn(List<Long> studentUserIds, Long semesterId, List<Long> pointCategoryIds);
 
-    void saveAll(ArrayList<StudentSemesterPoint> studentSemesterPoints);
+    void saveAll(List<StudentSemesterPoint> studentSemesterPoints);
 
     void save(StudentSemesterPoint studentSemesterPoint);
 }

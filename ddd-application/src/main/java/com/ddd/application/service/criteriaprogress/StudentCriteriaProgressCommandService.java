@@ -6,4 +6,6 @@ public interface StudentCriteriaProgressCommandService {
     void markCompleted(Long userId, Long criteriaId, Long academicYearId);
 
     void bulkMarkCompleted(List<Long> userIds, Long criteriaId, Long academicYearId);
+
+    void markUncompleted(Long userId, Long criteriaId, Long academicYearId);
 }

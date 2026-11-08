@@ -23,10 +23,8 @@ public class CriteriaTransactionController {
     private final CriteriaApiMapper criteriaApiMapper;
 
     @PostMapping("/me")
-    public BaseResponse<Void> createTransaction(Authentication authentication,
-                                                @RequestBody @Valid CriteriaTransactionRequestDto requestDto) {
+    public BaseResponse<Void> createTransaction(@RequestBody @Valid CriteriaTransactionRequestDto requestDto) {
         studentCriteriaTransactionCommandService.createTransaction(
-                authentication.getName(),
                 requestDto.criteriaId(),
                 requestDto.academicYearId(),
                 requestDto.note()
@@ -36,14 +34,18 @@ public class CriteriaTransactionController {
 
     @GetMapping("/me/criterias/{criteriaId}/academic-years/{academicYearId}")
     public BaseResponse<List<CriteriaTransactionResponseDto>> getCriteriaTransactions(
-            Authentication authentication,
             @PathVariable Long criteriaId,
             @PathVariable Long academicYearId) {
         List<CriteriaTransactionInfoDto> transactions = studentCriteriaTransactionQueryService.getCriteriaTransactions(
-                authentication.getName(),
                 criteriaId,
                 academicYearId
         );
         return BaseResponse.of(transactions.stream().map(criteriaApiMapper::toCriteriaTransactionResponseDto).toList());
+    }
+
+    @DeleteMapping("/me/{criteriaTransactionId}")
+    public BaseResponse<Void> deleteTransaction(@PathVariable Long criteriaTransactionId) {
+        studentCriteriaTransactionCommandService.deleteTransaction(criteriaTransactionId);
+        return BaseResponse.ok();
     }
 }

@@ -3,7 +3,7 @@ package com.ddd.application.service.semesterpoint.impl;
 import com.ddd.application.dto.semesterpoint.PointTransactionInfoDto;
 import com.ddd.application.mapper.PointTransactionDtoMapper;
 import com.ddd.application.service.semesterpoint.PointTransactionQueryService;
-import com.ddd.infrastructure.entity.UserJpaEntity;
+import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.infrastructure.repository.jpaRepository.PointTransactionJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,18 +19,14 @@ public class PointTransactionQueryServiceImpl implements PointTransactionQuerySe
     private final PointTransactionJpaRepository pointTransactionJpaRepository;
     private final PointTransactionDtoMapper pointTransactionDtoMapper;
     private final UserJpaRepository userJpaRepository;
+    private final SecurityContextPort securityContextPort;
 
     @Override
-    public List<PointTransactionInfoDto> getPointTransactionsForStudent(String email,
-                                                                        Long semesterId,
+    public List<PointTransactionInfoDto> getPointTransactionsForStudent(Long semesterId,
                                                                         Long pointCategoryId) {
-        UserJpaEntity userEntity = userJpaRepository.findByEmail(email);
-        if (userEntity == null) {
-            throw new IllegalArgumentException("User not found with email: " + email);
-        }
-
+        Long userId = securityContextPort.getCurrentUserId();
         return pointTransactionJpaRepository
-                .findByUserIdAndSemesterIdAndPointCategoryId(userEntity.getId(), semesterId, pointCategoryId)
+                .findByUserIdAndSemesterIdAndPointCategoryId(userId, semesterId, pointCategoryId)
                 .stream()
                 .map(pointTransactionDtoMapper::toInfoDto)
                 .toList();

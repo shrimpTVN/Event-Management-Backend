@@ -2,16 +2,18 @@ package com.ddd.application.service.event.impl;
 
 import com.ddd.application.dto.event.EventCreateDto;
 import com.ddd.application.dto.event.EventInfoDto;
+import com.ddd.application.dto.event.EventPointCreateDto;
 import com.ddd.application.dto.event.EventUpdateDto;
 import com.ddd.application.mapper.EventDtoMapper;
 import com.ddd.application.service.event.EventCommandService;
 import com.ddd.domain.enums.EventStatusEnum;
+import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.*;
+import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,12 +33,15 @@ public class EventCommandServiceImpl implements EventCommandService {
     private final CriteriaRepository criteriaRepository;
     private final EventDtoMapper eventDtoMapper;
     private final SemesterRepository semesterRepository;
+    private final PointCategoryRepository pointCategoryRepository;
+    private final SecurityContextPort securityContextPort;
 
     @Override
     @Transactional
-    public void createEvent(EventCreateDto dto, String email) {
-        log.info("Creating event for fanpageId: {} by user email: {}", dto.fanpageId(), email);
-        validateReferences(dto, email);
+    public Long createEvent(EventCreateDto dto) {
+        Long userId = securityContextPort.getCurrentUserId();
+        log.info("Creating event for fanpageId: {} by user id: {}", dto.fanpageId(), userId);
+        validateReferences(dto, userId);
 
         // Map DTO to Event entity
         Event event = eventDtoMapper.toEvent(dto);
@@ -54,6 +59,7 @@ public class EventCommandServiceImpl implements EventCommandService {
 
         Event savedEvent = eventRepository.save(event);
         log.info("Event created successfully with id: {} and status: {}", savedEvent.getId(), savedEvent.getStatus());
+        return savedEvent.getId();
     }
 
     @Override
@@ -101,24 +107,27 @@ public class EventCommandServiceImpl implements EventCommandService {
         log.info("Event soft deleted successfully for event id: {}", id);
     }
 
+    private void verifyUserFanpageMembership(Long fanpageId, Long userId) {
+        FanpageMember fanpageMember = fanpageMemberRepository.findById(fanpageId, userId)
+                .orElseThrow(() -> new AuthException("User is not a member of this fanpage"));
+        if (!fanpageMember.isActive()) {
+            throw new AuthException("User no longer has active membership in this fanpage");
+        }
+    }
+
     private void verifyUserFanpageMembership(Long fanpageId, String email) {
         User user = userRepository.findByEmail(email);
         if (user == null) {
             throw new ResourceNotFoundException("User not found with email: " + email);
         }
-
-        FanpageMember fanpageMember = fanpageMemberRepository.findById(fanpageId, user.getId())
-                .orElseThrow(() -> new AccessDeniedException("User is not a member of this fanpage"));
-        if (!fanpageMember.isActive()) {
-            throw new AccessDeniedException("User no longer has active membership in this fanpage");
-        }
+        verifyUserFanpageMembership(fanpageId, user.getId());
     }
 
-    private void validateReferences(EventCreateDto dto, String email) {
+    private void validateReferences(EventCreateDto dto, Long userId) {
         Fanpage fanpage = fanpageRepository.findById(dto.fanpageId())
                 .orElseThrow(() -> new ResourceNotFoundException("Fanpage not found with id: " + dto.fanpageId()));
 
-        verifyUserFanpageMembership(fanpage.getId(), email);
+        verifyUserFanpageMembership(fanpage.getId(), userId);
 
         EventType eventType = eventTypeRepository.findById(dto.eventTypeId());
         if (eventType == null) {
@@ -133,6 +142,15 @@ public class EventCommandServiceImpl implements EventCommandService {
         if (dto.semesterId() != null) {
             semesterRepository.findById(dto.semesterId())
                     .orElseThrow(() -> new ResourceNotFoundException("Semester not found with id: " + dto.semesterId()));
+        }
+
+        if (dto.eventPoints() != null && !dto.eventPoints().isEmpty()) {
+            for (EventPointCreateDto ep : dto.eventPoints()) {
+                if (ep.pointCategoryId() != null) {
+                    pointCategoryRepository.findById(ep.pointCategoryId())
+                            .orElseThrow(() -> new ResourceNotFoundException("PointCategory not found with id: " + ep.pointCategoryId()));
+                }
+            }
         }
     }
 

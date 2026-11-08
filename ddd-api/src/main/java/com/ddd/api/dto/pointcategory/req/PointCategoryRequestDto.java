@@ -12,6 +12,7 @@ public record PointCategoryRequestDto(
         @NotNull @Positive Integer maximum,
         @NotNull LocalDate dateApply,
         @Positive Long parentCategoryId,
-        @NotNull @Positive Integer childrenOrder
+        @NotNull @Positive Integer childrenOrder,
+        Boolean isMaxChild
 ) {
 }
