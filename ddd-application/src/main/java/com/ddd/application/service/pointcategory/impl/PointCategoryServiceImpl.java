@@ -31,6 +31,9 @@ public class PointCategoryServiceImpl implements PointCategoryService {
     @Override
     public PointCategoryInfoDto createPointCategory(PointCategoryCreateDto pointCategoryCreateDto) {
         PointCategory pointCategory = pointCategoryDtoMapper.toEntity(pointCategoryCreateDto);
+        if (pointCategory.getIsMaxChild() == null) {
+            pointCategory.setIsMaxChild(false);
+        }
         //calculate level
         if (pointCategoryCreateDto.parentCategoryId() == null) {
             pointCategory.setLevel(0);
@@ -67,7 +70,6 @@ public class PointCategoryServiceImpl implements PointCategoryService {
                 .sorted(POINT_CATEGORY_COMPARATOR)
                 .map(child -> buildTreeNodeTopDown(child, childrenByParent))
                 .toList();
-
         return new PointCategoryTreeNodeDto(
                 current.getId(),
                 current.getName(),
@@ -78,6 +80,7 @@ public class PointCategoryServiceImpl implements PointCategoryService {
                 current.getParentCategoryId(),
                 current.isActive(),
                 current.getChildrenOrder(),
+                current.isMaxChild(),
                 children
         );
     }
@@ -150,6 +153,7 @@ public class PointCategoryServiceImpl implements PointCategoryService {
                     root.getParentCategoryId(),
                     root.isActive(),
                     root.getChildrenOrder(),
+                    root.isMaxChild(),
                     flatItems
             );
         }).toList();
@@ -176,7 +180,8 @@ public class PointCategoryServiceImpl implements PointCategoryService {
                     child.getParentCategoryId(),
                     child.isActive(),
                     child.getChildrenOrder(),
-                    isLeaf
+                    isLeaf,
+                    child.isMaxChild()
             ));
             flattenDescendantsDfs(child.getId(), childrenByParent, resultList);
         });

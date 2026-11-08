@@ -2,6 +2,7 @@ package com.ddd.application.service.registration.impl;
 
 import com.ddd.application.service.criteriaprogress.StudentCriteriaTransactionCommandService;
 import com.ddd.application.service.registration.RegistrationCommandService;
+import com.ddd.application.service.semesterpoint.StudentSemesterPointCommandService;
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.PointTransactionStatusEnum;
 import com.ddd.domain.enums.PointTransactionTypeEnum;
@@ -34,7 +35,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final FanpageMemberRepository fanpageMemberRepository;
     private final EventPointRepository eventPointRepository;
     private final PointTransactionRepository pointTransactionRepository;
-    private final StudentSemesterPointRepository studentSemesterPointRepository;
+    private final StudentSemesterPointCommandService studentSemesterPointCommandService;
     private final StudentCriteriaTransactionCommandService studentCriteriaTransactionCommandService;
     private final SecurityContextPort securityContextPort;
 
@@ -258,46 +259,30 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
             throw new BusinessException("Event is not assigned to any semester");
         }
 
-
-        List<StudentSemesterPoint> existingPoints = takeExistingPoints(studentUserIds, event, eventPoints);
-        Map<StudentPointKey, StudentSemesterPoint> pointMap = existingPoints.stream()
-                .collect(Collectors.toMap(
-                        sp -> new StudentPointKey(sp.getUserId(), sp.getPointCategoryId()),
-                        Function.identity()
-                ));
-
         List<PointTransaction> pointTransactions = new ArrayList<>();
 
         for (Long studentUserId : studentUserIds) {
             for (EventPoint eventPoint : eventPoints) {
-
                 pointTransactions.add(createPointTransaction(event, studentUserId, eventPoint));
-
-                // Update or create StudentSemesterPoint
-                StudentPointKey key = new StudentPointKey(studentUserId, eventPoint.getPointCategoryId());
-                StudentSemesterPoint ssp = pointMap.get(key);
-                if (ssp == null) {
-                    ssp = new StudentSemesterPoint(studentUserId, event.getSemesterId(),
-                            eventPoint.getPointCategoryId(), eventPoint.getPoint());
-                    pointMap.put(key, ssp);
-                } else {
-                    ssp.setTotalPoint(ssp.getTotalPoint() + eventPoint.getPoint());
-                    ssp.setUpdatedAt(now);
-                }
             }
         }
 
         pointTransactionRepository.saveAll(pointTransactions);
-        studentSemesterPointRepository.saveAll(new ArrayList<>(pointMap.values()));
-    }
 
-    private List<StudentSemesterPoint> takeExistingPoints(List<Long> studentUserIds, Event event,
-                                                          List<EventPoint> eventPoints) {
-        List<Long> pointCategoryIds = eventPoints.stream()
-                .map(EventPoint::getPointCategoryId)
-                .distinct()
-                .toList();
-        return studentSemesterPointRepository.findAllIn(studentUserIds, event.getSemesterId(), pointCategoryIds);
+        // Batch propagate leaf points and all ancestors up to roots
+        Map<Long, Integer> categoryPointsMap = eventPoints.stream()
+                .collect(Collectors.toMap(
+                        EventPoint::getPointCategoryId,
+                        EventPoint::getPoint,
+                        Integer::sum
+                ));
+
+        studentSemesterPointCommandService.bulkRecordPointsAndPropagate(
+                studentUserIds,
+                event.getSemesterId(),
+                categoryPointsMap,
+                PointTransactionTypeEnum.CHECKOUT_REWARD
+        );
     }
 
     private PointTransaction createPointTransaction(Event event, Long studentUserId, EventPoint eventPoint) {
@@ -311,8 +296,5 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         pt.setStatus(PointTransactionStatusEnum.CONFIRMED.name());
         pt.setDescription("Checkout reward for event: " + event.getName());
         return pt;
-    }
-
-    record StudentPointKey(Long userId, Long pointCategoryId) {
     }
 }

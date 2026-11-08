@@ -18,4 +18,6 @@ public interface PointCategoryJpaRepository extends JpaRepository<PointCategoryJ
     List<PointCategoryJpaEntity> findByParentCategoryIsNull(Sort sort);
 
     List<PointCategoryJpaEntity>  findAllByIsActive(boolean b, Sort defaultSort);
+
+    boolean existsByParentCategoryIdAndIsActive(Long pointCategoryId, boolean b);
 }

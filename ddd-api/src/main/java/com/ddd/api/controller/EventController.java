@@ -37,13 +37,11 @@ public class EventController {
     private final EventApiMapper eventApiMapper;
 
     @PostMapping("/fanpage-member")
-    public BaseResponse<?> createEvent(
-            @Valid @RequestBody EventCreateRequestDto eventCreateRequestDto,
-            Authentication authentication) {
-        String email = authentication.getName();
+    public BaseResponse<Long> createEvent(
+            @Valid @RequestBody EventCreateRequestDto eventCreateRequestDto) {
         EventCreateDto createDto = eventApiMapper.toCreateDto(eventCreateRequestDto);
-        eventCommandService.createEvent(createDto, email);
-        return BaseResponse.ok();
+        Long eventId = eventCommandService.createEvent(createDto);
+        return BaseResponse.of(eventId);
     }
 
     @GetMapping({"", "/"})

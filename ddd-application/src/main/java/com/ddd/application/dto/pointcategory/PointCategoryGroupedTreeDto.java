@@ -13,6 +13,7 @@ public record PointCategoryGroupedTreeDto(
         Long parentCategoryId,
         boolean isActive,
         Integer childrenOrder,
+        Boolean isMaxChild,
         List<PointCategoryFlattenedItemDto> items
 ) {
 }

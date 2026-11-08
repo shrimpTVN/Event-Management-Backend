@@ -80,5 +80,10 @@ public class PointCategoryRepositoryImpl implements PointCategoryRepository {
         entity.setIsActive(false);
         pointCategoryJpaRepository.save(entity);
     }
+
+    @Override
+    public boolean hasChildren(Long pointCategoryId) {
+        return pointCategoryJpaRepository.existsByParentCategoryIdAndIsActive(pointCategoryId, true);
+    }
 }
 

@@ -8,7 +8,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface PointTransactionMapper {
 
-    @Mapping(target= "id", source= "user.id")
+    @Mapping(target= "userId", source= "user.id")
     @Mapping(target= "semesterId", source= "semester.id")
     @Mapping(target= "pointCategoryId", source= "pointCategory.id")
     @Mapping(target= "eventId", source= "event.id")

@@ -12,6 +12,7 @@ public record PointCategoryFlattenedItemDto(
         Long parentCategoryId,
         boolean isActive,
         Integer childrenOrder,
-        boolean isLeaf
+        boolean isLeaf,
+        Boolean isMaxChild
 ) {
 }

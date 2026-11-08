@@ -1,8 +1,10 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
+import com.ddd.api.dto.semesterpoint.res.StudentSemesterPointGroupedTreeResponseDto;
 import com.ddd.api.dto.semesterpoint.res.StudentSemesterPointResponseDto;
 import com.ddd.api.mapper.StudentSemesterPointApiMapper;
+import com.ddd.application.dto.semesterpoint.StudentSemesterPointGroupedTreeDto;
 import com.ddd.application.dto.semesterpoint.StudentSemesterPointInfoDto;
 import com.ddd.application.service.semesterpoint.StudentSemesterPointCommandService;
 import com.ddd.application.service.semesterpoint.StudentSemesterPointQueryService;
@@ -21,8 +23,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StudentSemesterPointController {
     private final StudentSemesterPointQueryService studentSemesterPointQueryService;
-    private final StudentSemesterPointCommandService studentSemesterPointCommandService;
     private final StudentSemesterPointApiMapper studentSemesterPointApiMapper;
+
+    @GetMapping("/grouped-tree/{semesterId}")
+    public BaseResponse<List<StudentSemesterPointGroupedTreeResponseDto>> getSemesterPointTree(
+            @PathVariable Long semesterId) {
+        List<StudentSemesterPointGroupedTreeDto> tree = studentSemesterPointQueryService
+                .getSemesterPointTreeForCurrentStudent(semesterId);
+        return BaseResponse.of(studentSemesterPointApiMapper.toGroupedTreeResponseDtoList(tree));
+    }
 
     @GetMapping("/me/semesters/{semesterId}")
     public BaseResponse<List<StudentSemesterPointResponseDto>> getSemesterPointForStudent(Authentication authentication ,

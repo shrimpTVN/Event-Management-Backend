@@ -13,6 +13,7 @@ public record PointCategoryTreeNodeDto(
         Long parentCategoryId,
         boolean isActive,
         Integer childrenOrder,
+        Boolean isMaxChild,
         List<PointCategoryTreeNodeDto> children
 ) {
 }

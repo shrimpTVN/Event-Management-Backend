@@ -16,5 +16,7 @@ public interface PointCategoryRepository {
 
     List<PointCategory> findByParentId(Long parentId);
     void delete(Long id);
+
+    boolean hasChildren(Long categoryId);
 }
 

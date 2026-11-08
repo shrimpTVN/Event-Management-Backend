@@ -5,6 +5,6 @@ import jakarta.validation.constraints.Positive;
 
 public record EventPointRequestDto(
         @NotNull @Positive Long pointCategoryId,
-        @NotNull @Positive Long point
+        @NotNull @Positive Integer point
 ) {
 }
