@@ -42,4 +42,10 @@ public class PointTransactionController {
         return BaseResponse.ok();
     }
 
+    @DeleteMapping("/me/{pointTransactionId}")
+    public BaseResponse<Void> deletePointTransactionForStudent(@PathVariable Long pointTransactionId){
+        pointTransactionCommandService.deletePointTransactionForStudent(pointTransactionId);
+        return BaseResponse.ok();
+    }
+
 }

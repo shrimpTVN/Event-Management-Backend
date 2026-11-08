@@ -10,7 +10,7 @@ public interface PointCategoryRepository {
 
     PointCategory save(PointCategory pointCategory);
 
-    List<PointCategory> findAll();
+    List<PointCategory> findAllActive();
 
     List<PointCategory> findByLevel(Integer level);
 

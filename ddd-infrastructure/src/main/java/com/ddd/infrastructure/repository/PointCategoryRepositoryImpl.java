@@ -44,8 +44,8 @@ public class PointCategoryRepositoryImpl implements PointCategoryRepository {
     }
 
     @Override
-    public List<PointCategory> findAll() {
-        return pointCategoryJpaRepository.findAll(getDefaultSort())
+    public List<PointCategory> findAllActive() {
+        return pointCategoryJpaRepository.findAllByIsActive(true, getDefaultSort())
                 .stream()
                 .map(pointCategoryMapper::toDomainModel)
                 .toList();

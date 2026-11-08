@@ -185,7 +185,7 @@ class PointCategoryServiceImplTest {
                 List<PointCategory> entities = List.of(entity);
                 List<PointCategoryInfoDto> expectedDtos = List.of(infoDto);
 
-                when(pointCategoryRepository.findAll()).thenReturn(entities);
+                when(pointCategoryRepository.findAllActive()).thenReturn(entities);
                 when(pointCategoryDtoMapper.toInfoDtoList(entities)).thenReturn(expectedDtos);
 
                 List<PointCategoryInfoDto> result = pointCategoryService.getAllPointCategories();
@@ -193,7 +193,7 @@ class PointCategoryServiceImplTest {
                 assertNotNull(result);
                 assertEquals(1, result.size());
                 assertEquals(expectedDtos, result);
-                verify(pointCategoryRepository).findAll();
+                verify(pointCategoryRepository).findAllActive();
                 verify(pointCategoryDtoMapper).toInfoDtoList(entities);
         }
 }
