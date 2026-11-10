@@ -3,9 +3,11 @@ package com.ddd.application.service.notification.impl;
 import com.ddd.application.dto.notification.NotificationInfoDto;
 import com.ddd.application.mapper.NotificationDtoMapper;
 import com.ddd.domain.enums.NotificationStatusEnum;
+import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.Notification;
 import com.ddd.domain.model.port.security.SecurityContextPort;
+import com.ddd.domain.repository.FanpageMemberRepository;
 import com.ddd.domain.repository.NotificationRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,9 @@ class NotificationQueryServiceImplTest {
 
     @Mock
     private SecurityContextPort securityContextPort;
+
+    @Mock
+    private FanpageMemberRepository fanpageMemberRepository;
 
     @InjectMocks
     private NotificationQueryServiceImpl notificationQueryService;
@@ -104,5 +109,61 @@ class NotificationQueryServiceImplTest {
         when(securityContextPort.getCurrentUserId()).thenReturn(null);
 
         assertThrows(UnauthorizedException.class, () -> notificationQueryService.getMyUnreadCount());
+    }
+
+    @Test
+    @DisplayName("Should return paginated fanpage notifications when user is admin")
+    void getFanpageNotifications_asAdmin_success() {
+        Long fanpageId = 100L;
+        Long userId = 1L;
+
+        when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+        when(fanpageMemberRepository.isAdminOfFanpage(fanpageId, userId)).thenReturn(true);
+
+        Notification notification = new Notification();
+        notification.setId(10L);
+        notification.setFanpageId(fanpageId);
+        Page<Notification> domainPage = new PageImpl<>(List.of(notification));
+
+        NotificationInfoDto infoDto = new NotificationInfoDto(10L, "Fanpage Title", "Message",
+                NotificationStatusEnum.UNREAD, null, null, null, fanpageId, Instant.now());
+
+        when(notificationRepository.findAllByFanpageId(eq(fanpageId), any(Pageable.class))).thenReturn(domainPage);
+        when(notificationDtoMapper.toInfoDto(notification)).thenReturn(infoDto);
+
+        Page<NotificationInfoDto> result = notificationQueryService.getFanpageNotifications(fanpageId, 0, 10, "createdAt", "desc", null);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        verify(notificationRepository).findAllByFanpageId(eq(fanpageId), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("Should throw AuthException when querying fanpage notifications and user is not admin")
+    void getFanpageNotifications_notAdmin_shouldThrow() {
+        Long fanpageId = 100L;
+        Long userId = 1L;
+
+        when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+        when(fanpageMemberRepository.isAdminOfFanpage(fanpageId, userId)).thenReturn(false);
+
+        assertThrows(AuthException.class, () -> notificationQueryService.getFanpageNotifications(fanpageId, 0, 10, "createdAt", "desc", null));
+        verify(notificationRepository, never()).findAllByFanpageId(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should return fanpage unread count when user is admin")
+    void getFanpageUnreadCount_asAdmin_success() {
+        Long fanpageId = 100L;
+        Long userId = 1L;
+
+        when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+        when(fanpageMemberRepository.isAdminOfFanpage(fanpageId, userId)).thenReturn(true);
+        when(notificationRepository.countUnreadByFanpageId(fanpageId)).thenReturn(3L);
+
+        long count = notificationQueryService.getFanpageUnreadCount(fanpageId);
+
+        assertEquals(3L, count);
+        verify(notificationRepository).countUnreadByFanpageId(fanpageId);
     }
 }

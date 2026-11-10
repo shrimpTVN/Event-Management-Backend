@@ -1,7 +1,10 @@
 package com.ddd.infrastructure.adapter.notification;
 
+import com.ddd.domain.enums.FanpageRoleEnum;
 import com.ddd.domain.model.Notification;
 import com.ddd.domain.model.port.notification.NotificationPushPort;
+import com.ddd.infrastructure.repository.jpaRepository.FanpageMemberJpaRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -15,11 +18,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class SseNotificationPushAdapter implements NotificationPushPort {
 
     private static final Long DEFAULT_TIMEOUT = 30 * 60 * 1000L; // 30 minutes
     private final Map<Long, CopyOnWriteArrayList<SseEmitter>> userEmitters = new ConcurrentHashMap<>();
+    private final FanpageMemberJpaRepository fanpageMemberJpaRepository;
 
     public SseEmitter createEmitter(Long userId) {
         SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
@@ -75,6 +80,23 @@ public class SseNotificationPushAdapter implements NotificationPushPort {
 
         if (!deadEmitters.isEmpty()) {
             emitters.removeAll(deadEmitters);
+        }
+    }
+
+    @Override
+    public void pushToFanpage(Long fanpageId, Notification notification) {
+        if (fanpageId == null || notification == null) {
+            return;
+        }
+
+        List<Long> adminUserIds = fanpageMemberJpaRepository.findUserIdsByFanpageIdAndRole(fanpageId, FanpageRoleEnum.ADMIN.name());
+        if (adminUserIds == null || adminUserIds.isEmpty()) {
+            log.debug("No active admins found for fanpage {}", fanpageId);
+            return;
+        }
+
+        for (Long adminUserId : adminUserIds) {
+            pushToUser(adminUserId, notification);
         }
     }
 

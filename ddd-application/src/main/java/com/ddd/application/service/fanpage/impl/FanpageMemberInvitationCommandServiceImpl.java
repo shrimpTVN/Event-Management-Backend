@@ -2,6 +2,8 @@ package com.ddd.application.service.fanpage.impl;
 
 import com.ddd.application.service.fanpage.FanpageMemberInvitationCommandService;
 import com.ddd.domain.enums.InvatitationStatusEnum;
+import com.ddd.domain.event.FanpageInvitationAcceptedEvent;
+import com.ddd.domain.event.FanpageInvitationRejectedEvent;
 import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.ResourceNotFoundException;
@@ -14,6 +16,7 @@ import com.ddd.domain.repository.FanpageMemberRepository;
 import com.ddd.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +30,7 @@ public class FanpageMemberInvitationCommandServiceImpl implements FanpageMemberI
     private final UserRepository userRepository;
     private final FanpageMemberRepository fanpageMemberRepository;
     private final SecurityContextPort securityContextPort;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public void acceptInvitation(Long invitationId, String userEmail) {
@@ -48,6 +52,16 @@ public class FanpageMemberInvitationCommandServiceImpl implements FanpageMemberI
             fanpageMemberRepository.save(newMember);
         }
 
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        applicationEventPublisher.publishEvent(new FanpageInvitationAcceptedEvent(
+                fanpageId,
+                user.getId(),
+                user.getFullName(),
+                user.getAvatarUrl()
+        ));
+
         log.info("Invitation {} accepted by user {}", invitationId, userEmail);
     }
 
@@ -66,6 +80,13 @@ public class FanpageMemberInvitationCommandServiceImpl implements FanpageMemberI
 
         invitation.setStatus(InvatitationStatusEnum.REJECTED);
         invitationRepository.save(invitation);
+
+        applicationEventPublisher.publishEvent(new FanpageInvitationRejectedEvent(
+                invitation.getFanpageId(),
+                user.getId(),
+                user.getFullName(),
+                user.getAvatarUrl()
+        ));
 
         log.info("Invitation {} declined by user {}", invitationId, userEmail);
     }

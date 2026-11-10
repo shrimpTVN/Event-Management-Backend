@@ -28,6 +28,9 @@ public interface FanpageMemberJpaRepository extends JpaRepository<FanpageMemberJ
     @Query("SELECT fm.id.fanpageId FROM FanpageMemberJpaEntity fm WHERE fm.id.userId = :userId AND fm.role = :role AND fm.isActive = true")
     List<Long> findFanpageIdsByUserIdAndRole(@Param("userId") Long userId, @Param("role") String role);
 
+    @Query("SELECT fm.id.userId FROM FanpageMemberJpaEntity fm WHERE fm.id.fanpageId = :fanpageId AND fm.role = :role AND fm.isActive = true")
+    List<Long> findUserIdsByFanpageIdAndRole(@Param("fanpageId") Long fanpageId, @Param("role") String role);
+
     @Modifying
     @Query("UPDATE FanpageMemberJpaEntity fm SET fm.isActive = false WHERE fm.id.fanpageId = :fanpageId")
     void deactivateAllMembersByFanpageId(@Param("fanpageId") Long fanpageId);

@@ -23,4 +23,16 @@ public interface NotificationRepository {
     void markAllAsRead(Long userId);
 
     void deleteByIdAndUserId(Long id, Long userId);
+
+    Page<Notification> findAllByFanpageId(Long fanpageId, Pageable pageable);
+
+    Page<Notification> findAllByFanpageIdAndStatus(Long fanpageId, NotificationStatusEnum status, Pageable pageable);
+
+    long countUnreadByFanpageId(Long fanpageId);
+
+    void markAsReadByFanpage(Long id, Long fanpageId);
+
+    void markAllAsReadByFanpage(Long fanpageId);
+
+    void deleteByIdAndFanpageId(Long id, Long fanpageId);
 }

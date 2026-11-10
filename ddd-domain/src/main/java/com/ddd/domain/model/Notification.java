@@ -17,6 +17,11 @@ public class Notification extends BaseModel {
     private String iconUrl;
     private String url;
     private Long userId;
+    private Long fanpageId;
+
+    public Notification(String title, String message, NotificationStatusEnum status, String iconUrl, String url, Long userId) {
+        this(title, message, status, iconUrl, url, userId, null);
+    }
 
     public void markAsRead() {
         this.status = NotificationStatusEnum.READ;
@@ -24,5 +29,13 @@ public class Notification extends BaseModel {
 
     public boolean isUnread() {
         return this.status == NotificationStatusEnum.UNREAD;
+    }
+
+    public boolean isFanpageNotification() {
+        return this.fanpageId != null;
+    }
+
+    public boolean isUserNotification() {
+        return this.userId != null;
     }
 }

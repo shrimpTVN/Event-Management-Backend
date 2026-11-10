@@ -5,10 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "notifications", indexes = {
-        @Index(name = "idx_notifications_user_status", columnList = "user_id, status"),
-        @Index(name = "idx_notifications_user_created", columnList = "user_id, created_at")
-})
+@Table(name = "notifications")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -36,6 +33,10 @@ public class NotificationJpaEntity extends BaseEntityJpa {
     private String url;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
     private UserJpaEntity user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fanpage_id", nullable = true)
+    private FanpageJpaEntity fanpage;
 }

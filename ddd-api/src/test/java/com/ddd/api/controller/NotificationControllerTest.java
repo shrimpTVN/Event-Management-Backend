@@ -109,4 +109,61 @@ class NotificationControllerTest {
         assertNotNull(response);
         verify(notificationCommandService).deleteNotification(10L);
     }
+
+    @Test
+    @DisplayName("getFanpageNotifications should return mapped response page")
+    void getFanpageNotifications() {
+        Long fanpageId = 100L;
+        NotificationInfoDto infoDto = new NotificationInfoDto(1L, "Title", "Msg", NotificationStatusEnum.UNREAD, null, null, null, fanpageId, Instant.now());
+        NotificationResponseDto resDto = new NotificationResponseDto(1L, "Title", "Msg", NotificationStatusEnum.UNREAD, null, null, fanpageId, Instant.now());
+        Page<NotificationInfoDto> page = new PageImpl<>(List.of(infoDto));
+
+        when(notificationQueryService.getFanpageNotifications(fanpageId, 0, 10, "createdAt", "desc", null)).thenReturn(page);
+        when(notificationApiMapper.toResponseDto(infoDto)).thenReturn(resDto);
+
+        BaseResponse<Page<NotificationResponseDto>> response = notificationController.getFanpageNotifications(fanpageId, 0, 10, "createdAt", "desc", null);
+
+        assertNotNull(response);
+        assertEquals(1, response.data().getTotalElements());
+        assertEquals(fanpageId, response.data().getContent().get(0).fanpageId());
+    }
+
+    @Test
+    @DisplayName("getFanpageUnreadCount should return unread count for fanpage")
+    void getFanpageUnreadCount() {
+        Long fanpageId = 100L;
+        when(notificationQueryService.getFanpageUnreadCount(fanpageId)).thenReturn(3L);
+
+        BaseResponse<UnreadCountResponseDto> response = notificationController.getFanpageUnreadCount(fanpageId);
+
+        assertNotNull(response);
+        assertEquals(3L, response.data().unreadCount());
+    }
+
+    @Test
+    @DisplayName("markAsReadByFanpage should delegate to command service")
+    void markAsReadByFanpage() {
+        BaseResponse<Void> response = notificationController.markAsReadByFanpage(100L, 10L);
+
+        assertNotNull(response);
+        verify(notificationCommandService).markAsReadByFanpage(10L, 100L);
+    }
+
+    @Test
+    @DisplayName("markAllAsReadByFanpage should delegate to command service")
+    void markAllAsReadByFanpage() {
+        BaseResponse<Void> response = notificationController.markAllAsReadByFanpage(100L);
+
+        assertNotNull(response);
+        verify(notificationCommandService).markAllAsReadByFanpage(100L);
+    }
+
+    @Test
+    @DisplayName("deleteFanpageNotification should delegate to command service")
+    void deleteFanpageNotification() {
+        BaseResponse<Void> response = notificationController.deleteFanpageNotification(100L, 10L);
+
+        assertNotNull(response);
+        verify(notificationCommandService).deleteFanpageNotification(10L, 100L);
+    }
 }

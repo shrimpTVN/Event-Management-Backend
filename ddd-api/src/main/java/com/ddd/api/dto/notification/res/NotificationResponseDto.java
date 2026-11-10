@@ -11,6 +11,12 @@ public record NotificationResponseDto(
         NotificationStatusEnum status,
         String iconUrl,
         String url,
+        Long fanpageId,
         Instant createdAt
 ) {
+    public NotificationResponseDto(Long id, String title, String message,
+                                   NotificationStatusEnum status, String iconUrl, String url,
+                                   Instant createdAt) {
+        this(id, title, message, status, iconUrl, url, null, createdAt);
+    }
 }

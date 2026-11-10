@@ -11,4 +11,10 @@ public interface NotificationCommandService {
     void markAllAsRead();
 
     void deleteNotification(Long notificationId);
+
+    void markAsReadByFanpage(Long notificationId, Long fanpageId);
+
+    void markAllAsReadByFanpage(Long fanpageId);
+
+    void deleteFanpageNotification(Long notificationId, Long fanpageId);
 }

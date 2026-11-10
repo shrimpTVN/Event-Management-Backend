@@ -4,6 +4,7 @@ import com.ddd.domain.enums.NotificationStatusEnum;
 import com.ddd.domain.model.Notification;
 import com.ddd.domain.repository.NotificationRepository;
 import com.ddd.infrastructure.entity.BaseEntityJpa;
+import com.ddd.infrastructure.entity.FanpageJpaEntity;
 import com.ddd.infrastructure.entity.NotificationJpaEntity;
 import com.ddd.infrastructure.entity.UserJpaEntity;
 import com.ddd.infrastructure.mapper.NotificationMapper;
@@ -34,6 +35,15 @@ public class NotificationRepositoryImpl implements NotificationRepository {
         if (notification.getUserId() != null) {
             UserJpaEntity userRef = entityManager.getReference(UserJpaEntity.class, notification.getUserId());
             entity.setUser(userRef);
+        } else {
+            entity.setUser(null);
+        }
+
+        if (notification.getFanpageId() != null) {
+            FanpageJpaEntity fanpageRef = entityManager.getReference(FanpageJpaEntity.class, notification.getFanpageId());
+            entity.setFanpage(fanpageRef);
+        } else {
+            entity.setFanpage(null);
         }
 
         NotificationJpaEntity saved = notificationJpaRepository.save(entity);
@@ -77,5 +87,37 @@ public class NotificationRepositoryImpl implements NotificationRepository {
     @Override
     public void deleteByIdAndUserId(Long id, Long userId) {
         notificationJpaRepository.softDeleteByIdAndUserId(id, userId);
+    }
+
+    @Override
+    public Page<Notification> findAllByFanpageId(Long fanpageId, Pageable pageable) {
+        return notificationJpaRepository.findByFanpage_IdAndIsActiveTrue(fanpageId, pageable)
+                .map(notificationMapper::toDomainModel);
+    }
+
+    @Override
+    public Page<Notification> findAllByFanpageIdAndStatus(Long fanpageId, NotificationStatusEnum status, Pageable pageable) {
+        return notificationJpaRepository.findByFanpage_IdAndStatusAndIsActiveTrue(fanpageId, status, pageable)
+                .map(notificationMapper::toDomainModel);
+    }
+
+    @Override
+    public long countUnreadByFanpageId(Long fanpageId) {
+        return notificationJpaRepository.countByFanpage_IdAndStatusAndIsActiveTrue(fanpageId, NotificationStatusEnum.UNREAD);
+    }
+
+    @Override
+    public void markAsReadByFanpage(Long id, Long fanpageId) {
+        notificationJpaRepository.updateStatusByIdAndFanpageId(id, fanpageId, NotificationStatusEnum.READ);
+    }
+
+    @Override
+    public void markAllAsReadByFanpage(Long fanpageId) {
+        notificationJpaRepository.updateAllStatusByFanpageId(fanpageId, NotificationStatusEnum.UNREAD, NotificationStatusEnum.READ);
+    }
+
+    @Override
+    public void deleteByIdAndFanpageId(Long id, Long fanpageId) {
+        notificationJpaRepository.softDeleteByIdAndFanpageId(id, fanpageId);
     }
 }

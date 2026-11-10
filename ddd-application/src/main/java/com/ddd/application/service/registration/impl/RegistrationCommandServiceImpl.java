@@ -7,6 +7,7 @@ import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.PointTransactionStatusEnum;
 import com.ddd.domain.enums.PointTransactionTypeEnum;
 import com.ddd.domain.enums.RegistrationStatusEnum;
+import com.ddd.domain.event.EventCheckoutAwardedEvent;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.DuplicateResourceException;
 import com.ddd.domain.exception.EventAttendanceException;
@@ -16,6 +17,7 @@ import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -38,6 +40,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final StudentSemesterPointCommandService studentSemesterPointCommandService;
     private final StudentCriteriaTransactionCommandService studentCriteriaTransactionCommandService;
     private final SecurityContextPort securityContextPort;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     private Registration isRegistered(User user,  Long eventId) {
         if (registrationRepository.isRegistered(user.getId(), eventId)) {
@@ -147,6 +150,13 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         if (event.getCriteriaId() != null) {
             studentCriteriaTransactionCommandService.createTransactionFromEvent(userId, eventId);
         }
+
+        applicationEventPublisher.publishEvent(new EventCheckoutAwardedEvent(
+                eventId,
+                event.getName(),
+                event.getBannerUrl(),
+                List.of(userId)
+        ));
     }
 
     private void validateFanpageMemberPermission(Long memberId, Event event) {
@@ -228,6 +238,13 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         if (event.getCriteriaId() != null) {
             studentCriteriaTransactionCommandService.createTransactionFromEvent(distinctStudentUserIds, eventId);
         }
+
+        applicationEventPublisher.publishEvent(new EventCheckoutAwardedEvent(
+                eventId,
+                event.getName(),
+                event.getBannerUrl(),
+                distinctStudentUserIds
+        ));
     }
 
     private void validateAndCompleteRegistration(Registration registration, Long studentUserId, Long checkedOutById,

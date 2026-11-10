@@ -8,4 +8,8 @@ public interface NotificationQueryService {
     Page<NotificationInfoDto> getMyNotifications(int page, int size, String sortBy, String sortDir, NotificationStatusEnum status);
 
     long getMyUnreadCount();
+
+    Page<NotificationInfoDto> getFanpageNotifications(Long fanpageId, int page, int size, String sortBy, String sortDir, NotificationStatusEnum status);
+
+    long getFanpageUnreadCount(Long fanpageId);
 }

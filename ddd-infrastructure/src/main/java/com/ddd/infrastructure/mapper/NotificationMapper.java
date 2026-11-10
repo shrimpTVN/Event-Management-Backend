@@ -8,16 +8,19 @@ import org.mapstruct.*;
 public interface NotificationMapper {
 
     @Mapping(target = "userId", source = "user.id")
+    @Mapping(target = "fanpageId", source = "fanpage.id")
     @Mapping(target = "active", source = "isActive")
     Notification toDomainModel(NotificationJpaEntity entity);
 
     @Mapping(target = "user", ignore = true)
+    @Mapping(target = "fanpage", ignore = true)
     @Mapping(target = "isActive", source = "active")
     NotificationJpaEntity toJpaEntity(Notification domain);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "user", ignore = true)
+    @Mapping(target = "fanpage", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

@@ -64,4 +64,44 @@ public class NotificationController {
         notificationCommandService.deleteNotification(id);
         return BaseResponse.ok();
     }
+
+    @GetMapping("/fanpages/{fanpageId}")
+    public BaseResponse<Page<NotificationResponseDto>> getFanpageNotifications(
+            @PathVariable Long fanpageId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) NotificationStatusEnum status) {
+        Page<NotificationInfoDto> result = notificationQueryService.getFanpageNotifications(fanpageId, page, size, sortBy, sortDir, status);
+        return BaseResponse.of(result.map(notificationApiMapper::toResponseDto));
+    }
+
+    @GetMapping("/fanpages/{fanpageId}/unread-count")
+    public BaseResponse<UnreadCountResponseDto> getFanpageUnreadCount(@PathVariable Long fanpageId) {
+        long count = notificationQueryService.getFanpageUnreadCount(fanpageId);
+        return BaseResponse.of(new UnreadCountResponseDto(count));
+    }
+
+    @PatchMapping("/fanpages/{fanpageId}/{id}/read")
+    public BaseResponse<Void> markAsReadByFanpage(
+            @PathVariable Long fanpageId,
+            @PathVariable Long id) {
+        notificationCommandService.markAsReadByFanpage(id, fanpageId);
+        return BaseResponse.ok();
+    }
+
+    @PatchMapping("/fanpages/{fanpageId}/read-all")
+    public BaseResponse<Void> markAllAsReadByFanpage(@PathVariable Long fanpageId) {
+        notificationCommandService.markAllAsReadByFanpage(fanpageId);
+        return BaseResponse.ok();
+    }
+
+    @DeleteMapping("/fanpages/{fanpageId}/{id}")
+    public BaseResponse<Void> deleteFanpageNotification(
+            @PathVariable Long fanpageId,
+            @PathVariable Long id) {
+        notificationCommandService.deleteFanpageNotification(id, fanpageId);
+        return BaseResponse.ok();
+    }
 }

@@ -7,6 +7,8 @@ import com.ddd.application.dto.event.EventUpdateDto;
 import com.ddd.application.mapper.EventDtoMapper;
 import com.ddd.application.service.event.EventCommandService;
 import com.ddd.domain.enums.EventStatusEnum;
+import com.ddd.domain.enums.FollowingStatusEnum;
+import com.ddd.domain.event.EventCreatedEvent;
 import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.*;
@@ -14,6 +16,7 @@ import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,12 +38,17 @@ public class EventCommandServiceImpl implements EventCommandService {
     private final SemesterRepository semesterRepository;
     private final PointCategoryRepository pointCategoryRepository;
     private final SecurityContextPort securityContextPort;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final FollowingRepository followingRepository;
 
     @Override
     @Transactional
     public Long createEvent(EventCreateDto dto) {
         Long userId = securityContextPort.getCurrentUserId();
-        log.info("Creating event for fanpageId: {} by user id: {}", dto.fanpageId(), userId);
+
+        Fanpage fanpage = fanpageRepository.findById(dto.fanpageId())
+                .orElseThrow(() -> new ResourceNotFoundException("Fanpage not found with id: " + dto.fanpageId()));
+
         validateReferences(dto, userId);
 
         // Map DTO to Event entity
@@ -59,6 +67,19 @@ public class EventCommandServiceImpl implements EventCommandService {
 
         Event savedEvent = eventRepository.save(event);
         log.info("Event created successfully with id: {} and status: {}", savedEvent.getId(), savedEvent.getStatus());
+        List<Long> followerIds = followingRepository.findByFanpageIdAndFolStatus(fanpage.getId(), FollowingStatusEnum.FOLLOWING)
+                .stream()
+                .map(Following::getUserId)
+                .toList();
+
+        applicationEventPublisher.publishEvent(new EventCreatedEvent(
+                fanpage.getName(),
+                savedEvent.getName(),
+                savedEvent.getBannerUrl(),
+                savedEvent.getId(),
+                followerIds
+        ));
+
         return savedEvent.getId();
     }
 
@@ -124,10 +145,8 @@ public class EventCommandServiceImpl implements EventCommandService {
     }
 
     private void validateReferences(EventCreateDto dto, Long userId) {
-        Fanpage fanpage = fanpageRepository.findById(dto.fanpageId())
-                .orElseThrow(() -> new ResourceNotFoundException("Fanpage not found with id: " + dto.fanpageId()));
 
-        verifyUserFanpageMembership(fanpage.getId(), userId);
+        verifyUserFanpageMembership(dto.fanpageId(), userId);
 
         EventType eventType = eventTypeRepository.findById(dto.eventTypeId());
         if (eventType == null) {
