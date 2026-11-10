@@ -1,6 +1,7 @@
 package com.ddd.infrastructure.entity;
 
 import com.ddd.domain.enums.NotificationStatusEnum;
+import com.ddd.domain.enums.NotificationTypeEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,8 +17,9 @@ public class NotificationJpaEntity extends BaseEntityJpa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "title", length = 255)
-    private String title;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", length = 50)
+    private NotificationTypeEnum type;
 
     @Column(name = "message", columnDefinition = "TEXT")
     private String message;

@@ -9,6 +9,7 @@ import com.ddd.application.service.notification.NotificationCommandService;
 import com.ddd.application.service.notification.NotificationQueryService;
 import com.ddd.application.service.notification.NotificationRealtimeService;
 import com.ddd.domain.enums.NotificationStatusEnum;
+import com.ddd.domain.enums.NotificationTypeEnum;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,8 +59,8 @@ class NotificationControllerTest {
     @Test
     @DisplayName("getMyNotifications should return mapped response page")
     void getMyNotifications() {
-        NotificationInfoDto infoDto = new NotificationInfoDto(1L, "Title", "Msg", NotificationStatusEnum.UNREAD, null, null, 10L, Instant.now());
-        NotificationResponseDto resDto = new NotificationResponseDto(1L, "Title", "Msg", NotificationStatusEnum.UNREAD, null, null, Instant.now());
+        NotificationInfoDto infoDto = new NotificationInfoDto(1L, NotificationTypeEnum.SYSTEM, "Msg", NotificationStatusEnum.UNREAD, null, null, 10L, Instant.now());
+        NotificationResponseDto resDto = new NotificationResponseDto(1L, NotificationTypeEnum.SYSTEM, "Msg", NotificationStatusEnum.UNREAD, null, null, Instant.now());
         Page<NotificationInfoDto> page = new PageImpl<>(List.of(infoDto));
 
         when(notificationQueryService.getMyNotifications(0, 10, "createdAt", "desc", null)).thenReturn(page);
@@ -69,7 +70,7 @@ class NotificationControllerTest {
 
         assertNotNull(response);
         assertEquals(1, response.data().getTotalElements());
-        assertEquals("Title", response.data().getContent().get(0).title());
+        assertEquals(NotificationTypeEnum.SYSTEM, response.data().getContent().get(0).type());
     }
 
     @Test
@@ -114,8 +115,8 @@ class NotificationControllerTest {
     @DisplayName("getFanpageNotifications should return mapped response page")
     void getFanpageNotifications() {
         Long fanpageId = 100L;
-        NotificationInfoDto infoDto = new NotificationInfoDto(1L, "Title", "Msg", NotificationStatusEnum.UNREAD, null, null, null, fanpageId, Instant.now());
-        NotificationResponseDto resDto = new NotificationResponseDto(1L, "Title", "Msg", NotificationStatusEnum.UNREAD, null, null, fanpageId, Instant.now());
+        NotificationInfoDto infoDto = new NotificationInfoDto(1L, NotificationTypeEnum.SYSTEM, "Msg", NotificationStatusEnum.UNREAD, null, null, null, fanpageId, Instant.now());
+        NotificationResponseDto resDto = new NotificationResponseDto(1L, NotificationTypeEnum.SYSTEM, "Msg", NotificationStatusEnum.UNREAD, null, null, fanpageId, Instant.now());
         Page<NotificationInfoDto> page = new PageImpl<>(List.of(infoDto));
 
         when(notificationQueryService.getFanpageNotifications(fanpageId, 0, 10, "createdAt", "desc", null)).thenReturn(page);

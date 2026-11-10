@@ -39,7 +39,7 @@ public class NotificationCommandServiceImpl implements NotificationCommandServic
         log.info("Creating notification for user: {}, fanpage: {}", dto.userId(), dto.fanpageId());
 
         Notification notification = new Notification();
-        notification.setTitle(dto.title());
+        notification.setType(dto.type());
         notification.setMessage(dto.message());
         notification.setStatus(NotificationStatusEnum.UNREAD);
         notification.setIconUrl(dto.iconUrl());

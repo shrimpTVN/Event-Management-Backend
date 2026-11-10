@@ -1,12 +1,13 @@
 package com.ddd.api.dto.notification.res;
 
 import com.ddd.domain.enums.NotificationStatusEnum;
+import com.ddd.domain.enums.NotificationTypeEnum;
 
 import java.time.Instant;
 
 public record NotificationResponseDto(
         Long id,
-        String title,
+        NotificationTypeEnum type,
         String message,
         NotificationStatusEnum status,
         String iconUrl,
@@ -14,9 +15,9 @@ public record NotificationResponseDto(
         Long fanpageId,
         Instant createdAt
 ) {
-    public NotificationResponseDto(Long id, String title, String message,
+    public NotificationResponseDto(Long id, NotificationTypeEnum type, String message,
                                    NotificationStatusEnum status, String iconUrl, String url,
                                    Instant createdAt) {
-        this(id, title, message, status, iconUrl, url, null, createdAt);
+        this(id, type, message, status, iconUrl, url, null, createdAt);
     }
 }

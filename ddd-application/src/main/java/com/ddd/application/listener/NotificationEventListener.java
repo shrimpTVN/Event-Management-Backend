@@ -2,6 +2,7 @@ package com.ddd.application.listener;
 
 import com.ddd.application.dto.notification.CreateNotificationDto;
 import com.ddd.application.service.notification.NotificationCommandService;
+import com.ddd.domain.enums.NotificationTypeEnum;
 import com.ddd.domain.event.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +13,6 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-
 public class NotificationEventListener {
 
     private final NotificationCommandService notificationCommandService;
@@ -22,7 +22,7 @@ public class NotificationEventListener {
     public void onFanpageApproved(FanpageApprovedEvent event) {
         notificationCommandService.createNotification(new CreateNotificationDto(
                 event.userId(),
-                "Fanpage Approved",
+                NotificationTypeEnum.FANPAGE_APPROVED,
                 "Your fanpage \"" + event.fanpageName() + "\" has been approved by the university admin!",
                 event.fanpageAvatarUrl(),
                 "" + event.fanpageId()
@@ -34,7 +34,7 @@ public class NotificationEventListener {
     public void onFanpageRejected(FanpageRejectedEvent event) {
         notificationCommandService.createNotification(new CreateNotificationDto(
                 event.userId(),
-                "Fanpage Status Update",
+                NotificationTypeEnum.FANPAGE_REJECTED,
                 "Your fanpage \"" + event.fanpageName() + "\" was rejected or suspended.",
                 event.fanpageAvatarUrl(),
                 "" + event.fanpageId()
@@ -46,7 +46,7 @@ public class NotificationEventListener {
     public void onMemberInvited(FanpageMemberInvitedEvent event) {
         notificationCommandService.createNotification(new CreateNotificationDto(
                 event.invitedUserId(),
-                "Club Invitation",
+                NotificationTypeEnum.FANPAGE_MEMBER_INVITED,
                 event.inviterName() + " invited you to join \"" + event.fanpageName() + "\".",
                 event.fanpageAvatarUrl(),
                 "" + event.fanpageId()
@@ -58,7 +58,7 @@ public class NotificationEventListener {
     public void onInvitationAccepted(FanpageInvitationAcceptedEvent event) {
         notificationCommandService.createNotification(CreateNotificationDto.forFanpage(
                 event.fanpageId(),
-                "New Club Member",
+                NotificationTypeEnum.FANPAGE_INVITATION_ACCEPTED,
                 event.acceptedUserName() + " accepted the invitation to join fanpage",
                 event.acceptedUserAvatarUrl(),
                 event.fanpageId() + ""
@@ -70,7 +70,7 @@ public class NotificationEventListener {
     public void onInvitationRejected(FanpageInvitationRejectedEvent event) {
         notificationCommandService.createNotification(CreateNotificationDto.forFanpage(
                 event.fanpageId(),
-                "Invitation Declined",
+                NotificationTypeEnum.FANPAGE_INVITATION_REJECTED,
                 event.rejectedUserName() + " declined the invitation to join fanpage",
                 event.rejectedUserAvatarUrl(),
                 event.fanpageId() + ""
@@ -82,7 +82,7 @@ public class NotificationEventListener {
     public void onAdminAppointed(FanpageMemberAppointedEvent event) {
         notificationCommandService.createNotification(new CreateNotificationDto(
                 event.appointedUserId(),
-                "Role Promoted",
+                NotificationTypeEnum.FANPAGE_ADMIN_APPOINTED,
                 "You have been appointed as Admin of \"" + event.fanpageName() + "\" by " + event.appointerUserName() + ".",
                 event.fanpageAvatarUrl(),
                 "" + event.fanpageId()
@@ -95,7 +95,7 @@ public class NotificationEventListener {
         for (Long userId : event.userIds()) {
             notificationCommandService.createNotification(new CreateNotificationDto(
                     userId,
-                    "Event Completed & Points Awarded",
+                    NotificationTypeEnum.EVENT_CHECKOUT_AWARDED,
                     "Congratulations! You completed attendance for \"" + event.eventName() + "\" and your criteria points have been awarded.",
                     event.eventAvatarUrl(),
                     "/events/" + event.eventId()
@@ -103,14 +103,13 @@ public class NotificationEventListener {
         }
     }
 
-
-    //4. Event created for following fanpage
+    // 4. Event created for following fanpage
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onEventCreated(EventCreatedEvent event) {
         for (Long userId : event.followerUserIds()) {
             notificationCommandService.createNotification(new CreateNotificationDto(
                     userId,
-                    "New Event Created",
+                    NotificationTypeEnum.EVENT_CREATED,
                     "A new event \"" + event.eventName() + "\" has been created by fanpage \"" + event.fanpageName() + "\".",
                     event.eventAvatarUrl(),
                     "" + event.eventId()

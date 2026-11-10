@@ -3,6 +3,7 @@ package com.ddd.application.service.notification.impl;
 import com.ddd.application.dto.notification.NotificationInfoDto;
 import com.ddd.application.mapper.NotificationDtoMapper;
 import com.ddd.domain.enums.NotificationStatusEnum;
+import com.ddd.domain.enums.NotificationTypeEnum;
 import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.Notification;
@@ -51,11 +52,11 @@ class NotificationQueryServiceImplTest {
         Long userId = 1L;
         when(securityContextPort.getCurrentUserId()).thenReturn(userId);
 
-        Notification notification = new Notification("Title", "Message", NotificationStatusEnum.UNREAD, null, null, userId);
+        Notification notification = new Notification(NotificationTypeEnum.SYSTEM, "Message", NotificationStatusEnum.UNREAD, null, null, userId);
         notification.setId(10L);
         Page<Notification> domainPage = new PageImpl<>(List.of(notification));
 
-        NotificationInfoDto infoDto = new NotificationInfoDto(10L, "Title", "Message", NotificationStatusEnum.UNREAD, null, null, userId, Instant.now());
+        NotificationInfoDto infoDto = new NotificationInfoDto(10L, NotificationTypeEnum.SYSTEM, "Message", NotificationStatusEnum.UNREAD, null, null, userId, Instant.now());
 
         when(notificationRepository.findAllByUserId(eq(userId), any(Pageable.class))).thenReturn(domainPage);
         when(notificationDtoMapper.toInfoDto(notification)).thenReturn(infoDto);
@@ -74,11 +75,11 @@ class NotificationQueryServiceImplTest {
         Long userId = 1L;
         when(securityContextPort.getCurrentUserId()).thenReturn(userId);
 
-        Notification notification = new Notification("Title", "Message", NotificationStatusEnum.UNREAD, null, null, userId);
+        Notification notification = new Notification(NotificationTypeEnum.SYSTEM, "Message", NotificationStatusEnum.UNREAD, null, null, userId);
         notification.setId(10L);
         Page<Notification> domainPage = new PageImpl<>(List.of(notification));
 
-        NotificationInfoDto infoDto = new NotificationInfoDto(10L, "Title", "Message", NotificationStatusEnum.UNREAD, null, null, userId, Instant.now());
+        NotificationInfoDto infoDto = new NotificationInfoDto(10L, NotificationTypeEnum.SYSTEM, "Message", NotificationStatusEnum.UNREAD, null, null, userId, Instant.now());
 
         when(notificationRepository.findAllByUserIdAndStatus(eq(userId), eq(NotificationStatusEnum.UNREAD), any(Pageable.class))).thenReturn(domainPage);
         when(notificationDtoMapper.toInfoDto(notification)).thenReturn(infoDto);
@@ -125,7 +126,7 @@ class NotificationQueryServiceImplTest {
         notification.setFanpageId(fanpageId);
         Page<Notification> domainPage = new PageImpl<>(List.of(notification));
 
-        NotificationInfoDto infoDto = new NotificationInfoDto(10L, "Fanpage Title", "Message",
+        NotificationInfoDto infoDto = new NotificationInfoDto(10L, NotificationTypeEnum.SYSTEM, "Message",
                 NotificationStatusEnum.UNREAD, null, null, null, fanpageId, Instant.now());
 
         when(notificationRepository.findAllByFanpageId(eq(fanpageId), any(Pageable.class))).thenReturn(domainPage);

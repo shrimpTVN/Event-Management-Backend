@@ -1,6 +1,7 @@
 package com.ddd.domain.model;
 
 import com.ddd.domain.enums.NotificationStatusEnum;
+import com.ddd.domain.enums.NotificationTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,7 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Notification extends BaseModel {
-    private String title;
+    private NotificationTypeEnum type;
     private String message;
     private NotificationStatusEnum status = NotificationStatusEnum.UNREAD;
     private String iconUrl;
@@ -19,8 +20,8 @@ public class Notification extends BaseModel {
     private Long userId;
     private Long fanpageId;
 
-    public Notification(String title, String message, NotificationStatusEnum status, String iconUrl, String url, Long userId) {
-        this(title, message, status, iconUrl, url, userId, null);
+    public Notification(NotificationTypeEnum type, String message, NotificationStatusEnum status, String iconUrl, String url, Long userId) {
+        this(type, message, status, iconUrl, url, userId, null);
     }
 
     public void markAsRead() {

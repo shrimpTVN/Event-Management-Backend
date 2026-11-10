@@ -4,6 +4,7 @@ import com.ddd.application.dto.notification.CreateNotificationDto;
 import com.ddd.application.dto.notification.NotificationInfoDto;
 import com.ddd.application.mapper.NotificationDtoMapper;
 import com.ddd.domain.enums.NotificationStatusEnum;
+import com.ddd.domain.enums.NotificationTypeEnum;
 import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.exception.UnauthorizedException;
@@ -52,15 +53,15 @@ class NotificationCommandServiceImplTest {
     @DisplayName("Should create notification, push via SSE, and return DTO")
     void createNotification_success() {
         CreateNotificationDto dto = new CreateNotificationDto(
-                1L, "Event Approved", "Your event was approved", "icon.png", "/events/1"
+                1L, NotificationTypeEnum.SYSTEM, "Your event was approved", "icon.png", "/events/1"
         );
 
-        Notification saved = new Notification("Event Approved", "Your event was approved",
+        Notification saved = new Notification(NotificationTypeEnum.SYSTEM, "Your event was approved",
                 NotificationStatusEnum.UNREAD, "icon.png", "/events/1", 1L);
         saved.setId(10L);
 
         NotificationInfoDto expectedDto = new NotificationInfoDto(
-                10L, "Event Approved", "Your event was approved",
+                10L, NotificationTypeEnum.SYSTEM, "Your event was approved",
                 NotificationStatusEnum.UNREAD, "icon.png", "/events/1", 1L, Instant.now()
         );
 
@@ -80,16 +81,16 @@ class NotificationCommandServiceImplTest {
     void createNotification_forFanpage_success() {
         Long fanpageId = 100L;
         CreateNotificationDto dto = CreateNotificationDto.forFanpage(
-                fanpageId, "New Club Member", "Alice joined", "avatar.png", "/fanpages/100"
+                fanpageId, NotificationTypeEnum.FANPAGE_INVITATION_ACCEPTED, "Alice joined", "avatar.png", "/fanpages/100"
         );
 
         Notification saved = new Notification();
         saved.setId(20L);
-        saved.setTitle("New Club Member");
+        saved.setType(NotificationTypeEnum.FANPAGE_INVITATION_ACCEPTED);
         saved.setFanpageId(fanpageId);
 
         NotificationInfoDto expectedDto = new NotificationInfoDto(
-                20L, "New Club Member", "Alice joined",
+                20L, NotificationTypeEnum.FANPAGE_INVITATION_ACCEPTED, "Alice joined",
                 NotificationStatusEnum.UNREAD, "avatar.png", "/fanpages/100", null, fanpageId, Instant.now()
         );
 
