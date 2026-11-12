@@ -3,6 +3,8 @@ package com.ddd.application.service.notification;
 import com.ddd.application.dto.notification.CreateNotificationDto;
 import com.ddd.application.dto.notification.NotificationInfoDto;
 
+import java.util.List;
+
 public interface NotificationCommandService {
     NotificationInfoDto createNotification(CreateNotificationDto dto);
 
@@ -17,4 +19,6 @@ public interface NotificationCommandService {
     void markAllAsReadByFanpage(Long fanpageId);
 
     void deleteFanpageNotification(Long notificationId, Long fanpageId);
+
+    void createNotifications(List<CreateNotificationDto> notifications);
 }

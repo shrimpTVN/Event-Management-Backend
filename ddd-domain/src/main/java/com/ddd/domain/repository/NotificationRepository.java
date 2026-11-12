@@ -5,6 +5,7 @@ import com.ddd.domain.model.Notification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface NotificationRepository {
@@ -35,4 +36,6 @@ public interface NotificationRepository {
     void markAllAsReadByFanpage(Long fanpageId);
 
     void deleteByIdAndFanpageId(Long id, Long fanpageId);
+
+    List<Notification> saveAll(List<Notification> entities);
 }

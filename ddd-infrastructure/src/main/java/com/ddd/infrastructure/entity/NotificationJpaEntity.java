@@ -14,7 +14,10 @@ import lombok.*;
 public class NotificationJpaEntity extends BaseEntityJpa {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+//    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "notif_seq_gen")
+    @SequenceGenerator(name = "notif_seq_gen", sequenceName = "notifications_id_seq", allocationSize = 50)
+
     private Long id;
 
     @Enumerated(EnumType.STRING)

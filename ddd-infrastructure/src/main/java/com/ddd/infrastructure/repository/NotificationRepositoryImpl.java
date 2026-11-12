@@ -15,6 +15,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -25,13 +27,7 @@ public class NotificationRepositoryImpl implements NotificationRepository {
     private final NotificationMapper notificationMapper;
     private final EntityManager entityManager;
 
-    @Override
-    public Notification save(Notification notification) {
-        NotificationJpaEntity entity = notificationMapper.toJpaEntity(notification);
-        if (notification.getId() != null) {
-            entity.setId(notification.getId());
-        }
-
+    private void assignReferences(Notification notification, NotificationJpaEntity entity) {
         if (notification.getUserId() != null) {
             UserJpaEntity userRef = entityManager.getReference(UserJpaEntity.class, notification.getUserId());
             entity.setUser(userRef);
@@ -45,9 +41,38 @@ public class NotificationRepositoryImpl implements NotificationRepository {
         } else {
             entity.setFanpage(null);
         }
+    }
 
+    @Override
+    public Notification save(Notification notification) {
+        NotificationJpaEntity entity = notificationMapper.toJpaEntity(notification);
+        if (notification.getId() != null) {
+            entity.setId(notification.getId());
+        }
+        assignReferences(notification, entity);
         NotificationJpaEntity saved = notificationJpaRepository.save(entity);
         return notificationMapper.toDomainModel(saved);
+    }
+
+    @Override
+    public List<Notification> saveAll(List<Notification> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return List.of();
+        }
+
+        List<NotificationJpaEntity> jpaEntities = new ArrayList<>();
+        for (Notification notification : entities) {
+            NotificationJpaEntity entity = notificationMapper.toJpaEntity(notification);
+            if (notification.getId() != null) {
+                entity.setId(notification.getId());
+            }
+            assignReferences(notification, entity);
+            jpaEntities.add(entity);
+        }
+        List<NotificationJpaEntity> savedEntities = notificationJpaRepository.saveAll(jpaEntities);
+        return savedEntities.stream()
+                .map(notificationMapper::toDomainModel)
+                .toList();
     }
 
     @Override
@@ -120,4 +145,6 @@ public class NotificationRepositoryImpl implements NotificationRepository {
     public void deleteByIdAndFanpageId(Long id, Long fanpageId) {
         notificationJpaRepository.softDeleteByIdAndFanpageId(id, fanpageId);
     }
+
+
 }

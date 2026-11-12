@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -52,7 +53,6 @@ public class SseNotificationPushAdapter implements NotificationPushPort {
 
         return emitter;
     }
-
     @Override
     public void pushToUser(Long userId, Notification notification) {
         if (userId == null || notification == null) {
@@ -61,27 +61,26 @@ public class SseNotificationPushAdapter implements NotificationPushPort {
 
         List<SseEmitter> emitters = userEmitters.get(userId);
         if (emitters == null || emitters.isEmpty()) {
-            log.debug("No active SSE connections for user {}", userId);
             return;
         }
 
-        List<SseEmitter> deadEmitters = new ArrayList<>();
-        for (SseEmitter emitter : emitters) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .id(notification.getId() != null ? String.valueOf(notification.getId()) : null)
-                        .name("NOTIFICATION")
-                        .data(notification));
-            } catch (Exception e) {
-                log.debug("Failed to send notification to emitter for user {}: {}", userId, e.getMessage());
-                deadEmitters.add(emitter);
-            }
-        }
+        // Convert payload once to avoid repetitive Jackson reflection
+        SseEmitter.SseEventBuilder event = SseEmitter.event()
+                .id(notification.getId() != null ? String.valueOf(notification.getId()) : null)
+                .name("NOTIFICATION")
+                .data(notification);
 
-        if (!deadEmitters.isEmpty()) {
-            emitters.removeAll(deadEmitters);
+        for (SseEmitter emitter : emitters) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    emitter.send(event);
+                } catch (Exception e) {
+                    removeEmitter(userId, emitter);
+                }
+            });
         }
     }
+
 
     @Override
     public void pushToFanpage(Long fanpageId, Notification notification) {

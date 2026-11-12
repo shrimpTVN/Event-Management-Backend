@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -37,17 +38,7 @@ public class NotificationCommandServiceImpl implements NotificationCommandServic
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public NotificationInfoDto createNotification(CreateNotificationDto dto) {
         log.info("Creating notification for user: {}, fanpage: {}", dto.userId(), dto.fanpageId());
-
-        Notification notification = new Notification();
-        notification.setType(dto.type());
-        notification.setMessage(dto.message());
-        notification.setStatus(NotificationStatusEnum.UNREAD);
-        notification.setIconUrl(dto.iconUrl());
-        notification.setUrl(dto.url());
-        notification.setUserId(dto.userId());
-        notification.setFanpageId(dto.fanpageId());
-
-        Notification saved = notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notificationDtoMapper.toModel(dto));
 
         if (dto.userId() != null) {
             try {
@@ -66,6 +57,30 @@ public class NotificationCommandServiceImpl implements NotificationCommandServic
         }
 
         return notificationDtoMapper.toInfoDto(saved);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createNotifications(List<CreateNotificationDto> dtos) {
+        if (dtos == null || dtos.isEmpty()) {
+            return;
+        }
+
+        log.info("Batch creating {} notifications", dtos.size());
+
+        List<Notification> entities = dtos.stream().map(notificationDtoMapper::toModel).toList();
+
+        // 1. Single database transaction & batch insert
+        List<Notification> savedList = notificationRepository.saveAll(entities);
+
+        // Dispatch real-time pushes asynchronously without blocking
+        for (Notification saved : savedList) {
+            if (saved.getUserId() != null) {
+                notificationPushPort.pushToUser(saved.getUserId(), saved);
+            } else if (saved.getFanpageId() != null) {
+                notificationPushPort.pushToFanpage(saved.getFanpageId(), saved);
+            }
+        }
     }
 
     @Override
@@ -145,6 +160,8 @@ public class NotificationCommandServiceImpl implements NotificationCommandServic
 
         notificationRepository.deleteByIdAndFanpageId(notificationId, fanpageId);
     }
+
+
 
     private void validateFanpageAdmin(Long fanpageId) {
         Long currentUserId = securityContextPort.getCurrentUserId();

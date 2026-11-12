@@ -10,6 +10,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -92,28 +95,30 @@ public class NotificationEventListener {
     // 3. Checkout Completed & Awarded
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onCheckoutAwarded(EventCheckoutAwardedEvent event) {
-        for (Long userId : event.userIds()) {
-            notificationCommandService.createNotification(new CreateNotificationDto(
-                    userId,
-                    NotificationTypeEnum.EVENT_CHECKOUT_AWARDED,
-                    "Congratulations! You completed attendance for \"" + event.eventName() + "\" and your criteria points have been awarded.",
-                    event.eventAvatarUrl(),
-                    "/events/" + event.eventId()
-            ));
-        }
+        log.info("Notification listener running on thread: {}", Thread.currentThread().getName());
+        List<CreateNotificationDto> notifications = event.userIds().stream()
+                .map(userId -> new CreateNotificationDto(
+                        userId,
+                        NotificationTypeEnum.EVENT_CHECKOUT_AWARDED,
+                        "You have been awarded for your checkout in the event \"" + event.eventName() + "\".",
+                        event.eventAvatarUrl(),
+                        "" + event.eventId()
+                )).collect(Collectors.toList());
+        notificationCommandService.createNotifications(notifications);
     }
 
     // 4. Event created for following fanpage
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onEventCreated(EventCreatedEvent event) {
-        for (Long userId : event.followerUserIds()) {
-            notificationCommandService.createNotification(new CreateNotificationDto(
-                    userId,
-                    NotificationTypeEnum.EVENT_CREATED,
-                    "A new event \"" + event.eventName() + "\" has been created by fanpage \"" + event.fanpageName() + "\".",
-                    event.eventAvatarUrl(),
-                    "" + event.eventId()
-            ));
-        }
+        log.info("Notification listener running on thread: {}", Thread.currentThread().getName());
+        List<CreateNotificationDto> notifications = event.followerUserIds().stream()
+                .map(userId -> new CreateNotificationDto(
+                        userId,
+                        NotificationTypeEnum.EVENT_CREATED,
+                        "A new event has been created for the fanpage you are following: \"" + event.eventName() + "\".",
+                        event.eventAvatarUrl(),
+                        "" + event.eventId()
+                )).collect(Collectors.toList());
+        notificationCommandService.createNotifications(notifications);
     }
 }
