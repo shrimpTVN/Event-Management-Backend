@@ -128,7 +128,7 @@ eventSource.addEventListener('INIT', (e) => {
 
 eventSource.addEventListener('NOTIFICATION', (e) => {
     const notification = JSON.parse(e.data);
-    console.log('New notification arrived:', notification.title, notification.message);
+    console.log('New notification arrived:', notification.type, notification.message);
     // Display in-app toast, increment unread badge, etc.
 });
 

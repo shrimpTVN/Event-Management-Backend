@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Upload API Tester (Direct & Presigned)</title>
+    <title>Cloudinary Direct Upload Tester</title>
     <style>
         :root {
             --primary: #3b82f6;
@@ -34,7 +34,7 @@
 
         .container {
             width: 100%;
-            max-width: 850px;
+            max-width: 800px;
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: 12px;
@@ -43,7 +43,7 @@
         }
 
         h1 {
-            font-size: 1.5rem;
+            font-size: 1.45rem;
             font-weight: 700;
             margin-bottom: 6px;
             color: #0f172a;
@@ -51,8 +51,8 @@
 
         .subtitle {
             color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-bottom: 24px;
+            font-size: 0.88rem;
+            margin-bottom: 22px;
         }
 
         .section {
@@ -64,19 +64,19 @@
         }
 
         .section-title {
-            font-size: 1rem;
+            font-size: 0.98rem;
             font-weight: 600;
             margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: space-between;
         }
 
         .badge {
             font-size: 0.75rem;
             background: #dbeafe;
             color: #1e40af;
-            padding: 2px 8px;
+            padding: 3px 8px;
             border-radius: 9999px;
             font-weight: 500;
         }
@@ -84,7 +84,7 @@
         .grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 14px;
+            gap: 12px;
         }
 
         @media (max-width: 640px) {
@@ -94,32 +94,37 @@
         }
 
         .form-group {
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
 
         .form-group label {
             display: block;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             font-weight: 500;
             margin-bottom: 5px;
             color: #334155;
         }
 
         input[type="text"],
-        input[type="password"],
-        select {
+        input[type="number"],
+        textarea {
             width: 100%;
             padding: 9px 12px;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             border: 1px solid var(--border);
             border-radius: 6px;
             outline: none;
             transition: border-color 0.15s;
+            font-family: inherit;
         }
 
-        input[type="text"]:focus,
-        input[type="password"]:focus,
-        select:focus {
+        textarea {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.82rem;
+            resize: vertical;
+        }
+
+        input:focus, textarea:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
         }
@@ -127,7 +132,7 @@
         .drop-zone {
             border: 2px dashed #cbd5e1;
             border-radius: 8px;
-            padding: 24px;
+            padding: 22px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
@@ -140,7 +145,7 @@
         }
 
         .preview-container {
-            margin-top: 15px;
+            margin-top: 12px;
             display: none;
             align-items: center;
             gap: 15px;
@@ -151,8 +156,8 @@
         }
 
         .preview-img {
-            max-width: 100px;
-            max-height: 100px;
+            max-width: 90px;
+            max-height: 90px;
             object-fit: contain;
             border-radius: 4px;
             background: #fff;
@@ -164,9 +169,9 @@
             color: #ffffff;
             border: none;
             border-radius: 6px;
-            padding: 10px 16px;
-            font-size: 0.9rem;
-            font-weight: 500;
+            padding: 10px 18px;
+            font-size: 0.92rem;
+            font-weight: 600;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
@@ -183,38 +188,14 @@
             cursor: not-allowed;
         }
 
-        .btn-danger {
-            background: var(--danger);
+        .btn-outline {
+            background: transparent;
+            color: #475569;
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            font-size: 0.78rem;
         }
-
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-
-        .steps {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 14px;
-        }
-
-        .step-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .step-item.active {
-            color: var(--primary);
-            font-weight: 600;
-        }
-
-        .step-item.done {
-            color: var(--success);
-            font-weight: 600;
-        }
+        .btn-outline:hover { background: #f1f5f9; }
 
         .log-box {
             background: #0f172a;
@@ -224,11 +205,11 @@
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             font-size: 0.8rem;
             line-height: 1.5;
-            max-height: 260px;
+            max-height: 250px;
             overflow-y: auto;
             white-space: pre-wrap;
             word-break: break-all;
-            margin-top: 12px;
+            margin-top: 10px;
         }
 
         .result-card {
@@ -242,9 +223,9 @@
 
         .result-img-preview {
             max-width: 100%;
-            max-height: 300px;
+            max-height: 320px;
             border-radius: 6px;
-            margin-top: 10px;
+            margin-top: 12px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
     </style>
@@ -252,56 +233,74 @@
 <body>
 
 <div class="container">
-    <h1>🚀 Image Upload API Tester</h1>
-    <p class="subtitle">Test both Presigned Direct Upload (Approach 2) and Direct Backend Upload (Approach 1)</p>
+    <h1>☁️ Cloudinary Direct Upload Tester</h1>
+    <p class="subtitle">Paste the presigned parameters from Postman / Swagger & upload directly to Cloudinary</p>
 
-    <!-- Configuration Section -->
+    <!-- 1. Quick JSON Paste -->
     <div class="section">
         <div class="section-title">
-            <span>⚙️ API Configuration</span>
+            <span>📋 Quick Paste Presigned JSON</span>
+            <span class="badge">Auto-fills fields</span>
         </div>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 8px;">
+            Paste the raw response body from <code>POST /api/media/presign</code> here:
+        </p>
+        <textarea id="jsonPaste" rows="3" placeholder='{"uploadUrl":"https://api.cloudinary.com/...","apiKey":"...","timestamp":1730...,"signature":"...","folder":"...","publicId":"..."}' oninput="parsePastedJson()"></textarea>
+    </div>
+
+    <!-- 2. Cloudinary Upload Parameters -->
+    <div class="section">
+        <div class="section-title">
+            <span>🔑 Presigned Upload Parameters</span>
+        </div>
+
+        <div class="form-group">
+            <label for="uploadUrl">Upload URL (Cloudinary API Endpoint)</label>
+            <input type="text" id="uploadUrl" placeholder="https://api.cloudinary.com/v1_1/<cloud_name>/image/upload">
+        </div>
+
         <div class="grid">
             <div class="form-group">
-                <label for="apiUrl">Backend Base URL</label>
-                <input type="text" id="apiUrl" value="http://localhost:8080" placeholder="e.g. http://localhost:8080">
+                <label for="apiKey">API Key (api_key)</label>
+                <input type="text" id="apiKey" placeholder="e.g. 123456789012345">
             </div>
             <div class="form-group">
-                <label for="jwtToken">Bearer Token (JWT - Optional if public/cookies)</label>
-                <input type="text" id="jwtToken" placeholder="Paste Bearer token here (without 'Bearer ')">
+                <label for="timestamp">Timestamp</label>
+                <input type="text" id="timestamp" placeholder="e.g. 1730489999">
             </div>
+        </div>
+
+        <div class="form-group">
+            <label for="signature">Signature</label>
+            <input type="text" id="signature" placeholder="Cryptographic hash string">
+        </div>
+
+        <div class="grid">
+            <div class="form-group">
+                <label for="folder">Folder (folder)</label>
+                <input type="text" id="folder" placeholder="e.g. ctu-event/events">
+            </div>
+            <div class="form-group">
+                <label for="assetFolder">Asset Folder (asset_folder)</label>
+                <input type="text" id="assetFolder" placeholder="e.g. ctu-event/events">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="publicId">Public ID (optional / if generated)</label>
+            <input type="text" id="publicId" placeholder="e.g. u_2_xyz">
         </div>
     </div>
 
-    <!-- Presigned Upload Flow -->
+    <!-- 3. Choose File & Upload -->
     <div class="section">
         <div class="section-title">
-            <span>⚡ Approach 2: Presigned Direct Upload (Industry Standard)</span>
-            <span class="badge">Recommended</span>
+            <span>📁 Choose Image to Upload</span>
         </div>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
-            Step 1: Frontend asks backend for a signed ticket (<code>POST /media/presign</code>).<br>
-            Step 2: Frontend streams binary file directly to Cloudinary CDN edge. Zero backend RAM/bandwidth used.
-        </p>
 
-        <div class="grid">
-            <div class="form-group">
-                <label for="category">Media Category</label>
-                <select id="category">
-                    <option value="AVATAR">AVATAR (avatars/)</option>
-                    <option value="EVENT">EVENT (events/)</option>
-                    <option value="FANPAGE">FANPAGE (fanpages/)</option>
-                    <option value="EVIDENCE">EVIDENCE (evidence/)</option>
-                    <option value="CERTIFICATE">CERTIFICATE (certificates/)</option>
-                    <option value="GENERAL" selected>GENERAL (general/)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="fileInput">Choose Image</label>
-                <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display: none;">
-                <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-                    📁 Click or drag an image here (PNG, JPG, WEBP, GIF)
-                </div>
-            </div>
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            📷 Click or drag an image here (PNG, JPG, WEBP, GIF)
         </div>
 
         <div class="preview-container" id="previewContainer">
@@ -313,21 +312,14 @@
         </div>
 
         <div style="margin-top: 16px;">
-            <button class="btn" id="uploadPresignedBtn" onclick="runPresignedUpload()" disabled>
-                Upload via Presigned Signature
+            <button class="btn" id="uploadBtn" onclick="uploadDirectToCloudinary()" disabled>
+                🚀 Post Image to Cloudinary
             </button>
-        </div>
-
-        <!-- Progress Steps -->
-        <div class="steps" id="stepsList" style="display: none;">
-            <div class="step-item" id="step1">⏳ 1. Requesting signature from backend (POST /media/presign)...</div>
-            <div class="step-item" id="step2">⏳ 2. Uploading binary directly to Cloudinary CDN...</div>
-            <div class="step-item" id="step3">⏳ 3. Finished!</div>
         </div>
 
         <!-- Result Card -->
         <div class="result-card" id="resultCard">
-            <h3 style="color: #166534; font-size: 1rem; margin-bottom: 8px;">✅ Upload Succeeded!</h3>
+            <h3 style="color: #166534; font-size: 1rem; margin-bottom: 8px;">🎉 Upload Succeeded!</h3>
             <p style="font-size: 0.85rem; margin-bottom: 6px;"><strong>Public ID:</strong> <span id="resPublicId"></span></p>
             <p style="font-size: 0.85rem; margin-bottom: 6px;"><strong>Secure URL:</strong> <a id="resUrl" href="#" target="_blank" style="color: #2563eb; word-break: break-all;"></a></p>
             <p style="font-size: 0.85rem; margin-bottom: 6px;"><strong>Dimensions:</strong> <span id="resDimensions"></span></p>
@@ -335,26 +327,11 @@
         </div>
     </div>
 
-    <!-- Deletion Section -->
-    <div class="section">
-        <div class="section-title">
-            <span>🗑️ Delete Image API</span>
-        </div>
-        <div class="grid" style="align-items: flex-end;">
-            <div class="form-group" style="margin-bottom: 0;">
-                <label for="deletePublicId">Public ID to Delete</label>
-                <input type="text" id="deletePublicId" placeholder="e.g. event-management/general/u_1_xyz">
-            </div>
-            <div>
-                <button class="btn btn-danger" onclick="deleteImage()">Delete from Cloudinary</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Logs -->
     <div class="section">
         <div class="section-title">
-            <span>📋 Activity & Network Logs</span>
+            <span>📋 Cloudinary Response / Logs</span>
+            <button class="btn-outline" onclick="clearLogs()">Clear</button>
         </div>
         <div class="log-box" id="logBox">Logs will appear here...</div>
     </div>
@@ -363,14 +340,44 @@
 <script>
     let selectedFile = null;
 
-    // File selection & drag-and-drop
     const fileInput = document.getElementById('fileInput');
     const dropZone = document.getElementById('dropZone');
     const previewContainer = document.getElementById('previewContainer');
     const previewImg = document.getElementById('previewImg');
     const previewName = document.getElementById('previewName');
     const previewSize = document.getElementById('previewSize');
-    const uploadPresignedBtn = document.getElementById('uploadPresignedBtn');
+    const uploadBtn = document.getElementById('uploadBtn');
+
+    // Auto-parse pasted JSON from Postman / Backend
+    function parsePastedJson() {
+        const text = document.getElementById('jsonPaste').value.trim();
+        if (!text) return;
+
+        try {
+            let data = JSON.parse(text);
+            // If wrapped inside { data: { ... } }
+            if (data.data) {
+                data = data.data;
+            }
+
+            if (data.uploadUrl) document.getElementById('uploadUrl').value = data.uploadUrl.replace('clodinary.com', 'cloudinary.com');
+            if (data.apiKey) document.getElementById('apiKey').value = data.apiKey;
+            if (data.timestamp) document.getElementById('timestamp').value = data.timestamp;
+            if (data.signature) document.getElementById('signature').value = data.signature;
+            if (data.folder) document.getElementById('folder').value = data.folder;
+            if (data.assetFolder) {
+                document.getElementById('assetFolder').value = data.assetFolder;
+            } else if (data.folder) {
+                document.getElementById('assetFolder').value = data.folder;
+            }
+            if (data.publicId) document.getElementById('publicId').value = data.publicId;
+
+            log('✅ Parsed and populated parameters from JSON!');
+            checkCanUpload();
+        } catch (e) {
+            // Not valid JSON yet, wait for full paste
+        }
+    }
 
     fileInput.addEventListener('change', (e) => {
         if (e.target.files && e.target.files[0]) {
@@ -407,9 +414,19 @@
         };
         reader.readAsDataURL(file);
 
-        uploadPresignedBtn.disabled = false;
-        log(`Selected file: ${file.name} (${file.size} bytes, type: ${file.type})`);
+        log(`Selected image: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+        checkCanUpload();
     }
+
+    function checkCanUpload() {
+        const url = document.getElementById('uploadUrl').value.trim();
+        const sig = document.getElementById('signature').value.trim();
+        uploadBtn.disabled = !(selectedFile && url && sig);
+    }
+
+    ['uploadUrl', 'apiKey', 'timestamp', 'signature', 'folder', 'publicId'].forEach(id => {
+        document.getElementById(id).addEventListener('input', checkCanUpload);
+    });
 
     function log(message, data) {
         const box = document.getElementById('logBox');
@@ -421,154 +438,79 @@
         box.textContent = formatted + `\n\n` + box.textContent;
     }
 
-    function getAuthHeaders() {
-        const token = document.getElementById('jwtToken').value.trim();
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        if (token) {
-            headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
-        }
-        return headers;
+    function clearLogs() {
+        document.getElementById('logBox').textContent = 'Logs cleared.';
     }
 
-    // Step-by-step presigned direct upload flow
-    async function runPresignedUpload() {
+    // Direct Upload to Cloudinary
+    async function uploadDirectToCloudinary() {
         if (!selectedFile) {
-            alert('Please select an image first!');
+            alert('Please select an image file!');
             return;
         }
 
-        const baseUrl = document.getElementById('apiUrl').value.replace(/\/+$/, '');
-        const category = document.getElementById('category').value;
-        const fileExt = selectedFile.name.split('.').pop();
+        let uploadUrl = document.getElementById('uploadUrl').value.trim();
+        if (uploadUrl.includes('clodinary.com')) {
+            uploadUrl = uploadUrl.replace('clodinary.com', 'cloudinary.com');
+            document.getElementById('uploadUrl').value = uploadUrl;
+        }
+        const apiKey = document.getElementById('apiKey').value.trim();
+        const timestamp = document.getElementById('timestamp').value.trim();
+        const signature = document.getElementById('signature').value.trim();
+        const folder = document.getElementById('folder').value.trim();
+        const assetFolder = document.getElementById('assetFolder').value.trim() || folder;
+        const publicId = document.getElementById('publicId').value.trim();
 
-        const stepsList = document.getElementById('stepsList');
-        const step1 = document.getElementById('step1');
-        const step2 = document.getElementById('step2');
-        const step3 = document.getElementById('step3');
-        const resultCard = document.getElementById('resultCard');
+        if (!uploadUrl || !apiKey || !timestamp || !signature) {
+            alert('Please fill in uploadUrl, apiKey, timestamp, and signature!');
+            return;
+        }
 
-        stepsList.style.display = 'flex';
-        resultCard.style.display = 'none';
-        step1.className = 'step-item active';
-        step2.className = 'step-item';
-        step3.className = 'step-item';
-        uploadPresignedBtn.disabled = true;
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = '⏳ Uploading to Cloudinary...';
+        document.getElementById('resultCard').style.display = 'none';
+
+        log(`POST ${uploadUrl} -> Sending FormData with binary file...`);
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('api_key', apiKey);
+        formData.append('timestamp', timestamp);
+        formData.append('signature', signature);
+        if (folder) formData.append('folder', folder);
+        if (assetFolder) formData.append('asset_folder', assetFolder);
+        if (publicId) formData.append('public_id', publicId);
 
         try {
-            // STEP 1: Ask Backend for presigned ticket
-            log(`STEP 1: Requesting signature from backend -> POST ${baseUrl}/media/presign`);
-            const presignPayload = {
-                category: category,
-                fileExtension: fileExt
-            };
-
-            const presignResponse = await fetch(`${baseUrl}/media/presign`, {
-                method: 'POST',
-                headers: getAuthHeaders(),
-                body: JSON.stringify(presignPayload)
-            });
-
-            if (!presignResponse.ok) {
-                const errText = await presignResponse.text();
-                throw new Error(`Presign failed (${presignResponse.status}): ${errText}`);
-            }
-
-            const presignResult = await presignResponse.json();
-            log('Presign Response received from Backend:', presignResult);
-
-            // Handle BaseResponse wrapper if present (data field)
-            const signData = presignResult.data || presignResult;
-
-            step1.className = 'step-item done';
-            step1.innerHTML = '✅ 1. Signature received from backend';
-            step2.className = 'step-item active';
-
-            // STEP 2: Upload direct to Cloudinary CDN edge
-            log(`STEP 2: Uploading directly to Cloudinary -> POST ${signData.uploadUrl}`);
-
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-            formData.append('api_key', signData.apiKey);
-            formData.append('timestamp', signData.timestamp);
-            formData.append('signature', signData.signature);
-            formData.append('folder', signData.folder);
-            if (signData.publicId) {
-                formData.append('public_id', signData.publicId);
-            }
-
-            const cloudResponse = await fetch(signData.uploadUrl, {
+            const res = await fetch(uploadUrl, {
                 method: 'POST',
                 body: formData
             });
 
-            if (!cloudResponse.ok) {
-                const cloudErr = await cloudResponse.text();
-                throw new Error(`Cloudinary upload failed (${cloudResponse.status}): ${cloudErr}`);
+            const responseData = await res.json();
+
+            if (!res.ok) {
+                log('❌ Cloudinary Error Response:', responseData);
+                alert(`Cloudinary Error (${res.status}): ${responseData.error?.message || 'Upload failed'}`);
+                return;
             }
 
-            const cloudResult = await cloudResponse.json();
-            log('Cloudinary Upload Success Response:', cloudResult);
+            log('✅ Cloudinary Upload Succeeded!', responseData);
 
-            step2.className = 'step-item done';
-            step2.innerHTML = '✅ 2. File uploaded directly to Cloudinary';
-            step3.className = 'step-item done';
-            step3.innerHTML = '🎉 3. Complete! Zero bytes went through backend!';
+            document.getElementById('resPublicId').textContent = responseData.public_id;
+            document.getElementById('resUrl').href = responseData.secure_url;
+            document.getElementById('resUrl').textContent = responseData.secure_url;
+            document.getElementById('resDimensions').textContent = `${responseData.width} x ${responseData.height} px (${(responseData.bytes / 1024).toFixed(1)} KB, ${responseData.format})`;
+            document.getElementById('resImg').src = responseData.secure_url;
+            document.getElementById('resultCard').style.display = 'block';
 
-            // Display results
-            document.getElementById('resPublicId').textContent = cloudResult.public_id;
-            document.getElementById('resUrl').href = cloudResult.secure_url;
-            document.getElementById('resUrl').textContent = cloudResult.secure_url;
-            document.getElementById('resDimensions').textContent = `${cloudResult.width} x ${cloudResult.height} px (${(cloudResult.bytes / 1024).toFixed(1)} KB, ${cloudResult.format})`;
-            document.getElementById('resImg').src = cloudResult.secure_url;
-            resultCard.style.display = 'block';
-
-            // Auto-fill publicId into Delete input
-            document.getElementById('deletePublicId').value = cloudResult.public_id;
-
+            alert('Upload succeeded! Image is live on Cloudinary.');
         } catch (err) {
-            log('❌ ERROR:', err.message);
+            log('❌ Network/Fetch Error:', err.message);
             alert(`Error: ${err.message}`);
         } finally {
-            uploadPresignedBtn.disabled = false;
-        }
-    }
-
-    // Delete Image Flow
-    async function deleteImage() {
-        const publicId = document.getElementById('deletePublicId').value.trim();
-        if (!publicId) {
-            alert('Please enter a publicId to delete!');
-            return;
-        }
-
-        const baseUrl = document.getElementById('apiUrl').value.replace(/\/+$/, '');
-        const token = document.getElementById('jwtToken').value.trim();
-        const headers = {};
-        if (token) {
-            headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
-        }
-
-        log(`Deleting image: DELETE ${baseUrl}/media?publicId=${encodeURIComponent(publicId)}`);
-
-        try {
-            const response = await fetch(`${baseUrl}/media?publicId=${encodeURIComponent(publicId)}`, {
-                method: 'DELETE',
-                headers: headers
-            });
-
-            if (!response.ok) {
-                const err = await response.text();
-                throw new Error(`Delete failed (${response.status}): ${err}`);
-            }
-
-            const resJson = await response.json().catch(() => ({}));
-            log('✅ Image successfully deleted!', resJson);
-            alert('Image deleted successfully!');
-        } catch (err) {
-            log('❌ Delete Error:', err.message);
-            alert(`Delete Error: ${err.message}`);
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = '🚀 Post Image to Cloudinary';
         }
     }
 </script>

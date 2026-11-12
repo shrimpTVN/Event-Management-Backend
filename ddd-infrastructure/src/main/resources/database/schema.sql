@@ -195,6 +195,8 @@ CREATE TABLE followings
     CONSTRAINT uq_followings_fanpage_user UNIQUE (fanpage_id, user_id)
 );
 
+
+
 -- ============================================================
 --  11. EVENT_TYPE
 -- ============================================================
@@ -817,11 +819,13 @@ CREATE TRIGGER trg_reports_updated_at
     ON reports
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+
 CREATE TRIGGER trg_followings_updated_at
     BEFORE UPDATE
     ON followings
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+
 CREATE TRIGGER trg_stored_events_updated_at
     BEFORE UPDATE
     ON stored_events
