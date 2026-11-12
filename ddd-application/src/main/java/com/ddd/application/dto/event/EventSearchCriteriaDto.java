@@ -1,14 +1,15 @@
 package com.ddd.application.dto.event;
 
 import java.time.Instant;
+import java.util.List;
 
 public record EventSearchCriteriaDto(
         String keyword,
         String status,
-        Long eventTypeId,
+        List<Long> eventTypeIds,
         Long semesterId,
-        Long criteriaId,
-        Long pointCategoryId,
+        List<Long> criteriaIds,
+        List<Long> pointCategoryIds,
         Instant dateHappenFrom,
         Instant dateHappenTo,
         Boolean isActive,

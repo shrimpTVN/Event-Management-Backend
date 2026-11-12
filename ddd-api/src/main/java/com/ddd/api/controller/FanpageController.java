@@ -33,7 +33,6 @@ import java.util.List;
 public class FanpageController {
     private final FanpageCommandService fanpageCommandService;
     private final FanpageApiMapper fanpageApiMapper;
-    private final RegistrationCommandService registrationCommandService;
     private final FanpageQueryService fanpageQueryService;
 
     @GetMapping({"", "/"})

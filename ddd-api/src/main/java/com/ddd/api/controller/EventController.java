@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/events")
 @RequiredArgsConstructor
 public class EventController {
-
     private final EventCommandService eventCommandService;
     private final EventQueryService eventQueryService;
     private final StoredEventCommandService storedEventCommandService;
