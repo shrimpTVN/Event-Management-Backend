@@ -38,6 +38,14 @@ public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpa
             "AND e.dateHappen > CURRENT_TIMESTAMP")
     List<RegistrationJpaEntity> findUpcomingRegisteredEvents(@Param("userId") Long userId);
 
-    @EntityGraph(attributePaths = {"user"})
+    @EntityGraph(attributePaths = {"user", "user.studentProfile", "user.studentProfile.major"})
     Page<RegistrationJpaEntity> findAllByEventId(Long eventId, Pageable pageable);
+
+     @EntityGraph(attributePaths = {"user", "user.studentProfile", "user.studentProfile.major"})
+    @Query("SELECT r FROM RegistrationJpaEntity r " +
+            "LEFT JOIN r.user u " +
+            "LEFT JOIN u.studentProfile sp " +
+            "WHERE r.id.eventId = :eventId " +
+            "ORDER BY sp.studentId ASC NULLS LAST")
+    List<RegistrationJpaEntity> findAllByEventId(@Param("eventId") Long eventId);
 }

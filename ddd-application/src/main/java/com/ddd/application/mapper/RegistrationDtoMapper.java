@@ -1,7 +1,7 @@
 package com.ddd.application.mapper;
 
+import com.ddd.application.dto.export.AttendeeExportRowDto;
 import com.ddd.application.dto.fanpage.AttendeeInfoDto;
-import com.ddd.application.dto.registration.RegistrationDto;
 import com.ddd.application.dto.registration.RegistrationInfoDto;
 import com.ddd.infrastructure.entity.RegistrationJpaEntity;
 import org.mapstruct.Mapper;
@@ -26,4 +26,13 @@ public interface RegistrationDtoMapper {
     @Mapping(target="KNumber", source="user.studentProfile.KNumber")
     @Mapping(target="majorName", source="user.studentProfile.major.name")
     AttendeeInfoDto toAttendeeInfoDto(RegistrationJpaEntity entity);
+
+    @Mapping(target="index", source="index")
+    @Mapping(target="firstName", source="entity.user.firstName")
+    @Mapping(target="lastName", source="entity.user.lastName")
+    @Mapping(target="email", source="entity.user.email")
+    @Mapping(target="gender", source="entity.user.gender")
+    @Mapping(target="studentId", source="entity.user.studentProfile.studentId")
+    @Mapping(target="majorName", source="entity.user.studentProfile.major.name")
+    AttendeeExportRowDto toAttendeeExportRowDto(RegistrationJpaEntity entity, int index);
 }
