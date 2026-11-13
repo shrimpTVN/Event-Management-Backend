@@ -5,6 +5,7 @@ public enum RegistrationStatusEnum {
     CHECKED_IN,
     SELF_CHECKED_IN,
     SPENDING_CONFIRM,
+    CONFIRMED,
     COMPLETED,
     CANCELLED,
     ABSENT

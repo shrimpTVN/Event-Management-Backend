@@ -33,15 +33,15 @@ public class RegistrationRepositoryImpl implements RegistrationRepository {
     }
 
     @Override
-    public void save(Registration registration, Long userId, Long eventId) {
-        RegistrationId regId = new RegistrationId(userId, eventId);
+    public void save(Registration registration) {
+        RegistrationId regId = new RegistrationId(registration.getUserId(), registration.getEventId());
 
         RegistrationJpaEntity registrationJpaEntity = registrationJpaRepository.findById(regId)
                 .orElseGet(() -> {
                     RegistrationJpaEntity newEntity = new RegistrationJpaEntity();
                     newEntity.setId(regId);
-                    newEntity.setUser(entityManager.getReference(UserJpaEntity.class, userId));
-                    newEntity.setEvent(entityManager.getReference(EventJpaEntity.class, eventId));
+                    newEntity.setUser(entityManager.getReference(UserJpaEntity.class, registration.getUserId()));
+                    newEntity.setEvent(entityManager.getReference(EventJpaEntity.class, registration.getEventId()));
                     return newEntity;
                 });
 
@@ -49,8 +49,9 @@ public class RegistrationRepositoryImpl implements RegistrationRepository {
         registrationJpaRepository.save(registrationJpaEntity);
     }
 
+
     @Override
-    public void saveAll(List<Registration> registrations, Long eventId) {
+    public void saveAll(List<Registration> registrations) {
         if (registrations == null || registrations.isEmpty()) {
             return;
         }
@@ -58,6 +59,7 @@ public class RegistrationRepositoryImpl implements RegistrationRepository {
         List<Long> userIds = registrations.stream()
                 .map(Registration::getUserId)
                 .toList();
+        Long eventId = registrations.getFirst().getEventId();
 
         Map<Long, RegistrationJpaEntity> existingEntities = registrationJpaRepository
                 .findByEventIdAndUserIdIn(eventId, userIds).stream()

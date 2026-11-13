@@ -5,6 +5,7 @@ import com.ddd.api.dto.fanpage.req.BatchAttendanceRequestDto;
 import com.ddd.api.mapper.RegistrationApiMapper;
 import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.application.service.registration.RegistrationQueryService;
+import com.ddd.domain.enums.RegistrationStatusEnum;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,6 +69,6 @@ class RegistrationControllerTest {
         BaseResponse<Void> response = registrationController.fanpageMemberBatchCheckOut(eventId, request);
 
         assertNotNull(response);
-        verify(registrationCommandService).fanpageMemberCheckOut(eventId, studentUserIds);
+        verify(registrationCommandService).fanpageMemberCheckOut(eventId, studentUserIds, RegistrationStatusEnum.COMPLETED);
     }
 }
