@@ -1,5 +1,6 @@
 package com.ddd.infrastructure.repository.jpaRepository;
 
+import com.ddd.infrastructure.entity.RegistrationId;
 import com.ddd.infrastructure.entity.RegistrationJpaEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,20 +10,17 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpaEntity, Long> {
-
-    boolean existsByUserIdAndEventId(Long userId, Long eventId);
-
-    Optional<RegistrationJpaEntity> findByUserIdAndEventId(Long userId, Long eventId);
+public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpaEntity, RegistrationId> {
 
     @Query("SELECT r FROM RegistrationJpaEntity r " +
-            "WHERE r.event.id = :eventId " +
-            "AND r.user.id IN :userIds")
+            "WHERE r.id.eventId = :eventId " +
+            "AND r.id.userId IN :userIds")
     List<RegistrationJpaEntity> findByEventIdAndUserIdIn(@Param("eventId") Long eventId, @Param("userIds") Collection<Long> userIds);
 
     @EntityGraph(attributePaths = {"event", "event.eventType", "event.criteria",
@@ -48,4 +46,11 @@ public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpa
             "WHERE r.id.eventId = :eventId " +
             "ORDER BY sp.studentId ASC NULLS LAST")
     List<RegistrationJpaEntity> findAllByEventId(@Param("eventId") Long eventId);
+
+     @EntityGraph(attributePaths = {"event"})
+     @Query("SELECT r FROM RegistrationJpaEntity r " +
+             "WHERE r.user.id = :userId " +
+             "AND r.event.dateHappen BETWEEN :startTime AND :endTime")
+    List<RegistrationJpaEntity> findArrangedEvents(@Param("userId") Long userId,
+                                                   @Param("startTime") Instant startTime, @Param("endTime") Instant endTime);
 }

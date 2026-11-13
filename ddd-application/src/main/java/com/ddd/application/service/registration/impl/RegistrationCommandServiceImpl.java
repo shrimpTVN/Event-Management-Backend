@@ -247,6 +247,41 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         ));
     }
 
+    @Override
+    public void fanpageMemberBatchAbsent(Long eventId, List<Long> studentUserIds) {
+        if (studentUserIds == null || studentUserIds.isEmpty()) {
+            return;
+        }
+
+        Long fanpageMemberId = securityContextPort.getCurrentUserId();
+        List<Long> distinctStudentUserIds = studentUserIds.stream().distinct().toList();
+        Event event = eventRepository.findById(eventId);
+        validateFanpageMemberPermission(fanpageMemberId, event);
+
+        List<Registration> registrations = registrationRepository.findAllByUserIdsAndEvent(distinctStudentUserIds, eventId);
+        Map<Long, Registration> registrationMap = registrations.stream()
+                .collect(Collectors.toMap(Registration::getUserId, Function.identity()));
+
+        for (Long studentUserId : distinctStudentUserIds) {
+            Registration registration = registrationMap.get(studentUserId);
+            if (registration == null) {
+                throw new EventAttendanceException("Student ID " + studentUserId + " has not registered for this event!");
+            }
+            if (registration.getStatus() == RegistrationStatusEnum.ABSENT) {
+                throw new EventAttendanceException("Student ID " + studentUserId + " is already marked as absent!");
+            }
+            if (registration.getStatus() == RegistrationStatusEnum.COMPLETED) {
+                throw new EventAttendanceException("Student ID " + studentUserId + " has already completed attendance!");
+            }
+            if (registration.getStatus() == RegistrationStatusEnum.SPENDING_CONFIRM){
+                throw new EventAttendanceException("Student ID " + studentUserId + " is currently pending confirmation and cannot be marked as absent!");
+            }
+            registration.setStatus(RegistrationStatusEnum.ABSENT);
+        }
+
+        registrationRepository.saveAll(registrations, eventId);
+    }
+
     private void validateAndCompleteRegistration(Registration registration, Long studentUserId, Long checkedOutById,
                                                  String proofUrl, Instant now) {
         if (registration == null) {
