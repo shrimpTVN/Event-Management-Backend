@@ -7,8 +7,8 @@ import java.util.List;
 
 public interface RegistrationRepository {
     boolean isRegistered(Long userId, Long eventId);
-    void save(Registration registration, Long userId, Long eventId);
-    void saveAll(List<Registration> registrations, Long eventId);
+    void save(Registration registration);
+    void saveAll(List<Registration> registrations);
 
     Registration findByUserAndEvent(Long userId, Long eventId);
     List<Registration> findAllByUserIdsAndEvent(Collection<Long> userIds, Long eventId);

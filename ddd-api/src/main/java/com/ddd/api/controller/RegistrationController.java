@@ -10,6 +10,7 @@ import com.ddd.api.mapper.RegistrationApiMapper;
 import com.ddd.application.dto.fanpage.AttendeeInfoDto;
 import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.application.service.registration.RegistrationQueryService;
+import com.ddd.domain.enums.RegistrationStatusEnum;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -129,7 +130,7 @@ public class RegistrationController {
     @PatchMapping("/fanpage-member/events/{eventId}/check-out")
     public BaseResponse<Void> fanpageMemberBatchCheckOut(@PathVariable Long eventId,
                                                          @RequestBody @Valid BatchAttendanceRequestDto request) {
-        registrationCommandService.fanpageMemberCheckOut(eventId, request.studentUserIds());
+        registrationCommandService.fanpageMemberCheckOut(eventId, request.studentUserIds(), RegistrationStatusEnum.COMPLETED);
         return BaseResponse.ok();
     }
 
@@ -137,6 +138,13 @@ public class RegistrationController {
     public BaseResponse<Void> fanpageMemberBatchAbsent(@PathVariable Long eventId,
                                                        @RequestBody @Valid BatchAttendanceRequestDto request) {
         registrationCommandService.fanpageMemberBatchAbsent(eventId, request.studentUserIds());
+        return BaseResponse.ok();
+    }
+
+    @PatchMapping("/fanpage-member/events/{eventId}/confirm-attendance")
+    public BaseResponse<Void> fanpageMemberConfirmAttendance(@PathVariable Long eventId,
+                                                              @RequestBody @Valid BatchAttendanceRequestDto request) {
+        registrationCommandService.fanpageMemberCheckOut(eventId, request.studentUserIds(), RegistrationStatusEnum.CONFIRMED);
         return BaseResponse.ok();
     }
 }
