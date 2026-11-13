@@ -12,7 +12,7 @@ This document provides complete, production-ready specifications for Frontend De
 - **Port**: `8080` (configured in `application.yml` via `${SERVER_PORT:8080}`).
 
 > [!IMPORTANT]
-> Note on Route Prefixing: Most controllers mount directly on root paths (e.g. `/auth`, `/users`, `/events`, `/registrations`, `/fanpages`, `/schools`, `/majors`, `/associations`, `/event-types`, `/semesters`, `/point-categories`, `/point-transactions`, `/student-semester-points`, `/criterias`, `/criteria-progress`, `/criteria-transactions`, `/media`), while `RoleController` is explicitly prefixed at `/api/v1/roles`.
+> Note on Route Prefixing: Most controllers mount directly on root paths (e.g. `/auth`, `/users`, `/events`, `/registrations`, `/fanpages`, `/fanpage-member-invitations`, `/notifications`, `/schools`, `/majors`, `/associations`, `/event-types`, `/semesters`, `/point-categories`, `/point-transactions`, `/student-semester-points`, `/criterias`, `/criteria-progress`, `/criteria-transactions`, `/media`), while `RoleController` is explicitly prefixed at `/api/v1/roles`.
 
 ---
 
@@ -448,11 +448,18 @@ export interface PageResponse<T> {
 ---
 
 #### 2.2.4 User Profile Updates & Admin Management
+- **`GET /users/search-users?keyword={keyword}`**: Search active users by name or email (e.g. for inviting members).
+  - Access: `AUTHENTICATED`
+  - Query Param: `keyword` (optional string)
+  - Response: `BaseResponse<List<UserResponseDto>>`
 - **`PUT /users/me/profile`**: Update current student profile details.
-- **`PATCH /users/me/profile/change-avatar`**: Update current avatar.
+- **`PATCH /users/me/profile/change-avatar`**: Update current student avatar.
   - Body: `{ "avatarUrl": "https://example.com/new-avatar.png" }`
-- **`GET /users/admin/{id}/profile?id={id}`**: Retrieve student profile by ID.
-- **`PUT /users/admin/{id}/profile?id={id}`**: Admin update student profile.
+- **`DELETE /users/me/out-fanpage-member/{fanpageId}`**: Leave / resign as a member from a fanpage.
+  - Access: `AUTHENTICATED`
+  - Response: `BaseResponse<Void>`
+- **`GET /users/admin/{id}/profile`**: Retrieve student profile by ID.
+- **`PUT /users/admin/{id}/profile`**: Admin update student profile.
 - **`PATCH /users/admin/{id}/change-status`**: Toggle user account active status.
 - **`PATCH /users/admin/{id}/change-role?role={ROLE_NAME}`**: Admin change single user role (`ADMIN`, `FANPAGE_ADMIN`, `STUDENT`).
 - **`PATCH /users/admin/{id}/change-roles`**: Admin change user multiple roles.
@@ -512,18 +519,25 @@ export interface PageResponse<T> {
 #### 2.3.2 Search Events (Public)
 - **Endpoint**: `GET /events` or `GET /events/`
 - **Access**: `PUBLIC`
-- **Description**: Search active events available for registration and view.
+- **Description**: Search active events available for registration and view (defaults to `isActive = true` and `status = 'PUBLISHED'`).
 - **Query Parameters (`EventFilterRequestDto`)**:
-  - `keyword`: string (search by name, description, location)
-  - `semesterId`: Long
-  - `fanpageId`: Long
-  - `eventTypeId`: Long
-  - `criteriaId`: Long
-  - `status`: string (defaults to `ACTIVE`)
+  - `keyword`: string (optional fuzzy search matched against `name` and `description`)
+  - `pointCategoryIds`: List<Long> (e.g. `?pointCategoryIds=63` or `?pointCategoryIds=63,64` / `?pointCategoryIds=63&pointCategoryIds=64`)
+  - `eventTypeIds`: List<Long> (e.g. `?eventTypeIds=1`)
+  - `criteriaIds`: List<Long> (e.g. `?criteriaIds=2`)
+  - `semesterId`: Long (optional filter by semester)
+  - `dateHappenFrom`: Instant (optional ISO-8601 string, e.g. `2026-10-01T00:00:00Z`)
+  - `dateHappenTo`: Instant (optional ISO-8601 string, e.g. `2026-10-31T23:59:59Z`)
+  - `status`: string (default: `"PUBLISHED"`. Public search forces active events)
+  - `isActive`: boolean (default: `true`)
   - `page`: integer (default: `0`)
   - `size`: integer (default: `10`)
   - `sortBy`: string (default: `"createdAt"`)
   - `sortDir`: string (default: `"desc"`)
+
+> [!WARNING]
+> Filter parameter names for IDs with multiple values are **plural** (`pointCategoryIds`, `eventTypeIds`, `criteriaIds`). Passing a singular form such as `?pointCategoryId=63` will **not** bind to the DTO and will result in the filter being ignored (returning all events).
+
 - **Response `200 OK`**: `BaseResponse<Page<EventResponseDto>>`
 
 ---
@@ -531,7 +545,8 @@ export interface PageResponse<T> {
 #### 2.3.3 Admin - Search Events
 - **Endpoint**: `GET /events/admin`
 - **Access**: `ROLE_ADMIN`
-- **Query Parameters**: Same filter model as `EventFilterRequestDto`, allowing viewing of drafts, pending approvals, and closed events.
+- **Description**: Search events with full administrative visibility (drafts, pending, published, closed, or inactive events).
+- **Query Parameters**: Same filter model as `EventFilterRequestDto`, allowing viewing of drafts, pending approvals, and closed events (`status=DRAFT`, `status=PUBLISHED`, `status=CLOSED`, `isActive=false`, etc.).
 - **Response `200 OK`**: `BaseResponse<Page<EventResponseDto>>`
 
 ---
@@ -859,31 +874,18 @@ export interface PageResponse<T> {
 
 ---
 
-#### 2.4.8 Organizer - Batch Attendance Actions
-- **Batch Check-in**: `PATCH /registrations/fanpage-member/events/{eventId}/check-in`
-- **Batch Check-out**: `PATCH /registrations/fanpage-member/events/{eventId}/check-out`
-- **Access**: `ROLE_FANPAGE_ADMIN` / Organizer
-- **Request Body**:
+#### 2.4.8 Organizer - Attendance Management (Single & Batch)
+- **Check-in Students**: `PATCH /registrations/fanpage-member/events/{eventId}/check-in`
+- **Check-out Students**: `PATCH /registrations/fanpage-member/events/{eventId}/check-out`
+- **Access**: `ROLE_FANPAGE_ADMIN` / Fanpage Member (Organizer)
+- **Description**: Mark attendance for one or more students who registered for the event. Passing a single ID in `studentUserIds` processes that individual student.
+- **Path Variable**: `eventId` (Long)
+- **Request Body (`BatchAttendanceRequestDto`)**:
 ```json
 {
   "studentUserIds": [101, 102, 105]
 }
 ```
-- **Response `200 OK`**:
-```json
-{
-  "data": null,
-  "message": "Success",
-  "exceptionCode": null
-}
-```
-
----
-
-#### 2.4.9 Organizer - Individual Student Attendance Actions
-- **Check-in Single Student**: `PATCH /registrations/fanpage-member/events/{eventId}/users/{studentUserId}/check-in`
-- **Check-out Single Student**: `PATCH /registrations/fanpage-member/events/{eventId}/users/{studentUserId}/check-out`
-- **Access**: `ROLE_FANPAGE_ADMIN` / Organizer
 - **Response `200 OK`**:
 ```json
 {
@@ -1071,6 +1073,7 @@ export interface PageResponse<T> {
 #### 2.5.10 Fanpage Member Management
 - **Get Members of Fanpage**:
   - `GET /fanpages/{fanpageId}/members`
+  - Access: `PUBLIC` / `AUTHENTICATED`
   - Response:
 ```json
 {
@@ -1088,9 +1091,15 @@ export interface PageResponse<T> {
   "exceptionCode": null
 }
 ```
-- **Add Member**: `POST /fanpages/fanpage-admin/{fanpageId}/add-member/{userId}`
-- **Remove Member**: `POST /fanpages/fanpage-admin/{fanpageId}/remove-member/{userId}`
-- **Access**: `ROLE_FANPAGE_ADMIN`
+- **Invite Member**: `POST /fanpages/fanpage-admin/{fanpageId}/invite-member?email={email}`
+  - Access: `ROLE_FANPAGE_ADMIN`
+  - Description: Send an invitation to a registered user by email to join the fanpage team. Creates a pending invitation record in `/fanpage-member-invitations`.
+- **Remove Member**: `DELETE /fanpages/fanpage-admin/{fanpageId}/remove-member?email={email}`
+  - Access: `ROLE_FANPAGE_ADMIN`
+  - Description: Remove a member from the fanpage team by their email.
+- **Appoint Fanpage Admin**: `PATCH /fanpages/fanpage-admin/{fanpageId}/appoint-fanpage-admin?email={email}`
+  - Access: `ROLE_FANPAGE_ADMIN`
+  - Description: Promote an existing member to Fanpage Admin role for this organization.
 
 ---
 
@@ -1753,6 +1762,252 @@ const finalImageUrl = cloudinaryData.secure_url;
 
 ---
 
+### 2.17 Fanpage Member Invitations (`FanpageMemberInvitationController` - `/fanpage-member-invitations`)
+
+#### 2.17.1 Get My Pending Invitations
+- **Endpoint**: `GET /fanpage-member-invitations/me`
+- **Access**: `AUTHENTICATED`
+- **Description**: Retrieve all membership invitations sent to the currently authenticated user.
+- **Response `200 OK`**:
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "fanpageId": 5,
+      "fanpageName": "Google Developer Student Clubs",
+      "fanpageAvatarUrl": "https://cdn.example.com/gdsc-avatar.png",
+      "userId": 101,
+      "userEmail": "student@university.edu.vn",
+      "userFirstName": "Van A",
+      "userLastName": "Nguyen",
+      "userAvatarUrl": "https://cdn.example.com/student.png",
+      "inviterName": "Tran Van B",
+      "status": "PENDING",
+      "createdAt": "2026-11-01T10:00:00Z",
+      "updatedAt": "2026-11-01T10:00:00Z"
+    }
+  ],
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.17.2 Accept Fanpage Invitation
+- **Endpoint**: `POST /fanpage-member-invitations/{invitationId}/accept`
+- **Access**: `AUTHENTICATED` (Invited Student)
+- **Description**: Accept a pending invitation to join the fanpage team. Automatically assigns the `FANPAGE_ADMIN` or member role in that fanpage.
+- **Path Variable**: `invitationId` (Long, required)
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.17.3 Decline Fanpage Invitation
+- **Endpoint**: `POST /fanpage-member-invitations/{invitationId}/decline`
+- **Access**: `AUTHENTICATED` (Invited Student)
+- **Description**: Decline a pending invitation.
+- **Path Variable**: `invitationId` (Long, required)
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.17.4 Cancel Fanpage Invitation
+- **Endpoint**: `POST /fanpage-member-invitations/{invitationId}/cancel`
+- **Access**: `ROLE_FANPAGE_ADMIN` / Fanpage Member
+- **Description**: Cancel a previously issued invitation.
+- **Path Variable**: `invitationId` (Long, required)
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.17.5 Get Invitations by Fanpage ID (Paginated)
+- **Endpoint**: `GET /fanpage-member-invitations/fanpage/{fanpageId}`
+- **Access**: `ROLE_FANPAGE_ADMIN` / Fanpage Member
+- **Description**: List all membership invitations associated with a specific fanpage, filterable by status.
+- **Path Variable**: `fanpageId` (Long, required)
+- **Query Parameters**:
+  - `status`: string (`PENDING` (default), `ACCEPTED`, `REJECTED`, `CANCELED`)
+  - `page`: integer (default: `0`)
+  - `size`: integer (default: `10`)
+  - `sortBy`: string (default: `"createdAt"`)
+  - `sortDir`: string (default: `"DESC"`)
+- **Response `200 OK`**: `BaseResponse<Page<FanpageMemberInvitationResponseDto>>`
+
+---
+
+### 2.18 Real-time Notifications & SSE (`NotificationController` - `/notifications`)
+
+#### 2.18.1 Server-Sent Events (SSE) Stream
+- **Endpoint**: `GET /notifications/stream`
+- **Access**: `AUTHENTICATED`
+- **Headers**:
+  - `Accept: text/event-stream`
+- **Description**: Connects to the real-time notification push stream. The server keeps this connection open and pushes events as they happen (moderation approvals, event notifications, invitations).
+- **TypeScript / Frontend Client Example**:
+```typescript
+const eventSource = new EventSource('http://localhost:8080/notifications/stream', {
+  withCredentials: true
+});
+
+eventSource.onmessage = (event) => {
+  const notification: NotificationResponseDto = JSON.parse(event.data);
+  console.log('Real-time notification received:', notification);
+};
+
+eventSource.onerror = (err) => {
+  console.error('SSE connection error:', err);
+};
+```
+
+---
+
+#### 2.18.2 Get My Notifications (Paginated)
+- **Endpoint**: `GET /notifications`
+- **Access**: `AUTHENTICATED`
+- **Description**: Retrieve paginated notification history for the authenticated user.
+- **Query Parameters**:
+  - `status`: string (optional: `UNREAD`, `READ`, `ARCHIVED`, `SENT`)
+  - `page`: integer (default: `0`)
+  - `size`: integer (default: `10`)
+  - `sortBy`: string (default: `"createdAt"`)
+  - `sortDir`: string (default: `"desc"`)
+- **Response `200 OK`**: `BaseResponse<Page<NotificationResponseDto>>`
+
+---
+
+#### 2.18.3 Get My Unread Notification Count
+- **Endpoint**: `GET /notifications/unread-count`
+- **Access**: `AUTHENTICATED`
+- **Description**: Retrieve the total unread notification count for the user (for navbar badges).
+- **Response `200 OK`**:
+```json
+{
+  "data": {
+    "unreadCount": 3
+  },
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.18.4 Mark Notification as Read
+- **Endpoint**: `PATCH /notifications/{id}/read`
+- **Access**: `AUTHENTICATED`
+- **Path Variable**: `id` (Long, required)
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.18.5 Mark All My Notifications as Read
+- **Endpoint**: `PATCH /notifications/read-all`
+- **Access**: `AUTHENTICATED`
+- **Response `200 OK`**:
+```json
+{
+  "data": null,
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.18.6 Delete Notification
+- **Endpoint**: `DELETE /notifications/{id}`
+- **Access**: `AUTHENTICATED`
+- **Path Variable**: `id` (Long, required)
+- **Response `200 OK`**: `BaseResponse<Void>`
+
+---
+
+#### 2.18.7 Get Fanpage Notifications (Paginated)
+- **Endpoint**: `GET /notifications/fanpages/{fanpageId}`
+- **Access**: `ROLE_FANPAGE_ADMIN` / Fanpage Member
+- **Description**: Retrieve notification history scoped to an organization / fanpage.
+- **Path Variable**: `fanpageId` (Long, required)
+- **Query Parameters**:
+  - `status`: string (optional: `UNREAD`, `READ`, `ARCHIVED`, `SENT`)
+  - `page`: integer (default: `0`)
+  - `size`: integer (default: `10`)
+  - `sortBy`: string (default: `"createdAt"`)
+  - `sortDir`: string (default: `"desc"`)
+- **Response `200 OK`**: `BaseResponse<Page<NotificationResponseDto>>`
+
+---
+
+#### 2.18.8 Get Fanpage Unread Notification Count
+- **Endpoint**: `GET /notifications/fanpages/{fanpageId}/unread-count`
+- **Access**: `ROLE_FANPAGE_ADMIN` / Fanpage Member
+- **Path Variable**: `fanpageId` (Long, required)
+- **Response `200 OK`**:
+```json
+{
+  "data": {
+    "unreadCount": 1
+  },
+  "message": "Success",
+  "exceptionCode": null
+}
+```
+
+---
+
+#### 2.18.9 Mark Fanpage Notification as Read
+- **Endpoint**: `PATCH /notifications/fanpages/{fanpageId}/{id}/read`
+- **Access**: `ROLE_FANPAGE_ADMIN` / Fanpage Member
+- **Path Variables**: `fanpageId` (Long), `id` (Long)
+- **Response `200 OK`**: `BaseResponse<Void>`
+
+---
+
+#### 2.18.10 Mark All Fanpage Notifications as Read
+- **Endpoint**: `PATCH /notifications/fanpages/{fanpageId}/read-all`
+- **Access**: `ROLE_FANPAGE_ADMIN` / Fanpage Member
+- **Path Variable**: `fanpageId` (Long)
+- **Response `200 OK`**: `BaseResponse<Void>`
+
+---
+
+#### 2.18.11 Delete Fanpage Notification
+- **Endpoint**: `DELETE /notifications/fanpages/{fanpageId}/{id}`
+- **Access**: `ROLE_FANPAGE_ADMIN` / Fanpage Member
+- **Path Variables**: `fanpageId` (Long), `id` (Long)
+- **Response `200 OK`**: `BaseResponse<Void>`
+
+---
+
 ## 3. Frontend Type Definitions Summary (TypeScript)
 
 ```typescript
@@ -2060,5 +2315,86 @@ export interface PresignedResponseDto {
   assetFolder: string;
   publicId: string;
   cloudName: string;
+}
+
+// User Profile Actions
+export interface UpdateAvatarRequestDto {
+  avatarUrl: string;
+}
+
+// Event Query Filters
+export interface EventFilterRequestDto {
+  keyword?: string;
+  status?: string;
+  eventTypeIds?: number[];
+  semesterId?: number;
+  criteriaIds?: number[];
+  pointCategoryIds?: number[];
+  dateHappenFrom?: string; // ISO-8601
+  dateHappenTo?: string;   // ISO-8601
+  isActive?: boolean;
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+}
+
+// Attendance
+export interface BatchAttendanceRequestDto {
+  studentUserIds: number[];
+}
+
+// Fanpage Follow & Invitations
+export interface FanpageFollowCountResponseDto {
+  fanpageId: number;
+  followerCount: number;
+  isFollowing: boolean;
+}
+
+export type InvatitationStatusEnum = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELED';
+
+export interface FanpageMemberInvitationResponseDto {
+  id: number;
+  fanpageId: number;
+  fanpageName: string;
+  fanpageAvatarUrl: string;
+  userId: number;
+  userEmail: string;
+  userFirstName: string;
+  userLastName: string;
+  userAvatarUrl: string;
+  inviterName: string;
+  status: InvatitationStatusEnum | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Notifications
+export type NotificationStatusEnum = 'UNREAD' | 'READ' | 'ARCHIVED' | 'SENT';
+
+export type NotificationTypeEnum =
+  | 'FANPAGE_APPROVED'
+  | 'FANPAGE_REJECTED'
+  | 'FANPAGE_MEMBER_INVITED'
+  | 'FANPAGE_INVITATION_ACCEPTED'
+  | 'FANPAGE_INVITATION_REJECTED'
+  | 'FANPAGE_ADMIN_APPOINTED'
+  | 'EVENT_CREATED'
+  | 'EVENT_CHECKOUT_AWARDED'
+  | 'SYSTEM';
+
+export interface NotificationResponseDto {
+  id: number;
+  type: NotificationTypeEnum;
+  message: string;
+  status: NotificationStatusEnum;
+  iconUrl?: string | null;
+  url?: string | null;
+  fanpageId?: number | null;
+  createdAt: string;
+}
+
+export interface UnreadCountResponseDto {
+  unreadCount: number;
 }
 ```

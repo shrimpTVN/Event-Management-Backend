@@ -12,4 +12,6 @@ public interface RegistrationQueryService {
 
     Page<RegistrationInfoDto> getHistory(int page, int size);
     List<RegistrationInfoDto> getUpcoming();
+
+    byte[] exportAttendeesToCsv(Long fanpageId, Long eventId);
 }

@@ -12,6 +12,9 @@ import com.ddd.application.service.registration.RegistrationQueryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -59,6 +62,18 @@ public class RegistrationController {
                 .map(registrationApiMapper::toResponseDto)
                 .toList();
         return BaseResponse.of(responseList);
+    }
+
+    @GetMapping(value = "/fanpage-member/fanpages/{fanpageId}/events/{eventId}/attendees/export", produces = "text/csv")
+    public ResponseEntity<byte[]> exportAttendeesCsv(
+            @PathVariable Long fanpageId,
+            @PathVariable Long eventId) {
+        byte[] csvBytes = registrationQueryService.exportAttendeesToCsv(fanpageId, eventId);
+        String filename = "attendees-event-" + eventId + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csvBytes);
     }
 
     @PatchMapping("/me/events/{eventId}/check-in")
