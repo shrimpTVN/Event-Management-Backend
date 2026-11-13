@@ -101,7 +101,7 @@ class RegistrationCommandServiceImplTest {
 
         assertEquals(RegistrationStatusEnum.ABSENT, reg1.getStatus());
         assertEquals(RegistrationStatusEnum.ABSENT, reg2.getStatus());
-        verify(registrationRepository).saveAll(any(), eq(eventId));
+        verify(registrationRepository).saveAll(any());
     }
 
     @Test
@@ -125,7 +125,7 @@ class RegistrationCommandServiceImplTest {
 
         assertThrows(EventAttendanceException.class, () ->
                 registrationCommandService.fanpageMemberBatchAbsent(eventId, studentUserIds));
-        verify(registrationRepository, never()).saveAll(any(), any());
+        verify(registrationRepository, never()).saveAll(any());
     }
 
     @Test
