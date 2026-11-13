@@ -8,9 +8,8 @@ import com.ddd.infrastructure.entity.RegistrationId;
 import com.ddd.infrastructure.entity.RegistrationJpaEntity;
 import com.ddd.infrastructure.entity.UserJpaEntity;
 import com.ddd.infrastructure.mapper.RegistrationMapper;
-import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.RegistrationJpaRepository;
-import com.ddd.infrastructure.repository.jpaRepository.UserJpaRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +17,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
@@ -25,36 +25,27 @@ import java.util.stream.Collectors;
 public class RegistrationRepositoryImpl implements RegistrationRepository {
     private final RegistrationJpaRepository registrationJpaRepository;
     private final RegistrationMapper registrationMapper;
-    private final UserJpaRepository userJpaRepository;
-    private final EventJpaRepository eventJpaRepository;
+    private final EntityManager entityManager;
 
     @Override
     public boolean isRegistered(Long userId, Long eventId) {
-        return registrationJpaRepository.existsByUserIdAndEventId(userId, eventId);
+        return registrationJpaRepository.existsById(new RegistrationId(userId, eventId));
     }
 
     @Override
     public void save(Registration registration, Long userId, Long eventId) {
-        UserJpaEntity userJpaEntity = userJpaRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Not found user"));
-        EventJpaEntity eventJpaEntity = eventJpaRepository.findById(eventId)
-                .orElseThrow(() -> new ResourceNotFoundException("Not found Event"));
+        RegistrationId regId = new RegistrationId(userId, eventId);
 
-        RegistrationJpaEntity registrationJpaEntity = registrationJpaRepository.findByUserIdAndEventId(userId, eventId)
+        RegistrationJpaEntity registrationJpaEntity = registrationJpaRepository.findById(regId)
                 .orElseGet(() -> {
                     RegistrationJpaEntity newEntity = new RegistrationJpaEntity();
-                    RegistrationId regId = new RegistrationId();
-                    regId.setUserId(userId);
-                    regId.setEventId(eventId);
-
                     newEntity.setId(regId);
-                    newEntity.setUser(userJpaEntity);
-                    newEntity.setEvent(eventJpaEntity);
+                    newEntity.setUser(entityManager.getReference(UserJpaEntity.class, userId));
+                    newEntity.setEvent(entityManager.getReference(EventJpaEntity.class, eventId));
                     return newEntity;
                 });
 
         registrationMapper.updateEntityFromDomain(registration, registrationJpaEntity);
-
         registrationJpaRepository.save(registrationJpaEntity);
     }
 
@@ -70,10 +61,19 @@ public class RegistrationRepositoryImpl implements RegistrationRepository {
 
         Map<Long, RegistrationJpaEntity> existingEntities = registrationJpaRepository
                 .findByEventIdAndUserIdIn(eventId, userIds).stream()
-                .collect(Collectors.toMap(e -> e.getUser().getId(), e -> e));
+                .collect(Collectors.toMap(
+                        e -> e.getId().getUserId(),
+                        Function.identity(),
+                        (existing, replacement) -> existing
+                ));
 
         for (Registration reg : registrations) {
             RegistrationJpaEntity entity = existingEntities.get(reg.getUserId());
+            if (entity == null) {
+                throw new ResourceNotFoundException(
+                        "Cannot batch update: Registration not found for user " + reg.getUserId() + " in event " + eventId
+                );
+            }
             registrationMapper.updateEntityFromDomain(reg, entity);
         }
 
@@ -82,7 +82,8 @@ public class RegistrationRepositoryImpl implements RegistrationRepository {
 
     @Override
     public Registration findByUserAndEvent(Long userId, Long eventId) {
-        RegistrationJpaEntity registrationJpaEntity = registrationJpaRepository.findByUserIdAndEventId(userId, eventId)
+        RegistrationId regId = new RegistrationId(userId, eventId);
+        RegistrationJpaEntity registrationJpaEntity = registrationJpaRepository.findById(regId)
                 .orElseThrow(() -> new ResourceNotFoundException("Not found Registration with userId: " + userId + " and eventId: " + eventId));
 
         return registrationMapper.toDomain(registrationJpaEntity);
@@ -98,4 +99,3 @@ public class RegistrationRepositoryImpl implements RegistrationRepository {
                 .toList();
     }
 }
-

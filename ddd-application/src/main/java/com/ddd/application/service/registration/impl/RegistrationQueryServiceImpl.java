@@ -3,6 +3,7 @@ package com.ddd.application.service.registration.impl;
 import com.ddd.application.dto.export.AttendeeExportRowDto;
 import com.ddd.application.dto.export.EventAttendeeExportDto;
 import com.ddd.application.dto.fanpage.AttendeeInfoDto;
+import com.ddd.application.dto.registration.RegistrationArrangedInfoDto;
 import com.ddd.application.dto.registration.RegistrationDto;
 import com.ddd.application.dto.registration.RegistrationInfoDto;
 import com.ddd.application.mapper.RegistrationDtoMapper;
@@ -25,6 +26,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -99,6 +102,30 @@ public class RegistrationQueryServiceImpl implements RegistrationQueryService {
                 eventEntity.getStatus().name(),
                 attendeeRows
         ));
+    }
+
+    @Override
+    public List<RegistrationArrangedInfoDto> getArranged(Instant startTime, Instant endTime) {
+        Long userId = securityContextPort.getCurrentUserId();
+        if (userId == null) {
+            throw new BusinessException("Authentication required to access arranged events");
+        }
+
+        if (startTime == null || endTime == null) {
+            throw new BusinessException("Start time and end time must be provided");
+        }
+
+        if (startTime.isAfter(endTime)) {
+            throw new BusinessException("Start time must be before end time");
+        }
+
+        if (Duration.between(startTime, endTime).toDays() > 40) {
+            throw new BusinessException("The time range should not over one month.");
+        }
+        List<RegistrationJpaEntity> arrangedEvents = registrationJpaRepository.findArrangedEvents(userId, startTime, endTime);
+        return arrangedEvents.stream()
+                .map(registrationDtoMapper::toArrangedInfoDto)
+                .toList();
     }
 
     private void verifyFanpageMember( Long fanpageId, Long eventId) {

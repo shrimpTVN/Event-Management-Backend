@@ -14,4 +14,6 @@ public interface RegistrationCommandService {
     void fanpageMemberCheckIn(Long eventId, List<Long> studentUserIds);
 
     void fanpageMemberCheckOut(Long eventId, List<Long> studentUserIds);
+
+    void fanpageMemberBatchAbsent(Long eventId, List<Long> studentUserIds);
 }
