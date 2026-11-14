@@ -156,8 +156,9 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     }
 
     private void validateFanpageMemberPermission(Long memberId, Event event) {
-        if (!event.isActive() || !EventStatusEnum.PUBLISHED.name().equalsIgnoreCase(event.getStatus())) {
-            throw new EventAttendanceException("Cannot manage attendance for an event that is not active or published");
+        if (!event.isActive() || (!EventStatusEnum.PUBLISHED.name().equalsIgnoreCase(event.getStatus())
+                && !EventStatusEnum.COMPLETED.name().equalsIgnoreCase(event.getStatus()))) {
+            throw new EventAttendanceException("Cannot manage attendance for an event that is closed, inactive, or not published");
         }
         if (event.getDateHappen() != null && Instant.now().isBefore(event.getDateHappen())) {
             throw new EventAttendanceException("This event has not started yet");
@@ -228,18 +229,6 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         }
 
         registrationRepository.saveAll(registrations);
-        awardPointsForStudents(event, distinctStudentUserIds);
-
-        if (event.getCriteriaId() != null) {
-            studentCriteriaTransactionCommandService.createTransactionFromEvent(distinctStudentUserIds, eventId);
-        }
-
-        applicationEventPublisher.publishEvent(new EventCheckoutAwardedEvent(
-                eventId,
-                event.getName(),
-                event.getBannerUrl(),
-                distinctStudentUserIds
-        ));
     }
 
     @Override
@@ -278,6 +267,40 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
 
     @Override
     public void fanpageMemberMarkEventAsCompleted(Long eventId) {
+        Long fanpageMemberId = securityContextPort.getCurrentUserId();
+        Event event = eventRepository.findById(eventId);
+        validateFanpageMemberPermission(fanpageMemberId, event);
+
+        //take all registrations
+        List<Registration> registrations = registrationRepository.findAllByEvent(eventId);
+
+        List<Long> awardedStudentUserIds = new ArrayList<>();
+        registrations.forEach(reg -> {
+            if (RegistrationStatusEnum.COMPLETED.equals(reg.getStatus())
+                    || RegistrationStatusEnum.CONFIRMED.equals(reg.getStatus())) {
+                reg.setStatus(RegistrationStatusEnum.RECORDED);
+                awardedStudentUserIds.add(reg.getUserId());
+            } else {
+                reg.setStatus(RegistrationStatusEnum.ABSENT);
+            }
+        });
+
+        event.setStatus(EventStatusEnum.COMPLETED.name());
+        registrationRepository.saveAll(registrations);
+
+        List<Long> distinctStudentUserIds = awardedStudentUserIds.stream().distinct().collect(Collectors.toList());
+        awardPointsForStudents(event, distinctStudentUserIds);
+
+        if (event.getCriteriaId() != null) {
+            studentCriteriaTransactionCommandService.createTransactionFromEvent(distinctStudentUserIds, eventId);
+        }
+
+        applicationEventPublisher.publishEvent(new EventCheckoutAwardedEvent(
+                eventId,
+                event.getName(),
+                event.getBannerUrl(),
+                distinctStudentUserIds
+        ));
 
     }
 

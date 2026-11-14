@@ -159,7 +159,7 @@ public class RegistrationController {
         return BaseResponse.ok();
     }
 
-    @PatchMapping("/fanpage-member/events/{eventId}/mark-event-as-completed")
+    @PatchMapping("/fanpage-member/events/{eventId}/event-completed")
     public BaseResponse<Void> fanpageMemberMarkEventAsCompleted(@PathVariable Long eventId) {
         registrationCommandService.fanpageMemberMarkEventAsCompleted(eventId);
         return BaseResponse.ok();
