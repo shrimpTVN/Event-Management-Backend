@@ -10,10 +10,9 @@ public record AttendeeInfoDto(
         String firstName,
         String lastName,
         String gender,
-        String avatarUrl
-//        String studentId,
-//        int KNumber,
-//        String majorName
-
+        String avatarUrl,
+        String studentId,
+        int KNumber,
+        String majorName
 ) {
 }

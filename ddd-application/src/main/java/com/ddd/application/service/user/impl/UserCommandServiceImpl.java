@@ -7,9 +7,13 @@ import com.ddd.application.dto.user.UserSummaryDto;
 import com.ddd.application.mapper.StudentProfileDtoMapper;
 import com.ddd.application.mapper.UserDtoMapper;
 import com.ddd.application.service.user.UserCommandService;
+import com.ddd.domain.enums.FanpageRoleEnum;
 import com.ddd.domain.exception.DuplicateResourceException;
 import com.ddd.domain.exception.ResourceNotFoundException;
+import com.ddd.domain.model.FanpageMember;
 import com.ddd.domain.model.User;
+import com.ddd.domain.model.port.security.SecurityContextPort;
+import com.ddd.domain.repository.FanpageMemberRepository;
 import com.ddd.domain.repository.UserRepository;
 import com.ddd.infrastructure.entity.MajorJpaEntity;
 import com.ddd.infrastructure.entity.StudentProfileJpaEntity;
@@ -18,12 +22,14 @@ import com.ddd.infrastructure.repository.jpaRepository.MajorJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.StudentProfileJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -35,6 +41,8 @@ public class UserCommandServiceImpl implements UserCommandService {
     private final StudentProfileJpaRepository studentProfileJpaRepository;
     private final MajorJpaRepository majorJpaRepository;
     private final StudentProfileDtoMapper studentProfileDtoMapper;
+    private final SecurityContextPort securityContextPort;
+    private final FanpageMemberRepository fanpageMemberRepository;
 
     @Override
     public Long createUser(UserDto userDto, String roleName) {
@@ -160,6 +168,23 @@ public class UserCommandServiceImpl implements UserCommandService {
         });
 
         return userDtoMapper.toUserSummaryDto(savedUser);
+    }
+
+    @Override
+    public void outFanpageMember(Long fanpageId) {
+        Long userId = securityContextPort.getCurrentUserId();
+        FanpageMember fanpageMember = fanpageMemberRepository.findByFanpageIdAndUserId(fanpageId, userId);
+
+        if (fanpageMember == null || !fanpageMember.isActive()) {
+            throw new ResourceNotFoundException("You are not a member of this fanpage");
+        }
+
+        if (fanpageMember.getRole().equals(FanpageRoleEnum.ADMIN.name())) {
+            throw new IllegalArgumentException("Admin cannot leave the fanpage. Please transfer admin role before leaving.");
+        }
+
+        fanpageMemberRepository.removeFanpageMember(fanpageMember);
+        log.info("User with ID {} has left the fanpage with ID {}", userId, fanpageId);
     }
 
     private void updateUserFields(UserJpaEntity user, StudentProfileUpdateDto updateDto) {

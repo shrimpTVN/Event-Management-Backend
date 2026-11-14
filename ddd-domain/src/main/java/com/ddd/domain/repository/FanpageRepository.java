@@ -19,4 +19,5 @@ public interface FanpageRepository {
     Optional<Fanpage> findByIdAndIsActive(Long fanpageId, boolean isActive);
 
     List<Fanpage> findAllByIdsAndIsActive(List<Long> fanpageIds, boolean isActive);
+
 }

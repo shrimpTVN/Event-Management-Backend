@@ -4,16 +4,16 @@ import com.ddd.application.dto.fanpage.FanpageAdminUpdateDto;
 import com.ddd.application.dto.fanpage.FanpageRegisterDto;
 import com.ddd.application.dto.fanpage.FanpageSystemAdminUpdateDto;
 
-public interface FanpageService {
+public interface FanpageCommandService {
     void createFanpage(FanpageRegisterDto registerDto, String email);
 
     void acceptFanpage(Long fanpageId);
 
     void banFanpage(Long fanpageId);
 
-    void addMemberToFanpage(Long fanpageId, Long userId, String email);
+    void inviteMemberToFanpage(Long fanpageId, String memberEmail);
 
-    void removeMemberFromFanpage(Long fanpageId, Long userId, String email);
+    void removeMemberFromFanpage(Long fanpageId, String memberEmail);
 
     void unbanFanpage(Long fanpageId);
 
@@ -26,4 +26,6 @@ public interface FanpageService {
     void followFanpage(Long fanpageId, String email);
 
     void unfollowFanpage(Long fanpageId, String email);
+
+    void appointFanpageAdmin(Long fanpageId, String memberEmail);
 }

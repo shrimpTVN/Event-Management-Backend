@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -49,4 +51,6 @@ public interface FollowingJpaRepository extends JpaRepository<FollowingJpaEntity
             @Param("folStatus") FollowingStatusEnum folStatus,
             Pageable pageable
     );
+
+    List<FollowingJpaEntity> findByFanpageIdAndFolStatusAndIsActive(Long id, FollowingStatusEnum followingStatusEnum, boolean b);
 }

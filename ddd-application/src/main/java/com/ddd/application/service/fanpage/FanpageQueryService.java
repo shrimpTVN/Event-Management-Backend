@@ -1,9 +1,6 @@
 package com.ddd.application.service.fanpage;
 
-import com.ddd.application.dto.fanpage.FanpageFollowCountDto;
-import com.ddd.application.dto.fanpage.FanpageInfoDto;
-import com.ddd.application.dto.fanpage.FanpageMemberDto;
-import com.ddd.application.dto.fanpage.FanpageSearchCriteriaDto;
+import com.ddd.application.dto.fanpage.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -14,11 +11,11 @@ public interface FanpageQueryService {
 
     Page<FanpageInfoDto> searchAndFilterFanpages(FanpageSearchCriteriaDto criteria);
 
-    FanpageInfoDto getFanpageById(Long fanpageId, String currentUserEmail, boolean isAdmin);
+    FanpageInfoDto getFanpageById(Long fanpageId);
 
-    List<FanpageInfoDto> getMyManagedFanpages(String email);
+    List<ManagedFanpageInfoDto> getMyManagedFanpages();
 
-    FanpageFollowCountDto getFollowerCount(Long fanpageId, String currentUserEmail);
+    FanpageFollowCountDto getFollowerCount(Long fanpageId);
 
-    Page<FanpageInfoDto> getFollowingFanpages(String currentUserEmail, Pageable pageable);
+    Page<FanpageInfoDto> getFollowingFanpages(Pageable pageable);
 }

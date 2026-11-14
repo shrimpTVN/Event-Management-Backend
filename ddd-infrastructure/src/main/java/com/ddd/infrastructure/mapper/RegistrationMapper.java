@@ -20,6 +20,10 @@ public interface RegistrationMapper {
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "event", ignore = true)
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDomain(Registration registration, @MappingTarget RegistrationJpaEntity entity);
 }

@@ -1,16 +1,15 @@
 package com.ddd.application.service.pointcategory;
 
-import com.ddd.application.dto.pointcategory.PointCategoryCreateDto;
-import com.ddd.application.dto.pointcategory.PointCategoryInfoDto;
+import com.ddd.application.dto.pointcategory.*;
 
 import java.util.List;
-
-import com.ddd.application.dto.pointcategory.PointCategoryUpdateDto;
 
 public interface PointCategoryService {
     PointCategoryInfoDto createPointCategory(PointCategoryCreateDto pointCategoryCreateDto);
 
     List<PointCategoryInfoDto> getAllPointCategories();
+
+    List<PointCategoryTreeNodeDto> getPointCategoryTree();
 
     PointCategoryInfoDto getPointCategoryById(Long id);
 
@@ -21,5 +20,7 @@ public interface PointCategoryService {
     PointCategoryInfoDto updatePointCategory(Long id, PointCategoryUpdateDto pointCategoryUpdateDto);
 
     void deletePointCategory(Long id);
+
+    List<PointCategoryGroupedTreeDto> getGroupedPointCategoryTree();
 }
 

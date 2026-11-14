@@ -13,6 +13,7 @@ target/
 agents/
 .gemini/
 postgres-data/
+docs/bug
 
 ### STS ###
 .apt_generated

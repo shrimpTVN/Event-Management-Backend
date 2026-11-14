@@ -3,9 +3,13 @@ package com.ddd.api.controller;
 import com.ddd.api.common.BaseResponse;
 import com.ddd.api.dto.pointcategory.req.PointCategoryRequestDto;
 import com.ddd.api.dto.pointcategory.req.UpdatePointCategoryRequestDto;
+import com.ddd.api.dto.pointcategory.res.PointCategoryGroupedTreeResponseDto;
 import com.ddd.api.dto.pointcategory.res.PointCategoryResponseDto;
+import com.ddd.api.dto.pointcategory.res.PointCategoryTreeNodeResponseDto;
 import com.ddd.api.mapper.PointCategoryApiMapper;
+import com.ddd.application.dto.pointcategory.PointCategoryGroupedTreeDto;
 import com.ddd.application.dto.pointcategory.PointCategoryInfoDto;
+import com.ddd.application.dto.pointcategory.PointCategoryTreeNodeDto;
 import com.ddd.application.service.pointcategory.PointCategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +24,18 @@ public class PointCategoryController {
 
     private final PointCategoryService pointCategoryService;
     private final PointCategoryApiMapper pointCategoryApiMapper;
+
+    @GetMapping("/tree")
+    public BaseResponse<List<PointCategoryTreeNodeResponseDto>> getPointCategoryTree() {
+        List<PointCategoryTreeNodeDto> tree = pointCategoryService.getPointCategoryTree();
+        return BaseResponse.of(pointCategoryApiMapper.toPointCategoryTreeNodeResponseDtoList(tree));
+    }
+
+    @GetMapping("/grouped-tree")
+    public BaseResponse<List<PointCategoryGroupedTreeResponseDto>> getGroupedPointCategoryTree() {
+        List<PointCategoryGroupedTreeDto> categories = pointCategoryService.getGroupedPointCategoryTree();
+        return BaseResponse.of(pointCategoryApiMapper.toPointCategoryGroupedTreeResponseDtoList(categories));
+    }
 
     @GetMapping("")
     public BaseResponse<List<PointCategoryResponseDto>> getAllPointCategory() {

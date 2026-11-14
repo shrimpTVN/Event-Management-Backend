@@ -13,62 +13,76 @@ import java.util.List;
 public final class EventSpecification {
     private EventSpecification() {}
 
-    public static Specification<EventJpaEntity> withFilter(String keyword, String status,
-                                                           Long eventTypeId, Long semesterId,
-                                                           Long criteriaId, Long pointCategoryId,
-                                                           Instant dateHappenFrom, Instant dateHappenTo,
-                                                           Boolean isActive) {
+    public static Specification<EventJpaEntity> withFilter(
+            String keyword,
+            String status,
+            List<Long> eventTypeIds,
+            Long semesterId,
+            List<Long> criteriaIds,
+            List<Long> pointCategoryIds,
+            Instant dateHappenFrom,
+            Instant dateHappenTo,
+            Boolean isActive) {
 
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            if (keyword != null && !keyword.trim().isEmpty()) {
-                String patten = "%" + keyword.trim().toLowerCase() + "%";
-                Predicate nameMatch = cb.like(cb.lower(root.get("name")), patten);
-                Predicate descMatch = cb.like(cb.lower(root.get("description")), patten);
+            if (keyword != null && !keyword.isBlank()) {
+                String escaped = keyword.trim().toLowerCase()
+                        .replace("\\", "\\\\")
+                        .replace("%", "\\%")
+                        .replace("_", "\\_");
+                String pattern = "%" + escaped + "%";
+
+                Predicate nameMatch = cb.like(cb.lower(root.get("name")), pattern, '\\');
+                Predicate descMatch = cb.like(cb.lower(root.get("description")), pattern, '\\');
                 predicates.add(cb.or(nameMatch, descMatch));
             }
 
-            //define subquery form EventPointJpaEntity to filter event by pointCategoryId
-            if (pointCategoryId != null){
-                Subquery<Long> subquery = query.subquery(Long.class);
+            // Correlated EXISTS subquery for pointCategoryIds (safe for Pageable count queries)
+            if (pointCategoryIds != null && !pointCategoryIds.isEmpty()) {
+                Subquery<Integer> subquery = query.subquery(Integer.class);
                 var eventPointRoot = subquery.from(EventPointJpaEntity.class);
-                subquery.select(eventPointRoot.get("event").get("id"))
-                        .where(cb.equal(eventPointRoot.get("pointCategory").get("id"), pointCategoryId));
-                predicates.add(root.get("id").in(subquery));
+                subquery.select(cb.literal(1))
+                        .where(
+                                cb.equal(eventPointRoot.get("event"), root),
+                                eventPointRoot.get("pointCategory").get("id").in(pointCategoryIds)
+                        );
+                predicates.add(cb.exists(subquery));
             }
 
-            if (eventTypeId != null) {
-                Predicate eventTypeMatch = cb.equal(root.get("eventType").get("id"), eventTypeId);
-                predicates.add(eventTypeMatch);
+            if (eventTypeIds != null && !eventTypeIds.isEmpty()) {
+                predicates.add(root.get("eventType").get("id").in(eventTypeIds));
             }
 
-            if (semesterId != null){
-                Predicate semesterMatch = cb.equal(root.get("semester").get("id"), semesterId);
-                predicates.add(semesterMatch);
+            if (semesterId != null) {
+                predicates.add(cb.equal(root.get("semester").get("id"), semesterId));
             }
 
-            if (criteriaId != null){
-                Predicate criteriaMatch = cb.equal(root.get("criteria").get("id"), criteriaId);
-                predicates.add(criteriaMatch);
+            if (criteriaIds != null && !criteriaIds.isEmpty()) {
+                predicates.add(root.get("criteria").get("id").in(criteriaIds));
             }
 
-            if (status !=null && !status.trim().isEmpty()){
-                Predicate statusMatch = cb.equal(cb.upper(root.get("status")), status.trim().toUpperCase());
-                predicates.add(statusMatch);
+            if (status != null && !status.isBlank()) {
+                // Note: If 'status' on EventJpaEntity is an Enum, convert to Enum instead of using cb.upper()
+                predicates.add(cb.equal(cb.upper(root.get("status")), status.trim().toUpperCase()));
             }
 
-            if (dateHappenFrom != null && dateHappenTo != null){
-                Predicate dateHappenMatch = cb.between(root.get("dataHappen"), dateHappenFrom, dateHappenTo);
-                predicates.add(dateHappenMatch);
+            if (dateHappenFrom != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("dateHappen"), dateHappenFrom));
             }
 
-            if (isActive != null){
-                Predicate isActiveMatch = cb.equal(root.get("isActive"), isActive);
-                predicates.add(isActiveMatch);
+            if (dateHappenTo != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("dateHappen"), dateHappenTo));
             }
 
-            return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new Predicate[0]));
+            if (isActive != null) {
+                predicates.add(cb.equal(root.get("isActive"), isActive));
+            }
+
+            return predicates.isEmpty()
+                    ? cb.conjunction()
+                    : cb.and(predicates.toArray(new Predicate[0]));
         };
     }
 }

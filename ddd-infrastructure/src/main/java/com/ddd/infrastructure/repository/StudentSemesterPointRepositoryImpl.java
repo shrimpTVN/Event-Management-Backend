@@ -27,6 +27,22 @@ public class StudentSemesterPointRepositoryImpl implements StudentSemesterPointR
     }
 
     @Override
+    public List<StudentSemesterPoint> findAllByUserIdAndSemesterId(Long userId, Long semesterId) {
+        if (userId == null || semesterId == null) {
+            return List.of();
+        }
+        return mapper.toDomainList(jpaRepository.findByUserIdAndSemesterId(userId, semesterId));
+    }
+
+    @Override
+    public List<StudentSemesterPoint> findAllByUserIdsAndSemesterId(List<Long> userIds, Long semesterId) {
+        if (userIds == null || userIds.isEmpty() || semesterId == null) {
+            return List.of();
+        }
+        return mapper.toDomainList(jpaRepository.findAllByUserIdsAndSemesterId(userIds, semesterId));
+    }
+
+    @Override
     public List<StudentSemesterPoint> findAllIn(List<Long> studentUserIds, Long semesterId, List<Long> pointCategoryIds) {
         if (studentUserIds == null || studentUserIds.isEmpty() || pointCategoryIds == null || pointCategoryIds.isEmpty()) {
             return List.of();
@@ -35,7 +51,7 @@ public class StudentSemesterPointRepositoryImpl implements StudentSemesterPointR
     }
 
     @Override
-    public void saveAll(ArrayList<StudentSemesterPoint> studentSemesterPoints) {
+    public void saveAll(List<StudentSemesterPoint> studentSemesterPoints) {
         if (studentSemesterPoints == null || studentSemesterPoints.isEmpty()) {
             return;
         }

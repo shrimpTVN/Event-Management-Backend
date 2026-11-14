@@ -4,7 +4,11 @@ import com.ddd.application.dto.user.StudentProfileSummaryDto;
 import com.ddd.application.dto.user.UserSummaryDto;
 import org.springframework.data.domain.Page;
 
+import java.util.List;
+
 public interface UserQueryService {
+    List<UserSummaryDto> searchUsers(String keyword);
+
     StudentProfileSummaryDto getProfileStudentByEmail(String email);
 
     StudentProfileSummaryDto getProfileStudentById(Long id);

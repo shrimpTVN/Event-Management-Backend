@@ -195,6 +195,8 @@ CREATE TABLE followings
     CONSTRAINT uq_followings_fanpage_user UNIQUE (fanpage_id, user_id)
 );
 
+
+
 -- ============================================================
 --  11. EVENT_TYPE
 -- ============================================================
@@ -247,6 +249,7 @@ CREATE TABLE point_categories
     level              INTEGER      NOT NULL DEFAULT 0,
     children_order     INTEGER      NOT NULL DEFAULT 1,
     parent_category_id BIGINT,
+    is_max_child       BOOLEAN      NOT NULL DEFAULT FALSE,
     is_active          BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_by         BIGINT,
@@ -435,9 +438,11 @@ CREATE TABLE student_semester_points
     id                BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
     user_id           BIGINT      NOT NULL,
     semester_id       BIGINT      NOT NULL,
-    point_category_id BIGINT      NOT NULL,
-    total_point       INTEGER     NOT NULL DEFAULT 0,
-    finalized_at      TIMESTAMPTZ,
+    point_category_id   BIGINT      NOT NULL,
+    total_point         INTEGER     NOT NULL DEFAULT 0,
+    system_point_record INTEGER     NOT NULL DEFAULT 0,
+    manual_point_record INTEGER     NOT NULL DEFAULT 0,
+    finalized_at        TIMESTAMPTZ,
     created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by        BIGINT,
     updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -814,11 +819,13 @@ CREATE TRIGGER trg_reports_updated_at
     ON reports
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+
 CREATE TRIGGER trg_followings_updated_at
     BEFORE UPDATE
     ON followings
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
+
 CREATE TRIGGER trg_stored_events_updated_at
     BEFORE UPDATE
     ON stored_events

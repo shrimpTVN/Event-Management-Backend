@@ -35,6 +35,9 @@ public class PointCategoryJpaEntity extends BaseEntityJpa {
     @Column(name = "children_order", nullable = false)
     private Integer childrenOrder = 1;
 
+    @Column(name = "is_max_child", nullable = false)
+    private Boolean isMaxChild = Boolean.FALSE;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_category_id")
     private PointCategoryJpaEntity parentCategory;

@@ -4,9 +4,7 @@ import com.ddd.api.dto.fanpage.req.FanpageAdminUpdateRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageFilterRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageRegisterRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageSystemAdminUpdateRequestDto;
-import com.ddd.api.dto.fanpage.res.FanpageFollowCountResponseDto;
-import com.ddd.api.dto.fanpage.res.FanpageMemberResponseDto;
-import com.ddd.api.dto.fanpage.res.FanpageResponseDto;
+import com.ddd.api.dto.fanpage.res.*;
 import com.ddd.api.dto.registration.res.AttendeeResponseDto;
 import com.ddd.application.dto.fanpage.*;
 import org.mapstruct.Mapper;
@@ -14,6 +12,8 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface FanpageApiMapper {
     FanpageResponseDto toResponseDto(FanpageInfoDto fanpageInfoDto);
+    ManagedFanpageResponseDto toResponseDto(ManagedFanpageInfoDto managedFanpageInfoDto);
+
     FanpageRegisterDto toRegisterDto(FanpageRegisterRequestDto requestDto);
 
     FanpageMemberResponseDto toMemberResponseDto(FanpageMemberDto memberDto);
@@ -25,4 +25,6 @@ public interface FanpageApiMapper {
     FanpageSystemAdminUpdateDto toSystemAdminUpdateDto(FanpageSystemAdminUpdateRequestDto requestDto);
 
     FanpageFollowCountResponseDto toFollowCountResponseDto(FanpageFollowCountDto dto);
+
+    FanpageMemberInvitationResponseDto toInvitationResponseDto(FanpageMemberInvitationInfoDto dto);
 }
