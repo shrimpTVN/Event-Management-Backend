@@ -39,7 +39,9 @@ public class SecurityConstant {
             "/api/criterias/**",
             "/academic-years/**",
             "/api/academic-years/**",
-            "/google-test.html"
+            "/google-test.html",
+            "/test-upload.html",
+            "/test-recommendation.html"
     };
 
     public static final String[] SECURE_ENDPOINTS = {
@@ -55,6 +57,8 @@ public class SecurityConstant {
             "/api/events/*/is-stored",
             "/events/me/stored",
             "/api/events/me/stored",
+            "/events/recommendations",
+            "/api/events/recommendations",
     };
 
     public static final String CORS_PATH_PATTERN = "/**";
