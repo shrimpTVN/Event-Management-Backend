@@ -9,5 +9,9 @@ public interface FanpageStatisticQueryService {
     List<FanpageMonthlyTrendDto> getMonthlyTrends(Long fanpageId, Integer year);
     List<FanpageEventDistributionDto> getEventDistribution(Long fanpageId);
     List<FanpageTopEventDto> getTopEvents(Long fanpageId, int limit);
-    FanpageDashboardDto getDashboard(Long fanpageId, Integer year);
+    FanpageDemographicsDto getDemographics(Long fanpageId, Integer year, Long semesterId);
+    FanpageDashboardDto getDashboard(Long fanpageId, Integer year, Long semesterId);
+    default FanpageDashboardDto getDashboard(Long fanpageId, Integer year) {
+        return getDashboard(fanpageId, year, null);
+    }
 }

@@ -1,6 +1,6 @@
 package com.ddd.api.mapper;
 
-import com.ddd.api.dto.statistic.res.*;
+import com.ddd.api.dto.statistic.res.fanpage.*;
 import com.ddd.application.dto.statistic.*;
 import org.mapstruct.Mapper;
 
@@ -13,6 +13,8 @@ public interface FanpageStatisticApiMapper {
     FanpageEventDistributionResponseDto toResponseDto(FanpageEventDistributionDto dto);
     FanpageTopEventResponseDto toResponseDto(FanpageTopEventDto dto);
     FanpageDashboardResponseDto toResponseDto(FanpageDashboardDto dto);
+    DemographicItemResponseDto toResponseDto(FanpageDemographicItemDto dto);
+    FanpageDemographicsResponseDto toResponseDto(FanpageDemographicsDto dto);
 
     List<FanpageMonthlyTrendResponseDto> toMonthlyTrendResponseList(List<FanpageMonthlyTrendDto> dtos);
     List<FanpageEventDistributionResponseDto> toDistributionResponseList(List<FanpageEventDistributionDto> dtos);

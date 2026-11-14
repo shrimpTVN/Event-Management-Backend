@@ -1,4 +1,4 @@
-package com.ddd.infrastructure.dto.row;
+package com.ddd.infrastructure.dto.row.fanpage;
 
 /**
  * Internal JDBC result row for the fanpage overview aggregate query.
