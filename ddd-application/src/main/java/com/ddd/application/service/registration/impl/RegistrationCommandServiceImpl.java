@@ -276,6 +276,11 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         registrationRepository.saveAll(registrations);
     }
 
+    @Override
+    public void fanpageMemberMarkEventAsCompleted(Long eventId) {
+
+    }
+
     private void validateAndCompleteRegistration(Registration registration, Long studentUserId, Long checkedOutById,
                                                  String proofUrl, Instant now, RegistrationStatusEnum status) {
         if (registration == null) {

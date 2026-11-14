@@ -6,8 +6,10 @@ import com.ddd.api.dto.registration.req.AttendanceRequestDto;
 import com.ddd.api.dto.registration.res.AttendeeResponseDto;
 import com.ddd.api.dto.registration.res.RegistrationArrangedResponseDto;
 import com.ddd.api.dto.registration.res.RegistrationResponseDto;
+import com.ddd.api.dto.registration.res.StudentRegistrationResponseDto;
 import com.ddd.api.mapper.RegistrationApiMapper;
 import com.ddd.application.dto.fanpage.AttendeeInfoDto;
+import com.ddd.application.dto.registration.StudentRegistrationInfoDto;
 import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.application.service.registration.RegistrationQueryService;
 import com.ddd.domain.enums.RegistrationStatusEnum;
@@ -48,7 +50,6 @@ public class RegistrationController {
         return BaseResponse.ok();
     }
 
-
     @GetMapping("/me/history")
     public BaseResponse<Page<RegistrationResponseDto>> getHistory(@RequestParam(defaultValue = "0") int page,
                                                                   @RequestParam(defaultValue = "10") int size) {
@@ -56,7 +57,6 @@ public class RegistrationController {
         var summaryPage = registrationQueryService.getHistory(page, size);
         return BaseResponse.of(summaryPage.map(registrationApiMapper::toResponseDto));
     }
-
 
     @GetMapping("/me/upcoming")
     public BaseResponse<List<RegistrationResponseDto>> getUpcoming() {
@@ -89,8 +89,6 @@ public class RegistrationController {
                 .body(csvBytes);
     }
 
-
-
     @PatchMapping("/me/events/{eventId}/check-in")
     public BaseResponse<Void> checkIn(@RequestBody(required = false) AttendanceRequestDto checkInRequestDto,
                                       @PathVariable Long eventId) {
@@ -120,6 +118,19 @@ public class RegistrationController {
         return BaseResponse.of(attendees.stream().map(registrationApiMapper::toAttendeeResponseDto).toList());
     }
 
+    @GetMapping("/fanpage-member/fanpages/{fanpageId}/events/{eventId}/registrations")
+    public BaseResponse<Page<StudentRegistrationResponseDto>> getStudentRegistrationsOfEvent(
+            @PathVariable Long fanpageId,
+            @PathVariable Long eventId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "regDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        Page<StudentRegistrationInfoDto> registrations = registrationQueryService
+                .getStudentRegistrationsOfEvent(fanpageId, eventId, page, size, sortBy, sortDir);
+        return BaseResponse.of(registrations.map(registrationApiMapper::toStudentRegistrationResponseDto));
+    }
+
     @PatchMapping("/fanpage-member/events/{eventId}/check-in")
     public BaseResponse<Void> fanpageMemberBatchCheckIn(@PathVariable Long eventId,
                                                         @RequestBody @Valid BatchAttendanceRequestDto request) {
@@ -145,6 +156,12 @@ public class RegistrationController {
     public BaseResponse<Void> fanpageMemberConfirmAttendance(@PathVariable Long eventId,
                                                               @RequestBody @Valid BatchAttendanceRequestDto request) {
         registrationCommandService.fanpageMemberCheckOut(eventId, request.studentUserIds(), RegistrationStatusEnum.CONFIRMED);
+        return BaseResponse.ok();
+    }
+
+    @PatchMapping("/fanpage-member/events/{eventId}/mark-event-as-completed")
+    public BaseResponse<Void> fanpageMemberMarkEventAsCompleted(@PathVariable Long eventId) {
+        registrationCommandService.fanpageMemberMarkEventAsCompleted(eventId);
         return BaseResponse.ok();
     }
 }

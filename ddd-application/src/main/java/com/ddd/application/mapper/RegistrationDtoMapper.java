@@ -4,7 +4,10 @@ import com.ddd.application.dto.export.AttendeeExportRowDto;
 import com.ddd.application.dto.fanpage.AttendeeInfoDto;
 import com.ddd.application.dto.registration.RegistrationArrangedInfoDto;
 import com.ddd.application.dto.registration.RegistrationInfoDto;
+import com.ddd.application.dto.registration.StudentProfileBasicInfoDto;
+import com.ddd.application.dto.registration.StudentRegistrationInfoDto;
 import com.ddd.infrastructure.entity.RegistrationJpaEntity;
+import com.ddd.infrastructure.entity.UserJpaEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -16,6 +19,22 @@ public interface RegistrationDtoMapper {
     @Mapping(target="userId", source="user.id")
     @Mapping(target="eventId", source="event.id")
     RegistrationInfoDto toInfoDto(RegistrationJpaEntity entity);
+
+    @Mapping(target = "userId", source = "user.id")
+    @Mapping(target = "eventId", source = "event.id")
+    @Mapping(target = "studentProfile", source = "user")
+    StudentRegistrationInfoDto toStudentRegistrationInfoDto(RegistrationJpaEntity entity);
+
+    @Mapping(target = "email", source = "email")
+    @Mapping(target = "firstName", source = "firstName")
+    @Mapping(target = "lastName", source = "lastName")
+    @Mapping(target = "gender", source = "gender")
+    @Mapping(target = "avatarUrl", source = "avatarUrl")
+    @Mapping(target = "studentId", source = "studentProfile.studentId")
+    @Mapping(target = "kNumber", source = "studentProfile.KNumber")
+    @Mapping(target = "majorName", source = "studentProfile.major.name")
+    @Mapping(target = "majorCode", source = "studentProfile.major.code")
+    StudentProfileBasicInfoDto toStudentProfileBasicInfoDto(UserJpaEntity user);
 
     @Mapping(target = "userId", source = "user.id")
     @Mapping(target="firstName", source="user.firstName")
