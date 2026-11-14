@@ -8,5 +8,6 @@ public enum RegistrationStatusEnum {
     CONFIRMED,
     COMPLETED,
     CANCELLED,
-    ABSENT
+    ABSENT,
+    RECORDED
 }
