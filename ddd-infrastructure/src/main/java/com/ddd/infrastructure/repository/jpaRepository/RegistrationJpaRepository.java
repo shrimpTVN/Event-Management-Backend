@@ -35,4 +35,38 @@ public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpa
 
     @EntityGraph(attributePaths = {"user"})
     Page<RegistrationJpaEntity> findAllByEventId(Long eventId, Pageable pageable);
+
+    @Query("SELECT COUNT(r) FROM RegistrationJpaEntity r WHERE r.event.id = :eventId AND r.status <> :cancelledStatus")
+    long countActiveRegistrationsByEventId(@Param("eventId") Long eventId, @Param("cancelledStatus") com.ddd.domain.enums.RegistrationStatusEnum cancelledStatus);
+
+    @Query("SELECT r.event.id, COUNT(r) FROM RegistrationJpaEntity r " +
+            "WHERE r.event.id IN :eventIds AND r.status <> :cancelledStatus " +
+            "GROUP BY r.event.id")
+    List<Object[]> countActiveRegistrationsByEventIds(
+            @Param("eventIds") Collection<Long> eventIds,
+            @Param("cancelledStatus") com.ddd.domain.enums.RegistrationStatusEnum cancelledStatus
+    );
+
+    @Query("SELECT r.event.eventType.id, COUNT(r) FROM RegistrationJpaEntity r " +
+            "WHERE r.user.id = :userId " +
+            "AND r.status IN :attendedStatuses " +
+            "AND r.event.eventType IS NOT NULL " +
+            "GROUP BY r.event.eventType.id")
+    List<Object[]> countAttendedEventTypesByUserId(
+            @Param("userId") Long userId,
+            @Param("attendedStatuses") Collection<com.ddd.domain.enums.RegistrationStatusEnum> attendedStatuses
+    );
+
+    @Query("SELECT DISTINCT ep.pointCategory.id FROM RegistrationJpaEntity r " +
+            "JOIN r.event.eventPoints ep " +
+            "WHERE r.user.id = :userId " +
+            "AND r.status IN :attendedStatuses " +
+            "AND ep.pointCategory IS NOT NULL")
+    List<Long> findAttendedPointCategoryIdsByUserId(
+            @Param("userId") Long userId,
+            @Param("attendedStatuses") Collection<com.ddd.domain.enums.RegistrationStatusEnum> attendedStatuses
+    );
+
+    @Query("SELECT r.event.id FROM RegistrationJpaEntity r WHERE r.user.id = :userId AND r.status <> :cancelledStatus")
+    List<Long> findActiveRegisteredEventIdsByUserId(@Param("userId") Long userId, @Param("cancelledStatus") com.ddd.domain.enums.RegistrationStatusEnum cancelledStatus);
 }

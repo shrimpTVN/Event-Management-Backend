@@ -2,8 +2,10 @@ package com.ddd.application.service.event.impl;
 
 import com.ddd.application.dto.event.EventInfoDto;
 import com.ddd.application.dto.event.EventSearchCriteriaDto;
+import com.ddd.application.dto.recommendation.EventRecommendationDto;
 import com.ddd.application.mapper.EventDtoMapper;
 import com.ddd.application.service.event.EventQueryService;
+import com.ddd.application.service.event.EventRecommendationService;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.infrastructure.entity.EventJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
@@ -19,13 +21,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class EventQueryServiceImpl implements EventQueryService {
 
     private final EventJpaRepository eventJpaRepository;
     private final EventDtoMapper eventDtoMapper;
+    private final EventRecommendationService eventRecommendationService;
 
     @Override
+    @Transactional(readOnly = true)
     public EventInfoDto getEventById(Long id) {
         EventJpaEntity eventJpaEntity = eventJpaRepository.findWithDetailsByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + id));
@@ -34,6 +37,7 @@ public class EventQueryServiceImpl implements EventQueryService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<EventInfoDto> getAllEventsByFanpageId(Long fanpageId, int page, int size, String sortBy, String sortDir) {
         Pageable pageable = createPageable(page, size, sortBy, sortDir);
         
@@ -48,6 +52,7 @@ public class EventQueryServiceImpl implements EventQueryService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<EventInfoDto> getAllEvents(int page, int size, String sortBy, String sortDir) {
         Pageable pageable = createPageable(page, size, sortBy, sortDir);
 
@@ -56,6 +61,7 @@ public class EventQueryServiceImpl implements EventQueryService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<EventInfoDto> searchAndFilterEvents(EventSearchCriteriaDto criteria) {
         Pageable pageable = createPageable(criteria.page(), criteria.size(),
                 criteria.sortBy(), criteria.sortDir());
@@ -74,10 +80,11 @@ public class EventQueryServiceImpl implements EventQueryService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<EventInfoDto> getRecommendEvents(String email) {
-        // implement get Event for Student
-        //Fix recommend inactive event
-        return null;
+        Pageable pageable = PageRequest.of(0, 10);
+        return eventRecommendationService.getRecommendationsForStudent(email, pageable)
+                .map(EventRecommendationDto::event);
     }
 
 

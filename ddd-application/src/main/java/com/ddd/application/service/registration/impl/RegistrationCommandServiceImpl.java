@@ -2,6 +2,7 @@ package com.ddd.application.service.registration.impl;
 
 import com.ddd.application.service.criteriaprogress.StudentCriteriaProgressCommandService;
 import com.ddd.application.service.criteriaprogress.StudentCriteriaTransactionCommandService;
+import com.ddd.application.service.event.cache.RecommendationCacheService;
 import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.PointTransactionStatusEnum;
@@ -38,6 +39,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final StudentSemesterPointRepository studentSemesterPointRepository;
     private final StudentCriteriaProgressCommandService studentCriteriaProgressService;
     private final StudentCriteriaTransactionCommandService studentCriteriaTransactionCommandService;
+    private final RecommendationCacheService recommendationCacheService;
 
     private Registration isRegistered(User user, Long userId, Long eventId) {
         if (registrationRepository.isRegistered(user.getId(), eventId)) {
@@ -66,6 +68,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         reg.setRegDate(Instant.now());
         reg.setStatus(RegistrationStatusEnum.REGISTERED);
         registrationRepository.save(reg, user.getId(), eventId);
+        recommendationCacheService.evict(user.getId());
     }
 
     @Override
@@ -87,6 +90,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         reg.setReason(reason);
 
         registrationRepository.save(reg, user.getId(), eventId);
+        recommendationCacheService.evict(user.getId());
     }
 
     @Override
