@@ -1,6 +1,7 @@
 package com.ddd.application.service.fanpage.impl;
 
 import com.ddd.application.dto.statistic.*;
+import com.ddd.application.mapper.FanpageStatisticDtoMapper;
 import com.ddd.domain.enums.FollowingStatusEnum;
 import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.ResourceNotFoundException;
@@ -12,15 +13,16 @@ import com.ddd.domain.repository.FanpageRepository;
 import com.ddd.domain.repository.FanpageStatisticRepository;
 import com.ddd.domain.repository.FollowingRepository;
 import com.ddd.infrastructure.repository.FanpageStatisticRepositoryImpl;
-import com.ddd.infrastructure.dto.row.EventTypeDistributionRow;
-import com.ddd.infrastructure.dto.row.FanpageOverviewRow;
-import com.ddd.infrastructure.dto.row.MonthlyTrendRow;
-import com.ddd.infrastructure.dto.row.TopEventRow;
+import com.ddd.infrastructure.dto.row.fanpage.EventTypeDistributionRow;
+import com.ddd.infrastructure.dto.row.fanpage.FanpageOverviewRow;
+import com.ddd.infrastructure.dto.row.fanpage.MonthlyTrendRow;
+import com.ddd.infrastructure.dto.row.fanpage.TopEventRow;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -52,8 +54,20 @@ public class FanpageStatisticQueryServiceImplTest {
     @Mock
     private SecurityContextPort securityContextPort;
 
-    @InjectMocks
     private FanpageStatisticQueryServiceImpl service;
+
+    @BeforeEach
+    void setUp() {
+        service = new FanpageStatisticQueryServiceImpl(
+                fanpageStatisticRepository,
+                fanpageStatisticRepositoryImpl,
+                followingRepository,
+                fanpageMemberRepository,
+                fanpageRepository,
+                securityContextPort,
+                Mappers.getMapper(FanpageStatisticDtoMapper.class)
+        );
+    }
 
     private final Long fanpageId = 1L;
     private final Long userId = 100L;
@@ -87,7 +101,7 @@ public class FanpageStatisticQueryServiceImplTest {
             when(fanpageRepository.findByIdAndIsActive(fanpageId, true)).thenReturn(Optional.of(new Fanpage()));
             when(securityContextPort.getCurrentUserId()).thenReturn(userId);
             when(securityContextPort.hasRole("ADMIN")).thenReturn(false);
-            when(fanpageMemberRepository.isAdminOfFanpage(fanpageId, userId)).thenReturn(false);
+            when(fanpageMemberRepository.isActiveMember(fanpageId, userId)).thenReturn(false);
 
             assertThrows(AuthException.class, () -> service.getOverview(fanpageId));
         }
@@ -108,7 +122,7 @@ public class FanpageStatisticQueryServiceImplTest {
             assertNotNull(overview);
             assertEquals(10, overview.totalEvents());
             assertEquals(80.0, overview.attendanceRate());
-            verify(fanpageMemberRepository, never()).isAdminOfFanpage(anyLong(), anyLong());
+            verify(fanpageMemberRepository, never()).isActiveMember(anyLong(), anyLong());
         }
     }
 
@@ -122,7 +136,7 @@ public class FanpageStatisticQueryServiceImplTest {
             when(fanpageRepository.findByIdAndIsActive(fanpageId, true)).thenReturn(Optional.of(new Fanpage()));
             when(securityContextPort.getCurrentUserId()).thenReturn(userId);
             when(securityContextPort.hasRole("ADMIN")).thenReturn(false);
-            when(fanpageMemberRepository.isAdminOfFanpage(fanpageId, userId)).thenReturn(true);
+            when(fanpageMemberRepository.isActiveMember(fanpageId, userId)).thenReturn(true);
 
             when(fanpageStatisticRepositoryImpl.getOverviewRow(fanpageId))
                     .thenReturn(new FanpageOverviewRow(5, 20, 3, 200, 150));

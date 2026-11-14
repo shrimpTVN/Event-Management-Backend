@@ -1,6 +1,7 @@
 package com.ddd.application.service.fanpage.impl;
 
 import com.ddd.application.dto.statistic.*;
+import com.ddd.application.mapper.FanpageStatisticDtoMapper;
 import com.ddd.application.service.fanpage.FanpageStatisticQueryService;
 import com.ddd.domain.enums.FollowingStatusEnum;
 import com.ddd.domain.exception.AuthException;
@@ -12,9 +13,6 @@ import com.ddd.domain.repository.FanpageRepository;
 import com.ddd.domain.repository.FanpageStatisticRepository;
 import com.ddd.domain.repository.FollowingRepository;
 import com.ddd.infrastructure.repository.FanpageStatisticRepositoryImpl;
-import com.ddd.infrastructure.dto.row.EventTypeDistributionRow;
-import com.ddd.infrastructure.dto.row.MonthlyTrendRow;
-import com.ddd.infrastructure.dto.row.TopEventRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +31,7 @@ public class FanpageStatisticQueryServiceImpl implements FanpageStatisticQuerySe
     private final FanpageMemberRepository fanpageMemberRepository;
     private final FanpageRepository fanpageRepository;
     private final SecurityContextPort securityContextPort;
+    private final FanpageStatisticDtoMapper fanpageStatisticDtoMapper;
 
     @Override
     public FanpageOverviewStatisticDto getOverview(Long fanpageId) {
@@ -40,21 +39,10 @@ public class FanpageStatisticQueryServiceImpl implements FanpageStatisticQuerySe
         assertCallerIsAdminOfFanpage(fanpageId);
 
         var row = fanpageStatisticRepositoryImpl.getOverviewRow(fanpageId);
-
         long totalFollowers = followingRepository.countByFanpageIdAndFolStatus(
                 fanpageId, FollowingStatusEnum.FOLLOWING);
 
-        double attendanceRate = row.totalRegistrations() == 0 ? 0.0
-                : Math.round((double) row.totalAttendees() / row.totalRegistrations() * 10000.0) / 100.0;
-
-        return new FanpageOverviewStatisticDto(
-                row.totalEvents(),
-                totalFollowers,
-                row.totalMembers(),
-                row.totalRegistrations(),
-                row.totalAttendees(),
-                attendanceRate
-        );
+        return fanpageStatisticDtoMapper.toOverviewDto(row, totalFollowers);
     }
 
     @Override
@@ -63,12 +51,9 @@ public class FanpageStatisticQueryServiceImpl implements FanpageStatisticQuerySe
         assertCallerIsAdminOfFanpage(fanpageId);
 
         int resolvedYear = (year != null) ? year : LocalDate.now().getYear();
-        List<MonthlyTrendRow> rows = fanpageStatisticRepositoryImpl.getMonthlyTrends(fanpageId, resolvedYear);
+        var rows = fanpageStatisticRepositoryImpl.getMonthlyTrends(fanpageId, resolvedYear);
 
-        return rows.stream()
-                .map(r -> new FanpageMonthlyTrendDto(
-                        r.monthYear(), r.eventCount(), r.registrationCount(), r.attendeeCount()))
-                .toList();
+        return fanpageStatisticDtoMapper.toMonthlyTrendDtoList(rows);
     }
 
     @Override
@@ -77,15 +62,9 @@ public class FanpageStatisticQueryServiceImpl implements FanpageStatisticQuerySe
         assertCallerIsAdminOfFanpage(fanpageId);
 
         long totalEvents = fanpageStatisticRepository.countEventsByFanpageId(fanpageId);
-        List<EventTypeDistributionRow> rows = fanpageStatisticRepositoryImpl.getEventDistribution(fanpageId);
+        var rows = fanpageStatisticRepositoryImpl.getEventDistribution(fanpageId);
 
-        return rows.stream()
-                .map(r -> new FanpageEventDistributionDto(
-                        r.eventTypeName(),
-                        r.eventCount(),
-                        totalEvents == 0 ? 0.0
-                                : Math.round((double) r.eventCount() / totalEvents * 10000.0) / 100.0))
-                .toList();
+        return fanpageStatisticDtoMapper.toDistributionDtoList(rows, totalEvents);
     }
 
     @Override
@@ -93,68 +72,47 @@ public class FanpageStatisticQueryServiceImpl implements FanpageStatisticQuerySe
         assertFanpageExists(fanpageId);
         assertCallerIsAdminOfFanpage(fanpageId);
 
-        List<TopEventRow> rows = fanpageStatisticRepositoryImpl.getTopEvents(fanpageId, Math.min(limit, 20));
+        var rows = fanpageStatisticRepositoryImpl.getTopEvents(fanpageId, Math.min(limit, 20));
 
-        return rows.stream()
-                .map(r -> new FanpageTopEventDto(
-                        r.eventId(),
-                        r.eventName(),
-                        r.bannerUrl(),
-                        r.dateHappen(),
-                        r.capacity(),
-                        r.registrationCount(),
-                        r.attendeeCount(),
-                        r.registrationCount() == 0 ? 0.0
-                                : Math.round((double) r.attendeeCount() / r.registrationCount() * 10000.0) / 100.0))
-                .toList();
+        return fanpageStatisticDtoMapper.toTopEventDtoList(rows);
     }
 
     @Override
-    public FanpageDashboardDto getDashboard(Long fanpageId, Integer year) {
+    public FanpageDemographicsDto getDemographics(Long fanpageId, Integer year, Long semesterId) {
+        assertFanpageExists(fanpageId);
+        assertCallerIsAdminOfFanpage(fanpageId);
+
+        var cohortRows = fanpageStatisticRepositoryImpl.getCohortDemographics(fanpageId, year, semesterId);
+        var schoolRows = fanpageStatisticRepositoryImpl.getSchoolDemographics(fanpageId, year, semesterId);
+        var majorRows = fanpageStatisticRepositoryImpl.getMajorDemographics(fanpageId, year, semesterId);
+
+        return fanpageStatisticDtoMapper.toDemographicsDto(cohortRows, schoolRows, majorRows);
+    }
+
+    @Override
+    public FanpageDashboardDto getDashboard(Long fanpageId, Integer year, Long semesterId) {
         assertFanpageExists(fanpageId);
         assertCallerIsAdminOfFanpage(fanpageId);
 
         int resolvedYear = (year != null) ? year : LocalDate.now().getYear();
 
-        // Execute all aggregates — guards already passed above, skip re-checking in sub-calls
-        var row = fanpageStatisticRepositoryImpl.getOverviewRow(fanpageId);
+        var overviewRow = fanpageStatisticRepositoryImpl.getOverviewRow(fanpageId);
         long totalFollowers = followingRepository.countByFanpageIdAndFolStatus(
                 fanpageId, FollowingStatusEnum.FOLLOWING);
-        double attendanceRate = row.totalRegistrations() == 0 ? 0.0
-                : Math.round((double) row.totalAttendees() / row.totalRegistrations() * 10000.0) / 100.0;
+        FanpageOverviewStatisticDto overview = fanpageStatisticDtoMapper.toOverviewDto(overviewRow, totalFollowers);
 
-        FanpageOverviewStatisticDto overview = new FanpageOverviewStatisticDto(
-                row.totalEvents(), totalFollowers, row.totalMembers(),
-                row.totalRegistrations(), row.totalAttendees(), attendanceRate);
+        List<FanpageMonthlyTrendDto> trends = fanpageStatisticDtoMapper.toMonthlyTrendDtoList(
+                fanpageStatisticRepositoryImpl.getMonthlyTrends(fanpageId, resolvedYear));
 
-        List<FanpageMonthlyTrendDto> trends = fanpageStatisticRepositoryImpl
-                .getMonthlyTrends(fanpageId, resolvedYear)
-                .stream()
-                .map(r -> new FanpageMonthlyTrendDto(
-                        r.monthYear(), r.eventCount(), r.registrationCount(), r.attendeeCount()))
-                .toList();
+        List<FanpageEventDistributionDto> distribution = fanpageStatisticDtoMapper.toDistributionDtoList(
+                fanpageStatisticRepositoryImpl.getEventDistribution(fanpageId), overviewRow.totalEvents());
 
-        long totalEvents = row.totalEvents();
-        List<FanpageEventDistributionDto> distribution = fanpageStatisticRepositoryImpl
-                .getEventDistribution(fanpageId)
-                .stream()
-                .map(r -> new FanpageEventDistributionDto(
-                        r.eventTypeName(), r.eventCount(),
-                        totalEvents == 0 ? 0.0
-                                : Math.round((double) r.eventCount() / totalEvents * 10000.0) / 100.0))
-                .toList();
+        List<FanpageTopEventDto> topEvents = fanpageStatisticDtoMapper.toTopEventDtoList(
+                fanpageStatisticRepositoryImpl.getTopEvents(fanpageId, 5));
 
-        List<FanpageTopEventDto> topEvents = fanpageStatisticRepositoryImpl
-                .getTopEvents(fanpageId, 5)
-                .stream()
-                .map(r -> new FanpageTopEventDto(
-                        r.eventId(), r.eventName(), r.bannerUrl(), r.dateHappen(), r.capacity(),
-                        r.registrationCount(), r.attendeeCount(),
-                        r.registrationCount() == 0 ? 0.0
-                                : Math.round((double) r.attendeeCount() / r.registrationCount() * 10000.0) / 100.0))
-                .toList();
+        FanpageDemographicsDto demographics = getDemographics(fanpageId, resolvedYear, semesterId);
 
-        return new FanpageDashboardDto(overview, trends, distribution, topEvents);
+        return fanpageStatisticDtoMapper.toDashboardDto(overview, trends, distribution, topEvents, demographics);
     }
 
     private void assertFanpageExists(Long fanpageId) {

@@ -1,4 +1,4 @@
-package com.ddd.api.dto.statistic.res;
+package com.ddd.api.dto.statistic.res.fanpage;
 
 public record FanpageOverviewStatisticResponseDto(
         long totalEvents,
