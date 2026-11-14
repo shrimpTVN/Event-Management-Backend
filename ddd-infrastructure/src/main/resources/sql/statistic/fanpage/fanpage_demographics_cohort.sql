@@ -1,16 +1,15 @@
-SELECT
-    COALESCE(
-        CASE
-            WHEN sp.k_number IS NOT NULL THEN 'K' || sp.k_number::text
-            ELSE 'Unknown'
-        END,
-        'Unknown'
-    )                                                               AS name,
-    COUNT(r.user_id)                                                AS count
+SELECT COALESCE(
+           CASE
+               WHEN sp.k_number IS NOT NULL THEN 'K' || CAST(sp.k_number AS VARCHAR)
+               ELSE 'UNKNOWN'
+           END,
+           'UNKNOWN'
+       ) AS label,
+       COUNT(distinct r.user_id)                         AS count
 FROM events e
-JOIN registrations r ON r.event_id = e.id
-JOIN users u ON u.id = r.user_id
-LEFT JOIN student_profiles sp ON sp.user_id = u.id
+         JOIN registrations r ON r.event_id = e.id
+         JOIN users u ON u.id = r.user_id
+         LEFT JOIN student_profiles sp ON sp.user_id = u.id
 WHERE e.fanpage_id = :fanpageId
   AND e.is_active = true
   AND r.status != 'CANCELLED'

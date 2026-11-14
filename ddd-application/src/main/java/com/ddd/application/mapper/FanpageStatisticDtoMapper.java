@@ -64,7 +64,7 @@ public interface FanpageStatisticDtoMapper {
         if (row == null) return null;
         double percentage = totalRegistrations == 0 ? 0.0
                 : Math.round((double) row.count() / totalRegistrations * 10000.0) / 100.0;
-        return new FanpageDemographicItemDto(row.name(), row.count(), percentage);
+        return new FanpageDemographicItemDto(row.label(), row.count(), percentage);
     }
 
     default List<FanpageDemographicItemDto> toDemographicDtoList(List<DemographicItemRow> rows, long totalRegistrations) {

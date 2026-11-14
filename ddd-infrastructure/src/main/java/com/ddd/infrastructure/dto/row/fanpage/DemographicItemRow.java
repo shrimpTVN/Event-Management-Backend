@@ -1,6 +1,6 @@
 package com.ddd.infrastructure.dto.row.fanpage;
 
 public record DemographicItemRow(
-        String name,
+        String label,
         long count
 ) {}

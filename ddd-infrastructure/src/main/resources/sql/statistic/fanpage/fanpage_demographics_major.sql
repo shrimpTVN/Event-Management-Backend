@@ -1,11 +1,10 @@
-SELECT
-    COALESCE(m.name, 'Other')                                       AS name,
-    COUNT(r.user_id)                                                AS count
+SELECT COALESCE(m.name, 'Other') AS label,
+       COUNT(distinct r.user_id) AS count
 FROM events e
-JOIN registrations r ON r.event_id = e.id
-JOIN users u ON u.id = r.user_id
-LEFT JOIN student_profiles sp ON sp.user_id = u.id
-LEFT JOIN majors m ON m.id = sp.major_id
+         JOIN registrations r ON r.event_id = e.id
+         JOIN users u ON u.id = r.user_id
+         LEFT JOIN student_profiles sp ON sp.user_id = u.id
+         LEFT JOIN majors m ON m.id = sp.major_id
 WHERE e.fanpage_id = :fanpageId
   AND e.is_active = true
   AND r.status != 'CANCELLED'
