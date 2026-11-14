@@ -6,9 +6,11 @@ import com.ddd.application.dto.fanpage.AttendeeInfoDto;
 import com.ddd.application.dto.registration.RegistrationArrangedInfoDto;
 import com.ddd.application.dto.registration.RegistrationDto;
 import com.ddd.application.dto.registration.RegistrationInfoDto;
+import com.ddd.application.dto.registration.StudentRegistrationInfoDto;
 import com.ddd.application.mapper.RegistrationDtoMapper;
 import com.ddd.application.service.registration.RegistrationQueryService;
 import com.ddd.application.utils.CsvExportUtil;
+import com.ddd.application.utils.ServiceUtil;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.model.User;
 import com.ddd.domain.model.port.security.SecurityContextPort;
@@ -53,6 +55,15 @@ public class RegistrationQueryServiceImpl implements RegistrationQueryService {
         Page<RegistrationJpaEntity> registrations = registrationJpaRepository.findAllByEventId(eventId, pageable);
 
         return registrations.map(registrationDtoMapper::toAttendeeInfoDto);
+    }
+
+    @Override
+    public Page<StudentRegistrationInfoDto> getStudentRegistrationsOfEvent(Long fanpageId, Long eventId,
+                                                                          int page, int size, String sortBy, String sortDir) {
+        verifyFanpageMember(fanpageId, eventId);
+        Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
+        Page<RegistrationJpaEntity> registrations = registrationJpaRepository.findAllByEventId(eventId, pageable);
+        return registrations.map(registrationDtoMapper::toStudentRegistrationInfoDto);
     }
 
     @Override
