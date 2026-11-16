@@ -114,6 +114,10 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         Event event = eventRepository.findById(eventId);
         validateEventAttendanceReadiness(event);
 
+        if (!event.isAllowSelfCheck()) {
+            throw new EventAttendanceException("Self check-in is not allowed for this event");
+        }
+
         Registration registration = registrationRepository.findByUserAndEvent(userId, eventId);
 
         if (registration.getStatus() == RegistrationStatusEnum.CHECKED_IN
@@ -144,6 +148,10 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         Long userId = securityContextPort.getCurrentUserId();
         Event event = eventRepository.findById(eventId);
         validateEventAttendanceReadiness(event);
+
+        if (!event.isAllowSelfCheck()) {
+            throw new EventAttendanceException("Self check-out is not allowed for this event");
+        }
 
         Registration registration = registrationRepository.findByUserAndEvent(userId, eventId);
         if (registration.getStatus() == RegistrationStatusEnum.SPENDING_CONFIRM) {
