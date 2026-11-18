@@ -11,4 +11,6 @@ public interface StudentCriteriaTransactionJpaRepository
 
     @EntityGraph(attributePaths = {"event"})
     List<StudentCriteriaTransactionJpaEntity> findByUserIdAndCriteriaIdAndAcademicYearId(Long id, Long criteriaId, Long academicYearId);
+
+    boolean existsByIdAndUserIdAndCompletionSource(Long criteriaTransactionId, Long userId, String completionSource);
 }

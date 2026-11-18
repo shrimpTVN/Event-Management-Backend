@@ -6,6 +6,8 @@ public record StudentSemesterPointResponseDto(
         Long id,
         Long pointCategoryId,
         Integer totalPoint,
+        Integer systemPointRecord,
+        Integer manualPointRecord,
         Instant finalizedAt
 ) {
 }

@@ -1,5 +1,6 @@
 package com.ddd.api.dto.event.req;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,6 +24,12 @@ public record EventCreateRequestDto(
         @Positive Long criteriaId,
         @NotNull @Positive Long fanpageId,
         @NotNull @Positive Long semesterId,
-        @NotNull List<EventPointRequestDto> eventPoints
+        Boolean allowSelfCheck,
+        List<@Valid EventPointRequestDto> eventPoints
 ) {
+    public EventCreateRequestDto {
+        if (allowSelfCheck == null) {
+            allowSelfCheck = true;
+        }
+    }
 }

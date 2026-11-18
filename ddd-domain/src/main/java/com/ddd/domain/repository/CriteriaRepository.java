@@ -16,4 +16,6 @@ public interface CriteriaRepository {
     boolean hasChildren(Long criteriaId);
 
     List<Criteria> findAllByIsActive(boolean b);
+
+    List<Criteria> findAllById(List<Long> criteriaIds);
 }

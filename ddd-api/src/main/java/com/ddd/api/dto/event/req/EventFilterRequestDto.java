@@ -3,14 +3,15 @@ package com.ddd.api.dto.event.req;
 import com.ddd.domain.enums.EventStatusEnum;
 
 import java.time.Instant;
+import java.util.List;
 
 public record EventFilterRequestDto(
         String keyword,
         String status,
-        Long eventTypeId,
+        List<Long> eventTypeIds,
         Long semesterId,
-        Long criteriaId,
-        Long pointCategoryId,
+        List<Long> criteriaIds,
+        List<Long> pointCategoryIds,
         Instant dateHappenFrom,
         Instant dateHappenTo,
         Boolean isActive,
@@ -45,10 +46,10 @@ public record EventFilterRequestDto(
         this(
                 other.keyword,
                 other.status,
-                other.eventTypeId,
+                other.eventTypeIds,
                 other.semesterId,
-                other.criteriaId,
-                other.pointCategoryId,
+                other.criteriaIds,
+                other.pointCategoryIds,
                 other.dateHappenFrom,
                 other.dateHappenTo,
                 true,

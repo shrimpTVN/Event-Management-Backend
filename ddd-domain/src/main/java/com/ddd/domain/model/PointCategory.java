@@ -15,6 +15,11 @@ public class PointCategory extends BaseModel {
     private Integer level;
     private Long parentCategoryId;
     private Integer childrenOrder = 1;
+    private Boolean isMaxChild = Boolean.FALSE;
+
+    public boolean isMaxChild() {
+        return Boolean.TRUE.equals(this.isMaxChild);
+    }
 
     public void setLevel(Integer level) {
         if (level < 0) {

@@ -7,6 +7,11 @@ import com.ddd.application.mapper.FanpageDtoMapper;
 import com.ddd.application.service.fanpage.FanpageCommandService;
 import com.ddd.domain.enums.FanpageRoleEnum;
 import com.ddd.domain.enums.FanpageStatusEnum;
+import com.ddd.domain.enums.RoleEnum;
+import com.ddd.domain.event.FanpageApprovedEvent;
+import com.ddd.domain.event.FanpageMemberAppointedEvent;
+import com.ddd.domain.event.FanpageMemberInvitedEvent;
+import com.ddd.domain.event.FanpageRejectedEvent;
 import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.DuplicateResourceException;
@@ -16,6 +21,7 @@ import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,8 +40,7 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
     private final UserRepository userRepository;
     private final FollowingRepository followingRepository;
     private final SecurityContextPort securityContextPort;
-
-
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public void createFanpage(FanpageRegisterDto registerDto, String email) {
@@ -67,6 +72,12 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
         fanpage.setStatus(FanpageStatusEnum.ACTIVE.name());
         fanpageRepository.save(fanpage);
         log.info("Fanpage accepted successfully: {}", fanpage.getName());
+        applicationEventPublisher.publishEvent(new FanpageApprovedEvent(
+                fanpage.getId(),
+                fanpage.getName(),
+                fanpage.getAvatarUrl(),
+                fanpage.getCreatedBy()
+        ));
     }
 
     @Override
@@ -75,6 +86,12 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
         fanpage.setStatus(FanpageStatusEnum.BANNED.name());
         fanpageRepository.save(fanpage);
         log.info("Fanpage banned successfully: {}", fanpage.getName());
+        applicationEventPublisher.publishEvent(new FanpageRejectedEvent(
+                fanpage.getId(),
+                fanpage.getName(),
+                fanpage.getAvatarUrl(),
+                fanpage.getCreatedBy()
+        ));
     }
 
     @Override
@@ -91,12 +108,22 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
             throw new AuthException("You are not admin of the fanpage");
         }
 
+        Fanpage fanpage = fanpageRepository.findById(fanpageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fanpage not found with id: " + fanpageId));
+
         String inviterName = fanpageAdmin.getFullName();
 
         FanpageMemberInvitation invitation = new FanpageMemberInvitation(fanpageId, member.getId(), inviterName);
         fanpageMemberInvitationRepository.save(invitation);
 
         log.info("Member invited to fanpage successfully: {}", member.getEmail());
+        applicationEventPublisher.publishEvent(new FanpageMemberInvitedEvent(
+                fanpage.getId(),
+                fanpage.getName(),
+                fanpage.getAvatarUrl(),
+                inviterName,
+                member.getId()
+        ));
     }
 
     @Override
@@ -251,9 +278,22 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
         currentMemberRole.setRole(FanpageRoleEnum.ADMIN.name());
         fanpageMemberRepository.save(currentMemberRole);
 
-        Role adminRole = roleRepository.findByName(FanpageRoleEnum.ADMIN.name());
-        member.addRole(adminRole);
+        Role fanpageAdminRole = roleRepository.findByName(RoleEnum.FANPAGE_ADMIN.name());
+        member.addRole(fanpageAdminRole);
         userRepository.save(member);
         log.info("Appointment fanpage admin of fanpage {} from userId: {} to userId: {}", fanpageId, userId, member.getId());
+
+        Fanpage fanpage = fanpageRepository.findById(fanpageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fanpage not found with id: " + fanpageId));
+        User currentAdmin = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        applicationEventPublisher.publishEvent(new FanpageMemberAppointedEvent(
+                fanpage.getId(),
+                fanpage.getName(),
+                fanpage.getAvatarUrl(),
+                currentAdmin.getFullName(),
+                member.getId()
+        ));
     }
 }

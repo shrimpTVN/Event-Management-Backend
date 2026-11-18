@@ -44,8 +44,8 @@ public class PointCategoryRepositoryImpl implements PointCategoryRepository {
     }
 
     @Override
-    public List<PointCategory> findAll() {
-        return pointCategoryJpaRepository.findAll(getDefaultSort())
+    public List<PointCategory> findAllActive() {
+        return pointCategoryJpaRepository.findAllByIsActive(true, getDefaultSort())
                 .stream()
                 .map(pointCategoryMapper::toDomainModel)
                 .toList();
@@ -79,6 +79,11 @@ public class PointCategoryRepositoryImpl implements PointCategoryRepository {
                 .orElseThrow(() -> new com.ddd.domain.exception.ResourceNotFoundException("Point category not found with id: " + id));
         entity.setIsActive(false);
         pointCategoryJpaRepository.save(entity);
+    }
+
+    @Override
+    public boolean hasChildren(Long pointCategoryId) {
+        return pointCategoryJpaRepository.existsByParentCategoryIdAndIsActive(pointCategoryId, true);
     }
 }
 

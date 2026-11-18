@@ -11,6 +11,7 @@ public record PointCategoryResponseDto(
     Integer level,
     Long parentCategoryId,
     boolean isActive,
-    Integer childrenOrder
+    Integer childrenOrder,
+    boolean isMaxChild
 ) {
 }

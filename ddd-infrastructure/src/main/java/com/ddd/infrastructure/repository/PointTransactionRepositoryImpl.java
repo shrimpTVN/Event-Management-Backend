@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -18,6 +19,22 @@ public class PointTransactionRepositoryImpl implements PointTransactionRepositor
     private final PointTransactionJpaRepository pointTransactionJpaRepository;
     private final PointTransactionMapper pointTransactionMapper;
     private final EntityManager entityManager;
+
+    @Override
+    public Optional<PointTransaction> findById(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return pointTransactionJpaRepository.findById(id).map(pointTransactionMapper::toDomain);
+    }
+
+    @Override
+    public void delete(PointTransaction pointTransaction) {
+        if (pointTransaction != null && pointTransaction.getId() != null) {
+            pointTransactionJpaRepository.deleteById(pointTransaction.getId());
+        }
+    }
+
     @Override
     public void saveAll(List<PointTransaction> pointTransactions) {
         List<PointTransactionJpaEntity> pointTransactionJpaEntities = new ArrayList<>();

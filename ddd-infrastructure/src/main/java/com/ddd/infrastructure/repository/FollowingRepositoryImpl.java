@@ -12,7 +12,10 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
+
+import static java.util.Arrays.stream;
 
 @Component
 @RequiredArgsConstructor
@@ -62,5 +65,13 @@ public class FollowingRepositoryImpl implements FollowingRepository {
                 folStatus,
                 true
         );
+    }
+
+    @Override
+    public List<Following> findByFanpageIdAndFolStatus(Long id, FollowingStatusEnum followingStatusEnum) {
+        return followingJpaRepository.findByFanpageIdAndFolStatusAndIsActive(id, followingStatusEnum, true)
+                .stream()
+                .map(followingMapper::toDomain)
+                .toList();
     }
 }

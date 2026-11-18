@@ -87,6 +87,13 @@ public class StudentCriteriaProgressRepositoryImpl implements StudentCriteriaPro
         return mapper.toDomainList(jpaRepository.findAllByUserIdInAndAcademicYearId(userIds, academicYearId));
     }
 
+    @Override
+    public void delete(StudentCriteriaProgress leafProgress) {
+        StudentCriteriaProgressJpaEntity jpaEntity = mapper.toJpaEntity(leafProgress);
+        assignReferences(leafProgress, jpaEntity);
+        jpaRepository.delete(jpaEntity);
+    }
+
     private void assignReferences(StudentCriteriaProgress progress, StudentCriteriaProgressJpaEntity entity) {
        if ( progress.getUserId() != null) {
             entity.setUser(entityManager.getReference(UserJpaEntity.class, progress.getUserId()));

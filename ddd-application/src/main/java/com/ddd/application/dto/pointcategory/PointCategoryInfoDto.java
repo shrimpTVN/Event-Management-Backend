@@ -11,6 +11,7 @@ public record PointCategoryInfoDto(
         Integer level,
         Long parentCategoryId,
         boolean isActive,
-        Integer childrenOrder
+        Integer childrenOrder,
+        Boolean isMaxChild
 ) {
 }

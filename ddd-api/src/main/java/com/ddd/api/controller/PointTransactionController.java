@@ -25,23 +25,26 @@ public class PointTransactionController {
     private final PointTransactionApiMapper pointTransactionApiMapper;
 
     @GetMapping("/me/semesters/{semesterId}/point-categories/{pointCategoryId}")
-    public BaseResponse<List<PointTransactionResponseDto>> getPointTransactionsForStudent(Authentication authentication,
-                                                                                          @PathVariable Long semesterId,
+    public BaseResponse<List<PointTransactionResponseDto>> getPointTransactionsForStudent(@PathVariable Long semesterId,
                                                                                           @PathVariable Long pointCategoryId) {
-        String email = authentication.getName();
         List<PointTransactionInfoDto> pointTransactions = pointTransactionQueryService
-                .getPointTransactionsForStudent(email, semesterId, pointCategoryId);
+                .getPointTransactionsForStudent(semesterId, pointCategoryId);
         return BaseResponse.of(pointTransactions.stream().map(pointTransactionApiMapper::toResponseDto)
                 .collect(Collectors.toList()));
     }
 
     @PostMapping("/me")
-    public BaseResponse<Void> createPointTransactionForStudent(Authentication authentication,
-                                                                                      @RequestBody @Valid PointTransactionRequestDto requestDto) {
-        String email = authentication.getName();
+    public BaseResponse<Void> createPointTransactionForStudent(@RequestBody @Valid PointTransactionRequestDto requestDto) {
+
         PointTransactionRequestInfoDto requestInfoDto = pointTransactionApiMapper.toRequestInfoDto(requestDto);
         pointTransactionCommandService
-                .createPointTransactionForStudent(email, requestInfoDto);
+                .createPointTransactionForStudent(requestInfoDto);
+        return BaseResponse.ok();
+    }
+
+    @DeleteMapping("/me/{pointTransactionId}")
+    public BaseResponse<Void> deletePointTransactionForStudent(@PathVariable Long pointTransactionId){
+        pointTransactionCommandService.deletePointTransactionForStudent(pointTransactionId);
         return BaseResponse.ok();
     }
 

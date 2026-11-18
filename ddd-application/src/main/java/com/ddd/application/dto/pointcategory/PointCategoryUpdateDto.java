@@ -13,6 +13,7 @@ public record PointCategoryUpdateDto(
         @NotNull LocalDate dateApply,
         @Positive Long parentCategoryId,
         @NotNull @Positive Integer childrenOrder,
-        Boolean isActive
+        Boolean isActive,
+        Boolean isMaxChild
 ) {
 }

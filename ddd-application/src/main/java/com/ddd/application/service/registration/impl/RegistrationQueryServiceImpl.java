@@ -1,16 +1,21 @@
 package com.ddd.application.service.registration.impl;
 
+import com.ddd.application.dto.export.AttendeeExportRowDto;
+import com.ddd.application.dto.export.EventAttendeeExportDto;
 import com.ddd.application.dto.fanpage.AttendeeInfoDto;
+import com.ddd.application.dto.registration.RegistrationArrangedInfoDto;
 import com.ddd.application.dto.registration.RegistrationDto;
 import com.ddd.application.dto.registration.RegistrationInfoDto;
 import com.ddd.application.dto.registration.StudentRegistrationInfoDto;
 import com.ddd.application.mapper.RegistrationDtoMapper;
 import com.ddd.application.service.registration.RegistrationQueryService;
+import com.ddd.application.utils.CsvExportUtil;
 import com.ddd.application.utils.ServiceUtil;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.model.User;
 import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.UserRepository;
+import com.ddd.infrastructure.entity.EventJpaEntity;
 import com.ddd.infrastructure.entity.RegistrationJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.FanpageMemberJpaRepository;
@@ -23,20 +28,20 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class RegistrationQueryServiceImpl implements RegistrationQueryService {
-
     private final RegistrationJpaRepository registrationJpaRepository;
     private final RegistrationDtoMapper registrationDtoMapper;
     private final FanpageMemberJpaRepository fanpageMemberJpaRepository;
     private final EventJpaRepository eventJpaRepository;
     private final SecurityContextPort securityContextPort;
     private final UserRepository userRepository;
-
 
     @Override
     public Page<AttendeeInfoDto> getAttendeesOfEvent(Long fanpageId, Long eventId,
@@ -58,7 +63,6 @@ public class RegistrationQueryServiceImpl implements RegistrationQueryService {
         verifyFanpageMember(fanpageId, eventId);
         Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
         Page<RegistrationJpaEntity> registrations = registrationJpaRepository.findAllByEventId(eventId, pageable);
-
         Set<Long> checkerIds = new HashSet<>();
         for (RegistrationJpaEntity reg : registrations) {
             if (reg.getCheckInBy() != null) checkerIds.add(reg.getCheckInBy());
@@ -122,6 +126,57 @@ public class RegistrationQueryServiceImpl implements RegistrationQueryService {
 
         return upcomingList.stream()
                 .map(registrationDtoMapper::toInfoDto)
+                .toList();
+    }
+
+    @Override
+    public byte[] exportAttendeesToCsv(Long fanpageId, Long eventId) {
+        verifyFanpageMember(fanpageId, eventId);
+
+        List<AttendeeExportRowDto> attendeeRows = new ArrayList<>();
+        List<RegistrationJpaEntity> registrations = registrationJpaRepository.findAllByEventId(eventId);
+        for (int i = 0; i < registrations.size(); i++) {
+            RegistrationJpaEntity registration = registrations.get(i);
+            AttendeeExportRowDto rowDto = registrationDtoMapper.toAttendeeExportRowDto(registration, i + 1);
+            attendeeRows.add(rowDto);
+        }
+        EventJpaEntity eventEntity = eventJpaRepository.findById(eventId)
+                .orElseThrow(() -> new BusinessException("Event not found with eventId: " + eventId));
+
+        return CsvExportUtil.generateAttendeesCsv(new EventAttendeeExportDto(
+                eventEntity.getId(),
+                eventEntity.getName(),
+                eventEntity.getLocation(),
+                eventEntity.getDateHappen(),
+                eventEntity.getDateOpen(),
+                eventEntity.getDateClose(),
+                eventEntity.getCapacity(),
+                eventEntity.getStatus().name(),
+                attendeeRows
+        ));
+    }
+
+    @Override
+    public List<RegistrationArrangedInfoDto> getArranged(Instant startTime, Instant endTime) {
+        Long userId = securityContextPort.getCurrentUserId();
+        if (userId == null) {
+            throw new BusinessException("Authentication required to access arranged events");
+        }
+
+        if (startTime == null || endTime == null) {
+            throw new BusinessException("Start time and end time must be provided");
+        }
+
+        if (startTime.isAfter(endTime)) {
+            throw new BusinessException("Start time must be before end time");
+        }
+
+        if (Duration.between(startTime, endTime).toDays() > 40) {
+            throw new BusinessException("The time range should not over one month.");
+        }
+        List<RegistrationJpaEntity> arrangedEvents = registrationJpaRepository.findArrangedEvents(userId, startTime, endTime);
+        return arrangedEvents.stream()
+                .map(registrationDtoMapper::toArrangedInfoDto)
                 .toList();
     }
 

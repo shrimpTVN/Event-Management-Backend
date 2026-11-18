@@ -94,4 +94,12 @@ public class CriteriaRepositoryImpl implements CriteriaRepository {
                 .map(criteriaMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public List<Criteria> findAllById(List<Long> criteriaIds) {
+        return criteriaJpaRepository.findAllById(criteriaIds)
+                .stream()
+                .map(criteriaMapper::toDomain)
+                .toList();
+    }
 }

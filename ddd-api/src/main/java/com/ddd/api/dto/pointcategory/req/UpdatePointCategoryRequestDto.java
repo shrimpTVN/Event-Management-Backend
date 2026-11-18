@@ -13,6 +13,7 @@ public record UpdatePointCategoryRequestDto(
         LocalDate dateApply,
         @NotNull @Positive Long parentCategoryId,
         @Positive Integer childrenOrder,
-        Boolean isActive
+        Boolean isActive,
+        Boolean isMaxChild
 ) {
 }

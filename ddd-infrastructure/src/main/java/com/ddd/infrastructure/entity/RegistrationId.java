@@ -11,6 +11,8 @@ import java.util.Objects;
 @Getter
 @Setter
 @EqualsAndHashCode
+@NoArgsConstructor
+@AllArgsConstructor
 @Embeddable
 public class RegistrationId implements Serializable {
     @Column(name = "user_id", nullable = false)

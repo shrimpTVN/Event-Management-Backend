@@ -14,6 +14,5 @@ public record AttendeeInfoDto(
         String studentId,
         int KNumber,
         String majorName
-
 ) {
 }

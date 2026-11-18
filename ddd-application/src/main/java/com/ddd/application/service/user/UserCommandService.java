@@ -21,4 +21,6 @@ public interface UserCommandService {
     StudentProfileSummaryDto updateAvatar(String email, String avatarUrl);
 
     UserSummaryDto updateProfileStatusById(Long id);
+
+    void outFanpageMember(Long fanpageId);
 }

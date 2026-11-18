@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,6 +30,11 @@ public class UserController {
     private final StudentProfileApiMapper studentProfileApiMapper;
     private final UserApiMapper userApiMapper;
 
+    @GetMapping("/search-users")
+    public BaseResponse<List<UserResponseDto>> searchUsers(@RequestParam(required = false) String keyword) {
+        List<UserSummaryDto> users = userQueryService.searchUsers(keyword);
+        return BaseResponse.of(users.stream().map(userApiMapper::toUserResponseDto).toList());
+    }
 
     @GetMapping("/me/profile")
     public BaseResponse<StudentProfileResponseDto> getUserProfile(Authentication authentication) {
@@ -91,6 +97,12 @@ public class UserController {
         StudentProfileSummaryDto summary = userCommandService.updateStudentProfileById(
                 id, studentProfileApiMapper.toStudentProfileUpdateDto(studentProfileRequestDto));
         return BaseResponse.of(studentProfileApiMapper.toStudentProfileResponseDto(summary));
+    }
+
+    @DeleteMapping("/me/out-fanpage-member/{fanpageId}")
+    public BaseResponse<Void> outFanpageMember(@PathVariable Long fanpageId) {
+        userCommandService.outFanpageMember(fanpageId);
+        return BaseResponse.ok();
     }
 
     @PatchMapping("/admin/{id}/change-status")

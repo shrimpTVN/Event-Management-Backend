@@ -25,4 +25,12 @@ public interface StudentSemesterPointJpaRepository extends JpaRepository<Student
                                                   @Param("pointCategoryIds") List<Long> pointCategoryIds);
 
     List<StudentSemesterPointJpaEntity> findByUserIdAndSemesterId(Long id, Long semesterId);
+
+    @Query("""
+            SELECT ssp FROM StudentSemesterPointJpaEntity ssp
+            WHERE ssp.user.id IN :studentUserIds
+            AND ssp.semester.id = :semesterId
+            """)
+    List<StudentSemesterPointJpaEntity> findAllByUserIdsAndSemesterId(@Param("studentUserIds") List<Long> studentUserIds,
+                                                                      @Param("semesterId") Long semesterId);
 }

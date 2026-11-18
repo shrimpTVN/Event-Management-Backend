@@ -9,6 +9,7 @@ import com.ddd.domain.model.Criteria;
 import com.ddd.domain.model.Event;
 import com.ddd.domain.model.Semester;
 import com.ddd.domain.model.StudentCriteriaTransaction;
+import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,10 +32,12 @@ public class StudentCriteriaTransactionCommandServiceImpl implements StudentCrit
     private final EventRepository eventRepository;
     private final SemesterRepository semesterRepository;
     private final StudentCriteriaProgressCommandService criteriaProgressCommandService;
+    private final SecurityContextPort securityContextPort;
 
     @Override
-    public void createTransaction(String email, Long criteriaId, Long academicYearId, String note) {
-        var user = userRepository.findByEmail(email);
+    public void createTransaction(Long criteriaId, Long academicYearId, String note) {
+        Long userId = securityContextPort.getCurrentUserId();
+
         var criteria = criteriaRepository.findById(criteriaId)
                 .orElseThrow(() -> new BusinessException("Criteria not found with id: " + criteriaId));
         var academicYear = academicYearRepository.findById(academicYearId)
@@ -42,7 +46,7 @@ public class StudentCriteriaTransactionCommandServiceImpl implements StudentCrit
         validateManualCriteriaEligible(criteria);
 
         var transaction = new StudentCriteriaTransaction(
-                user.getId(),
+                userId,
                 criteria.getId(),
                 academicYear.getId(),
                 null,
@@ -52,7 +56,7 @@ public class StudentCriteriaTransactionCommandServiceImpl implements StudentCrit
         criteriaTransactionRepository.save(transaction);
         log.info("Transaction created with id: {}", transaction.getId());
 
-        criteriaProgressCommandService.markCompleted(user.getId(), criteria.getId(), academicYear.getId());
+        criteriaProgressCommandService.markCompleted(userId, criteria.getId(), academicYear.getId());
 
     }
 
@@ -93,6 +97,22 @@ public class StudentCriteriaTransactionCommandServiceImpl implements StudentCrit
                 .orElseThrow(() -> new ResourceNotFoundException("Semester not found for event"));
 
         bulkCreateTransactions(userIds, criteria.getId(), semester.getAcademicYearId(), eventId);
+    }
+
+    @Override
+    public void deleteTransaction(Long criteriaTransactionId) {
+        Long userId = securityContextPort.getCurrentUserId();
+        StudentCriteriaTransaction transaction = criteriaTransactionRepository.findById(criteriaTransactionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found with id: " + criteriaTransactionId));
+
+        if (!Objects.equals(transaction.getUserId(), userId) || !CriteriaCompletionSourceEnum.MANUAL.name().equals(transaction.getCompletionSource())) {
+            throw new IllegalArgumentException("You can't delete this transaction because you have not created this transaction by yourself.");
+        }
+
+        criteriaTransactionRepository.delete(transaction);
+        log.info("Transaction deleted with id: {}", criteriaTransactionId);
+
+        criteriaProgressCommandService.markUncompleted(userId, transaction.getCriteriaId(), transaction.getAcademicYearId());
     }
 
     private void bulkCreateTransactions(List<Long> userIds, Long criteriaId, Long academicYearId, Long eventId) {

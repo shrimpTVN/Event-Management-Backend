@@ -48,7 +48,17 @@ public class StudentSemesterPointJpaEntity {
     @NotNull
     @ColumnDefault("0")
     @Column(name = "total_point", nullable = false)
-    private Integer totalPoint;
+    private Integer totalPoint = 0;
+
+    @NotNull
+    @ColumnDefault("0")
+    @Column(name = "system_point_record", nullable = false)
+    private Integer systemPointRecord = 0;
+
+    @NotNull
+    @ColumnDefault("0")
+    @Column(name = "manual_point_record", nullable = false)
+    private Integer manualPointRecord = 0;
 
     @Column(name = "finalized_at")
     private Instant finalizedAt;

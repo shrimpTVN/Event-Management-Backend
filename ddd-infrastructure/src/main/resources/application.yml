@@ -7,7 +7,7 @@ spring:
     name: ddd
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:mydb}
+    url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:mydb}?reWriteBatchedInserts=true
     username: ${DATABASE_USERNAME:admin}
     password: ${DATABASE_PASSWORD:admin}
   jpa:
@@ -17,6 +17,10 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
+        jdbc:
+          batch_size: 50
+          order_inserts: true
+          order_updates: true
         format_sql: ${HIBERNATE_FORMAT_SQL:true}
         default_batch_fetch_size: ${DEFAULT_BATCH_FETCH_SIZE:50}
   docker:
@@ -39,6 +43,10 @@ spring:
 logging:
   pattern:
     console: "${CONSOLE_LOG_PATTERN:%green(%d{HH:mm:ss.SSS}) %blue(%-5level) %red([%thread]) %yellow(%logger{15})- %cyan(%msg%n)}"
+  level:
+    org.hibernate.engine.jdbc.batch.internal.BatchingBatch: DEBUG
+    org.hibernate.orm.jdbc.batch: TRACE
+
 
 jwt:
   secret: ${JWT_SECRET:bItuCsIDL5c+BspirFjkgEYurvJBLNosOfR6f7/wuRTF}

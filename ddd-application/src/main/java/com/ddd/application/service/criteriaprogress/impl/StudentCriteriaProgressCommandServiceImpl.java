@@ -13,21 +13,14 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Command service handling write mutations and business rules for student criteria progress.
- */
+
 @Service
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
 public class StudentCriteriaProgressCommandServiceImpl implements StudentCriteriaProgressCommandService {
-
-    private final UserRepository userRepository;
     private final CriteriaRepository criteriaRepository;
     private final StudentCriteriaProgressRepository progressRepository;
-    private final AcademicYearRepository academicYearRepository;
-    private final EventRepository eventRepository;
-    private final SemesterRepository semesterRepository;
 
 
     @Override
@@ -43,7 +36,6 @@ public class StudentCriteriaProgressCommandServiceImpl implements StudentCriteri
         if (userIds == null || userIds.isEmpty() || criteriaId == null || academicYearId == null) {
             return;
         }
-
         //Identify and skip students who already completed this criteria
         List<Long> eligibleUserIds = getEligibleUserIds(userIds, criteriaId, academicYearId);
         if (eligibleUserIds.isEmpty()) {
@@ -73,7 +65,6 @@ public class StudentCriteriaProgressCommandServiceImpl implements StudentCriteri
                     updatedProgressList.size(), eligibleUserIds.size());
         }
     }
-
     private List<Long> getEligibleUserIds(List<Long> userIds, Long criteriaId, Long academicYearId) {
         List<Long> distinctUserIds = userIds.stream()
                 .filter(Objects::nonNull)
@@ -173,4 +164,64 @@ public class StudentCriteriaProgressCommandServiceImpl implements StudentCriteri
         }
         return updatedProgressList;
     }
+    @Override
+    public void markUncompleted(Long userId, Long criteriaId, Long academicYearId) {
+        StudentCriteriaProgress leafProgress = progressRepository
+                .findByUserIdAndCriteriaIdAndAcademicYearId(userId, criteriaId, academicYearId)
+                .orElseThrow(() -> new IllegalArgumentException("No progress found for user: " + userId + ", criteria: " + criteriaId + ", academic year: " + academicYearId));
+
+        if (!leafProgress.getIsCompleted()) {
+            log.info("Progress for user: {}, criteria: {}, academic year: {} is already uncompleted, skipping", userId, criteriaId, academicYearId);
+            return;
+        }
+
+        List<StudentCriteriaProgress> criteriaProgresses = progressRepository.findAllByUserIdAndAcademicYearId(userId, academicYearId);
+        Map<Long, StudentCriteriaProgress> progressMap = criteriaProgresses.stream()
+                .collect(Collectors.toMap(StudentCriteriaProgress::getCriteriaId, p -> p));
+
+        List<Long> criteriaIds = criteriaProgresses.stream()
+                .map(StudentCriteriaProgress::getCriteriaId).distinct().toList();
+        Map<Long, Criteria> criteriaMap = criteriaRepository.findAllById(criteriaIds).stream()
+                .collect(Collectors.toMap(Criteria::getId, c -> c));
+
+        List<StudentCriteriaProgress> updatedProgressList = new ArrayList<>();
+        Criteria leafCriteria = criteriaMap.get(criteriaId);
+        Long currentParentId = leafCriteria != null ? leafCriteria.getParentId() : null;
+
+        while (currentParentId != null) {
+            Criteria parentCriteria = criteriaMap.get(currentParentId);
+            if (parentCriteria == null) {
+                break;
+            }
+
+            StudentCriteriaProgress parentProgress = progressMap.get(currentParentId);
+            if (parentProgress == null) {
+                break;
+            }
+
+            int completedChildrenCount = Math.max(0, parentProgress.getCompletedChildrenCount() - 1);
+            parentProgress.setCompletedChildrenCount(completedChildrenCount);
+
+            int requiredChildren = parentCriteria.getRequiredChildren() != null
+                    ? parentCriteria.getRequiredChildren()
+                    : 1;
+
+            if (parentProgress.getCompletedChildrenCount() < requiredChildren) {
+                parentProgress.setIsCompleted(false);
+                parentProgress.setCompletedAt(null);
+                currentParentId = parentCriteria.getParentId();
+            } else {
+                currentParentId = null;
+            }
+
+            updatedProgressList.add(parentProgress);
+        }
+
+        progressRepository.delete(leafProgress);
+        if (!updatedProgressList.isEmpty()) {
+            progressRepository.saveAll(updatedProgressList);
+        }
+    }
+
+
 }

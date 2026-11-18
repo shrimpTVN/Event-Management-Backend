@@ -4,6 +4,7 @@ import com.ddd.api.common.BaseResponse;
 import com.ddd.api.dto.fanpage.req.BatchAttendanceRequestDto;
 import com.ddd.api.dto.registration.req.AttendanceRequestDto;
 import com.ddd.api.dto.registration.res.AttendeeResponseDto;
+import com.ddd.api.dto.registration.res.RegistrationArrangedResponseDto;
 import com.ddd.api.dto.registration.res.RegistrationResponseDto;
 import com.ddd.api.dto.registration.res.StudentRegistrationResponseDto;
 import com.ddd.api.mapper.RegistrationApiMapper;
@@ -11,12 +12,17 @@ import com.ddd.application.dto.fanpage.AttendeeInfoDto;
 import com.ddd.application.dto.registration.StudentRegistrationInfoDto;
 import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.application.service.registration.RegistrationQueryService;
+import com.ddd.domain.enums.RegistrationStatusEnum;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +50,6 @@ public class RegistrationController {
         return BaseResponse.ok();
     }
 
-
     @GetMapping("/me/history")
     public BaseResponse<Page<RegistrationResponseDto>> getHistory(@RequestParam(defaultValue = "0") int page,
                                                                   @RequestParam(defaultValue = "10") int size) {
@@ -53,7 +58,6 @@ public class RegistrationController {
         return BaseResponse.of(summaryPage.map(registrationApiMapper::toResponseDto));
     }
 
-
     @GetMapping("/me/upcoming")
     public BaseResponse<List<RegistrationResponseDto>> getUpcoming() {
         var summaryList = registrationQueryService.getUpcoming();
@@ -61,6 +65,28 @@ public class RegistrationController {
                 .map(registrationApiMapper::toResponseDto)
                 .toList();
         return BaseResponse.of(responseList);
+    }
+
+    @GetMapping("/me/arranged")
+    public BaseResponse<List<RegistrationArrangedResponseDto>> getArranged(@RequestParam Instant startTime,
+                                                                           @RequestParam Instant endTime) {
+        var summaryList = registrationQueryService.getArranged(startTime, endTime);
+        List<RegistrationArrangedResponseDto> responseList = summaryList.stream()
+                .map(registrationApiMapper::toArrangedResponseDto)
+                .toList();
+        return BaseResponse.of(responseList);
+    }
+
+    @GetMapping(value = "/fanpage-member/fanpages/{fanpageId}/events/{eventId}/attendees/export", produces = "text/csv")
+    public ResponseEntity<byte[]> exportAttendeesCsv(
+            @PathVariable Long fanpageId,
+            @PathVariable Long eventId) {
+        byte[] csvBytes = registrationQueryService.exportAttendeesToCsv(fanpageId, eventId);
+        String filename = "attendees-event-" + eventId + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csvBytes);
     }
 
     @PatchMapping("/me/events/{eventId}/check-in")
@@ -115,8 +141,27 @@ public class RegistrationController {
     @PatchMapping("/fanpage-member/events/{eventId}/check-out")
     public BaseResponse<Void> fanpageMemberBatchCheckOut(@PathVariable Long eventId,
                                                          @RequestBody @Valid BatchAttendanceRequestDto request) {
-        registrationCommandService.fanpageMemberCheckOut(eventId, request.studentUserIds());
+        registrationCommandService.fanpageMemberCheckOut(eventId, request.studentUserIds(), RegistrationStatusEnum.COMPLETED);
         return BaseResponse.ok();
     }
 
+    @PatchMapping("/fanpage-member/events/{eventId}/absent")
+    public BaseResponse<Void> fanpageMemberBatchAbsent(@PathVariable Long eventId,
+                                                       @RequestBody @Valid BatchAttendanceRequestDto request) {
+        registrationCommandService.fanpageMemberBatchAbsent(eventId, request.studentUserIds());
+        return BaseResponse.ok();
+    }
+
+    @PatchMapping("/fanpage-member/events/{eventId}/confirm-attendance")
+    public BaseResponse<Void> fanpageMemberConfirmAttendance(@PathVariable Long eventId,
+                                                              @RequestBody @Valid BatchAttendanceRequestDto request) {
+        registrationCommandService.fanpageMemberCheckOut(eventId, request.studentUserIds(), RegistrationStatusEnum.CONFIRMED);
+        return BaseResponse.ok();
+    }
+
+    @PatchMapping("/fanpage-member/events/{eventId}/event-completed")
+    public BaseResponse<Void> fanpageMemberMarkEventAsCompleted(@PathVariable Long eventId) {
+        registrationCommandService.fanpageMemberMarkEventAsCompleted(eventId);
+        return BaseResponse.ok();
+    }
 }
