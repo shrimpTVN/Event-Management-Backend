@@ -173,6 +173,26 @@ public class GlobalExceptionHandler {
                 );
     }
 
+    @ExceptionHandler(StudentProfileRequiredException.class)
+    public ResponseEntity<Object> handleStudentProfileRequiredException(
+            StudentProfileRequiredException exception, WebRequest webRequest) {
+        log.warn("Student profile required [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.STUDENT_PROFILE_REQUIRED.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.STUDENT_PROFILE_REQUIRED.getDefaultMessage(),
+                ErrorCodeEnum.STUDENT_PROFILE_REQUIRED.getStatus());
+    }
+
+    @ExceptionHandler(FanpageAdminProfileRequiredException.class)
+    public ResponseEntity<Object> handleFanpageAdminProfileRequiredException(
+            FanpageAdminProfileRequiredException exception, WebRequest webRequest) {
+        log.warn("Fanpage admin profile required [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.FANPAGE_ADMIN_PROFILE_REQUIRED.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.FANPAGE_ADMIN_PROFILE_REQUIRED.getDefaultMessage(),
+                ErrorCodeEnum.FANPAGE_ADMIN_PROFILE_REQUIRED.getStatus());
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // 404 Not Found
     // ─────────────────────────────────────────────────────────────────────────
