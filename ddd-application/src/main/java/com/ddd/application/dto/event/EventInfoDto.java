@@ -18,7 +18,9 @@ public record EventInfoDto(
         Integer femaleQuantity,
         String bannerUrl,
         String status,
+        Long eventTypeId,
         String eventTypeName,
+        Long criteriaId,
         String criteriaName,
         String fanpageName,
         Long fanpageId,
@@ -46,11 +48,66 @@ public record EventInfoDto(
             String fanpageName,
             Long fanpageId,
             boolean isActive,
+            boolean allowSelfCheck,
             SemesterDto semester,
             Instant updatedAt,
             List<EventPointInfoDto> eventPoints
     ) {
         this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity, femaleQuantity,
-                bannerUrl, status, eventTypeName, criteriaName, fanpageName, fanpageId, isActive, true, semester, updatedAt, eventPoints);
+                bannerUrl, status, null, eventTypeName, null, criteriaName, fanpageName, fanpageId, isActive, allowSelfCheck, semester, updatedAt, eventPoints);
+    }
+
+    public EventInfoDto(
+            Long id,
+            String name,
+            String description,
+            String location,
+            Instant dateOpen,
+            Instant dateClose,
+            Instant dateHappen,
+            Integer capacity,
+            Integer maleQuantity,
+            Integer femaleQuantity,
+            String bannerUrl,
+            String status,
+            String eventTypeName,
+            String criteriaName,
+            String fanpageName,
+            Long fanpageId,
+            boolean isActive,
+            SemesterDto semester,
+            Instant updatedAt,
+            List<EventPointInfoDto> eventPoints
+    ) {
+        this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity, femaleQuantity,
+                bannerUrl, status, null, eventTypeName, null, criteriaName, fanpageName, fanpageId, isActive, true, semester, updatedAt, eventPoints);
+    }
+
+    public EventInfoDto(
+            Long id,
+            String name,
+            String description,
+            String location,
+            Instant dateOpen,
+            Instant dateClose,
+            Instant dateHappen,
+            Integer capacity,
+            Integer maleQuantity,
+            Integer femaleQuantity,
+            String bannerUrl,
+            String status,
+            Long eventTypeId,
+            String eventTypeName,
+            Long criteriaId,
+            String criteriaName,
+            String fanpageName,
+            Long fanpageId,
+            boolean isActive,
+            SemesterDto semester,
+            Instant updatedAt,
+            List<EventPointInfoDto> eventPoints
+    ) {
+        this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity, femaleQuantity,
+                bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName, fanpageId, isActive, true, semester, updatedAt, eventPoints);
     }
 }
