@@ -19,6 +19,8 @@ public interface AuthService {
     ResponseCookie getClearRefreshCookie();
     String extractRefreshToken(HttpServletRequest request);
 
+    void register(UserDto userDto, String otpCode);
+
     void createUser(UserDto userDto, StudentProfileDto studentProfileDto);
 
     void createFanpageAdmin(UserDto userDto, FanpageAdminProfileDto fanpageAdminProfileDto);

@@ -35,6 +35,12 @@ public class StudentProfileRepositoryImpl implements StudentProfileRepository {
     }
 
     @Override
+    public java.util.Optional<StudentProfile> findByUserId(Long userId) {
+        return studentProfileJpaRepository.findByUserId(userId)
+                .map(studentProfileMapper::toDomain);
+    }
+
+    @Override
     public void save(StudentProfile studentProfile, Long userId) {
         MajorJpaEntity majorJpaEntity = studentProfile.getMajorId() != null
                 ? majorJpaRepository.findById(studentProfile.getMajorId())

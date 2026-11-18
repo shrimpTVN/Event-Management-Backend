@@ -84,7 +84,8 @@ CREATE TABLE users
     updated_by  BIGINT,
     CONSTRAINT pk_users PRIMARY KEY (id)
 );
-
+ALTER TABLE users
+ALTER COLUMN gender DROP NOT NULL;
 -- ============================================================
 --  6. USER_ROLE (Many-to-Many giữa User và Role)
 -- ============================================================
