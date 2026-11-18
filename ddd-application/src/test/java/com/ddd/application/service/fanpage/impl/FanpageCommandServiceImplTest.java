@@ -149,4 +149,20 @@ class FanpageCommandServiceImplTest {
             verify(fanpageMemberRepository).save(any(FanpageMember.class));
         }
     }
+
+    @Test
+    @DisplayName("rejectFanpage_shouldSetStatusToRejectedAndStoreReason")
+    void rejectFanpage_shouldSetStatusToRejectedAndStoreReason() {
+        Fanpage fanpage = new Fanpage();
+        fanpage.setId(5L);
+        fanpage.setName("Club");
+        when(fanpageRepository.findById(5L)).thenReturn(Optional.of(fanpage));
+
+        fanpageCommandService.rejectFanpage(5L, "Missing proof");
+
+        org.junit.jupiter.api.Assertions.assertEquals("REJECTED", fanpage.getStatus());
+        org.junit.jupiter.api.Assertions.assertEquals("Missing proof", fanpage.getRejectionReason());
+        verify(fanpageRepository).save(fanpage);
+        verify(applicationEventPublisher).publishEvent(any());
+    }
 }

@@ -106,6 +106,20 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
     }
 
     @Override
+    public void rejectFanpage(Long fanpageId, String reason) {
+        Fanpage fanpage = fanpageRepository.findById(fanpageId).orElseThrow(() -> new ResourceNotFoundException("Fanpage not found"));
+        fanpage.reject(reason);
+        fanpageRepository.save(fanpage);
+        log.info("Fanpage rejected successfully: {}, reason: {}", fanpage.getName(), reason);
+        applicationEventPublisher.publishEvent(new FanpageRejectedEvent(
+                fanpage.getId(),
+                fanpage.getName(),
+                fanpage.getAvatarUrl(),
+                fanpage.getCreatedBy()
+        ));
+    }
+
+    @Override
     public void inviteMemberToFanpage(Long fanpageId, String memberEmail) {
         User member = userRepository.findByEmail(memberEmail);
         if (member == null) {
