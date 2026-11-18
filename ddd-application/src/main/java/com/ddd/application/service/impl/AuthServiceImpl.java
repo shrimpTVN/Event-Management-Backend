@@ -7,6 +7,7 @@ import com.ddd.application.dto.auth.TokenRefreshResultDto;
 import com.ddd.application.dto.user.FanpageAdminProfileDto;
 import com.ddd.application.dto.user.StudentProfileDto;
 import com.ddd.application.dto.user.UserDto;
+import com.ddd.application.service.otp.OtpCommandService;
 import com.ddd.application.service.userprofile.FanpageAdminProfileCommandService;
 import com.ddd.application.service.userprofile.StudentProfileCommandService;
 import com.ddd.application.service.user.UserCommandService;
@@ -48,6 +49,7 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenHashUtil tokenHashUtil;
     private final UserRepository userRepository;
+    private final OtpCommandService otpCommandService;
 
     private String createAndSaveRefreshToken(Long userId) {
         String rawToken = UUID.randomUUID().toString();
@@ -102,12 +104,24 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email);
 
         if (user == null) {
-            throw new ResourceNotFoundException("User not found with email: " + email);
-        }
-
-        if (user.getProviderId() == null || user.getProviderId().isBlank()) {
-            user.setProviderId(googleUserInfo.googleId());
-            userRepository.update(user);
+            UserDto newUserDto = new UserDto(
+                    googleUserInfo.email(),
+                    null,
+                    googleUserInfo.googleId(),
+                    googleUserInfo.firstName(),
+                    googleUserInfo.lastName(),
+                    null,
+                    googleUserInfo.pictureUrl()
+            );
+            Long userId = userCommandService.createUser(newUserDto, RoleEnum.STUDENT.name());
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found after creation: " + userId));
+            log.info("Google user:{} auto-provisioned successfully with ID:{}", googleUserInfo.email(), userId);
+        } else {
+            if (user.getProviderId() == null || user.getProviderId().isBlank()) {
+                user.setProviderId(googleUserInfo.googleId());
+                userRepository.update(user);
+            }
         }
 
         log.info("Google user:{} logged in successfully", email);
@@ -119,6 +133,14 @@ public class AuthServiceImpl implements AuthService {
                 user.getRoleNames()
         );
         return new LoginResult(loginDto, jwtToken, rawRefreshToken);
+    }
+
+    @Transactional
+    @Override
+    public void register(UserDto userDto, String otpCode) {
+        otpCommandService.verifyOtp(userDto.email(), otpCode);
+        userCommandService.createUser(userDto, RoleEnum.STUDENT.name());
+        log.info("User:{} registered successfully with role STUDENT", userDto.email());
     }
 
     @Transactional
