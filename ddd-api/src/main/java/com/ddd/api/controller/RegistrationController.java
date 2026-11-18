@@ -5,8 +5,10 @@ import com.ddd.api.dto.fanpage.req.BatchAttendanceRequestDto;
 import com.ddd.api.dto.registration.req.AttendanceRequestDto;
 import com.ddd.api.dto.registration.res.AttendeeResponseDto;
 import com.ddd.api.dto.registration.res.RegistrationResponseDto;
+import com.ddd.api.dto.registration.res.StudentRegistrationResponseDto;
 import com.ddd.api.mapper.RegistrationApiMapper;
 import com.ddd.application.dto.fanpage.AttendeeInfoDto;
+import com.ddd.application.dto.registration.StudentRegistrationInfoDto;
 import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.application.service.registration.RegistrationQueryService;
 import jakarta.validation.Valid;
@@ -88,6 +90,19 @@ public class RegistrationController {
         Page<AttendeeInfoDto> attendees = registrationQueryService
                 .getAttendeesOfEvent(fanpageId, eventId, page, size, sortBy, sortDir);
         return BaseResponse.of(attendees.stream().map(registrationApiMapper::toAttendeeResponseDto).toList());
+    }
+
+    @GetMapping("/fanpage-member/fanpages/{fanpageId}/events/{eventId}/registrations")
+    public BaseResponse<Page<StudentRegistrationResponseDto>> getStudentRegistrationsOfEvent(
+            @PathVariable Long fanpageId,
+            @PathVariable Long eventId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "regDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        Page<StudentRegistrationInfoDto> registrations = registrationQueryService
+                .getStudentRegistrationsOfEvent(fanpageId, eventId, page, size, sortBy, sortDir);
+        return BaseResponse.of(registrations.map(registrationApiMapper::toStudentRegistrationResponseDto));
     }
 
     @PatchMapping("/fanpage-member/events/{eventId}/check-in")
