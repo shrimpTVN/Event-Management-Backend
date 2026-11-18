@@ -40,7 +40,7 @@ public class DotenvTest {
         assertEquals("start-only", env.getProperty("DOCKER_COMPOSE_LIFECYCLE"));
 
         // JWT
-        assertEquals("jxgEQeXHuPq8VdbyYFNkANdudQ53YUn4", env.getProperty("JWT_SECRET"));
+        assertEquals("bItuCsIDL5c+BspirFjkgEYurvJBLNosOfR6f7/wuPE=", env.getProperty("JWT_SECRET"));
         assertEquals("86400000", env.getProperty("JWT_EXPIRATION_MS"));
         assertEquals("ddd_jwt", env.getProperty("JWT_COOKIE_NAME"));
         assertEquals("Authorization", env.getProperty("JWT_HEADER"));

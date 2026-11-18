@@ -15,10 +15,27 @@ import org.mapstruct.Mapping;
 public interface RegistrationDtoMapper {
 
 
-    @Mapping(target="eventInfo", source="event")
-    @Mapping(target="userId", source="user.id")
-    @Mapping(target="eventId", source="event.id")
-    RegistrationInfoDto toInfoDto(RegistrationJpaEntity entity);
+    @Mapping(target="eventInfo", source="entity.event")
+    @Mapping(target="userId", source="entity.user.id")
+    @Mapping(target="eventId", source="entity.event.id")
+    @Mapping(target="checkInByName", source="checkInByName")
+    @Mapping(target="checkOutByName", source="checkOutByName")
+    RegistrationInfoDto toInfoDto(RegistrationJpaEntity entity, String checkInByName, String checkOutByName);
+
+    default RegistrationInfoDto toInfoDto(RegistrationJpaEntity entity) {
+        return toInfoDto(entity, null, null);
+    }
+
+    @Mapping(target = "userId", source = "entity.user.id")
+    @Mapping(target = "eventId", source = "entity.event.id")
+    @Mapping(target = "studentProfile", source = "entity.user")
+    @Mapping(target = "checkInByName", source = "checkInByName")
+    @Mapping(target = "checkOutByName", source = "checkOutByName")
+    StudentRegistrationInfoDto toStudentRegistrationInfoDto(
+            RegistrationJpaEntity entity,
+            String checkInByName,
+            String checkOutByName
+    );
 
     @Mapping(target = "userId", source = "user.id")
     @Mapping(target = "eventId", source = "event.id")
