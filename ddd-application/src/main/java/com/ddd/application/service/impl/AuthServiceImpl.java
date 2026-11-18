@@ -104,12 +104,24 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email);
 
         if (user == null) {
-            throw new ResourceNotFoundException("User not found with email: " + email);
-        }
-
-        if (user.getProviderId() == null || user.getProviderId().isBlank()) {
-            user.setProviderId(googleUserInfo.googleId());
-            userRepository.update(user);
+            UserDto newUserDto = new UserDto(
+                    googleUserInfo.email(),
+                    null,
+                    googleUserInfo.googleId(),
+                    googleUserInfo.firstName(),
+                    googleUserInfo.lastName(),
+                    null,
+                    googleUserInfo.pictureUrl()
+            );
+            Long userId = userCommandService.createUser(newUserDto, RoleEnum.STUDENT.name());
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found after creation: " + userId));
+            log.info("Google user:{} auto-provisioned successfully with ID:{}", googleUserInfo.email(), userId);
+        } else {
+            if (user.getProviderId() == null || user.getProviderId().isBlank()) {
+                user.setProviderId(googleUserInfo.googleId());
+                userRepository.update(user);
+            }
         }
 
         log.info("Google user:{} logged in successfully", email);
