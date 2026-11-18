@@ -163,6 +163,6 @@ class FanpageCommandServiceImplTest {
         org.junit.jupiter.api.Assertions.assertEquals("REJECTED", fanpage.getStatus());
         org.junit.jupiter.api.Assertions.assertEquals("Missing proof", fanpage.getRejectionReason());
         verify(fanpageRepository).save(fanpage);
-        verify(applicationEventPublisher).publishEvent(any());
+        verify(applicationEventPublisher).publishEvent(any(com.ddd.domain.event.FanpageRejectedEvent.class));
     }
 }
