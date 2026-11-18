@@ -56,8 +56,7 @@ public class AuthController {
     @PostMapping("/register")
     public BaseResponse<Void> register(@RequestBody @Valid RegisterRequestDto userRegisterRequestDto) {
         UserDto userDto = authApiMapper.toUserDto(userRegisterRequestDto);
-        StudentProfileDto studentProfileDto = authApiMapper.toUserProfileDto(userRegisterRequestDto);
-        authService.createUser(userDto, studentProfileDto);
+        authService.register(userDto, userRegisterRequestDto.otpCode());
         return BaseResponse.ok();
     }
 
