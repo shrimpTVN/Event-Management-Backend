@@ -15,6 +15,7 @@ public class Fanpage extends BaseModel {
     private String parentOrg;
     private String helpContact;
     private String helpPhone;
+    private String rejectionReason;
 
     public void updateByFanpageAdmin(String description, String avatarUrl, String helpContact, String helpPhone) {
         if (description != null) this.description = description.trim();
@@ -34,6 +35,12 @@ public class Fanpage extends BaseModel {
         if (helpContact != null) this.helpContact = helpContact.trim();
         if (helpPhone != null) this.helpPhone = helpPhone.trim();
         if (status != null && !status.isBlank()) this.status = status.trim();
+    }
+
+    public void reject(String reason) {
+        this.status = "REJECTED";
+        this.rejectionReason = reason;
+        this.setActive(false);
     }
 
     public void deactivate() {

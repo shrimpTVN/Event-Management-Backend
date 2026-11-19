@@ -112,7 +112,11 @@ public class StudentCriteriaTransactionCommandServiceImpl implements StudentCrit
         criteriaTransactionRepository.delete(transaction);
         log.info("Transaction deleted with id: {}", criteriaTransactionId);
 
-        criteriaProgressCommandService.markUncompleted(userId, transaction.getCriteriaId(), transaction.getAcademicYearId());
+        try {
+            criteriaProgressCommandService.markUncompleted(userId, transaction.getCriteriaId(), transaction.getAcademicYearId());
+        } catch (Exception e) {
+            log.warn("Could not mark uncompleted for progress: {}", e.getMessage(), e);
+        }
     }
 
     private void bulkCreateTransactions(List<Long> userIds, Long criteriaId, Long academicYearId, Long eventId) {
