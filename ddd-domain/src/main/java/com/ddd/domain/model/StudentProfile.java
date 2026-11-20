@@ -14,6 +14,7 @@ public class StudentProfile extends BaseModel {
     private String studentId;
     private Integer kNumber;
     private Long majorId;
+    private Long schoolId;
     private Long userId;
 
 

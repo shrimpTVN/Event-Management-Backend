@@ -2,6 +2,7 @@ package com.ddd.application.service.school.impl;
 import com.ddd.application.dto.school.*;
 import com.ddd.application.mapper.SchoolDtoMapper;
 import com.ddd.application.service.school.SchoolService;
+import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.School;
 import com.ddd.domain.model.Major;
 import com.ddd.domain.repository.SchoolRepository;
@@ -28,7 +29,8 @@ public class SchoolServiceImpl implements SchoolService {
 
     @Override
     public SchoolDetailDto findById(Long id) {
-        School school = schoolRepository.findById(id);
+        School school = schoolRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("School not found with id: " + id));
         List<Major> majors = majorRepository.findBySchoolId(id);
         return schoolDtoMapper.toDetailSchoolDto(school, majors);
     }
@@ -41,7 +43,8 @@ public class SchoolServiceImpl implements SchoolService {
     @Override
     @Transactional
     public SchoolDto updateSchool(Long id, SchoolDto schoolDto) {
-        School school = schoolRepository.findById(id);
+        School school = schoolRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("School not found with id: " + id));
         schoolDtoMapper.updateSchoolEntityFromDto(schoolDto, school);
         return schoolDtoMapper.toSchoolDto(schoolRepository.save(school));
     }

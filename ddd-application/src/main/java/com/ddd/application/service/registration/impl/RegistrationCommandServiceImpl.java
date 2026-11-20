@@ -1,5 +1,6 @@
 package com.ddd.application.service.registration.impl;
 
+import com.ddd.application.mapper.RegistrationDtoMapper;
 import com.ddd.application.service.criteriaprogress.StudentCriteriaTransactionCommandService;
 import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.application.service.semesterpoint.StudentSemesterPointCommandService;
@@ -39,6 +40,8 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final PointTransactionRepository pointTransactionRepository;
     private final StudentSemesterPointCommandService studentSemesterPointCommandService;
     private final StudentCriteriaTransactionCommandService studentCriteriaTransactionCommandService;
+    private final StudentProfileRepository studentProfileRepository;
+    private final RegistrationDtoMapper registrationDtoMapper;
     private final SecurityContextPort securityContextPort;
     private final ApplicationEventPublisher applicationEventPublisher;
 
@@ -67,11 +70,24 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         User user = userRepository.findById(securityContextPort.getCurrentUserId())
                 .orElseThrow(() -> new BusinessException("User not found"));
 
+        if (event.getSchoolId() != null) {
+            StudentProfile studentProfile = studentProfileRepository.findByUserId(user.getId())
+                    .orElseThrow(() -> new EventRegistrationException(
+                            "Student profile not found. Please update your profile before registering for the event!"));
+
+            if (studentProfile.getSchoolId() == null) {
+                throw new EventRegistrationException(
+                        "Student profile is missing major or school information. Please update your profile before registering!");
+            }
+
+            if (!event.getSchoolId().equals(studentProfile.getSchoolId())) {
+                throw new EventRegistrationException(
+                        "This event is only open to students from the designated school!");
+            }
+        }
+
         Registration reg = isRegistered(user, eventId);
-        reg.setUserId(user.getId());
-        reg.setEventId(eventId);
-        reg.setRegDate(Instant.now());
-        reg.setStatus(RegistrationStatusEnum.REGISTERED);
+        registrationDtoMapper.updateRegistrationForRegister(reg, user.getId(), eventId, Instant.now(), RegistrationStatusEnum.REGISTERED);
         registrationRepository.save(reg);
     }
 

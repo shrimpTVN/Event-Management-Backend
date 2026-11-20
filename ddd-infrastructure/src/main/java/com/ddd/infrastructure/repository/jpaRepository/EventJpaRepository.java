@@ -15,16 +15,16 @@ import java.util.Optional;
 public interface EventJpaRepository extends JpaRepository<EventJpaEntity, Long>, JpaSpecificationExecutor<EventJpaEntity> {
     Page<EventJpaEntity> findByFanpage_Id(Long fanpageId, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage", "semester"})
+    @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage", "semester", "school"})
     Optional<EventJpaEntity> findWithDetailsById(Long id);
 
-    @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage", "semester"})
+    @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage", "semester", "school"})
     Optional<EventJpaEntity> findWithDetailsByIdAndIsActiveTrue(Long id);
 
-    @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage", "semester"})
+    @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage", "semester", "school"})
     Page<EventJpaEntity> findWithDetailsByFanpage_Id(Long fanpageId, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage", "semester"})
+    @EntityGraph(attributePaths = {"eventType", "criteria", "fanpage", "semester", "school"})
     Page<EventJpaEntity> findWithDetailsByFanpage_IdAndIsActiveTrue(Long fanpageId, Pageable pageable);
 
     boolean existsByIdAndFanpageId(Long eventId, Long fanpageId);

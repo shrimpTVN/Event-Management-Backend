@@ -15,6 +15,8 @@ import com.ddd.infrastructure.repository.jpaRepository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 @RequiredArgsConstructor
 public class StudentProfileRepositoryImpl implements StudentProfileRepository {
@@ -32,6 +34,12 @@ public class StudentProfileRepositoryImpl implements StudentProfileRepository {
     @Override
     public boolean existsByUserId(Long userId) {
         return studentProfileJpaRepository.existsByUserId(userId);
+    }
+
+    @Override
+    public Optional<StudentProfile> findByUserId(Long userId) {
+        return studentProfileJpaRepository.findByUserId(userId)
+                .map(studentProfileMapper::toDomain);
     }
 
     @Override
