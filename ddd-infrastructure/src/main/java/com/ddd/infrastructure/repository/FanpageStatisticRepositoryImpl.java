@@ -23,6 +23,8 @@ public class FanpageStatisticRepositoryImpl implements FanpageStatisticRepositor
     private static final String DEMO_COHORT_SQL = SqlLoader.load("statistic/fanpage/fanpage_demographics_cohort.sql");
     private static final String DEMO_SCHOOL_SQL = SqlLoader.load("statistic/fanpage/fanpage_demographics_school.sql");
     private static final String DEMO_MAJOR_SQL = SqlLoader.load("statistic/fanpage/fanpage_demographics_major.sql");
+    private static final String MONTHLY_ABSENT_RATE_SQL = SqlLoader.load("statistic/fanpage/fanpage_monthly_absent_rate.sql");
+    private static final String STUDENT_ABSENCE_COUNT_SQL = SqlLoader.load("statistic/fanpage/fanpage_student_absence_count.sql");
     private final JdbcClient jdbcClient;
 
     @Override
@@ -113,6 +115,24 @@ public class FanpageStatisticRepositoryImpl implements FanpageStatisticRepositor
                 .param("year", year)
                 .param("semesterId", semesterId)
                 .query(DemographicItemRow.class)
+                .list();
+    }
+
+    public List<MonthlyAbsentRateRow> getMonthlyAbsentRate(Long fanpageId, Integer year, Long semesterId) {
+        return jdbcClient.sql(MONTHLY_ABSENT_RATE_SQL)
+                .param("fanpageId", fanpageId)
+                .param("year", year)
+                .param("semesterId", semesterId)
+                .query(MonthlyAbsentRateRow.class)
+                .list();
+    }
+
+    public List<StudentAbsenceRow> getStudentAbsenceCounts(Long fanpageId, Long semesterId, int minAbsences) {
+        return jdbcClient.sql(STUDENT_ABSENCE_COUNT_SQL)
+                .param("fanpageId", fanpageId)
+                .param("semesterId", semesterId)
+                .param("minAbsences", minAbsences)
+                .query(StudentAbsenceRow.class)
                 .list();
     }
 }

@@ -115,6 +115,25 @@ public class FanpageStatisticQueryServiceImpl implements FanpageStatisticQuerySe
         return fanpageStatisticDtoMapper.toDashboardDto(overview, trends, distribution, topEvents, demographics);
     }
 
+    @Override
+    public List<FanpageMonthlyAbsentRateDto> getMonthlyAbsentRate(Long fanpageId, Integer year, Long semesterId) {
+        assertFanpageExists(fanpageId);
+        assertCallerIsAdminOfFanpage(fanpageId);
+
+        var rows = fanpageStatisticRepositoryImpl.getMonthlyAbsentRate(fanpageId, year, semesterId);
+        return fanpageStatisticDtoMapper.toMonthlyAbsentRateDtoList(rows);
+    }
+
+    @Override
+    public List<FanpageStudentAbsenceDto> getStudentAbsenceCounts(Long fanpageId, Long semesterId, Integer minAbsences) {
+        assertFanpageExists(fanpageId);
+        assertCallerIsAdminOfFanpage(fanpageId);
+
+        int resolvedMinAbsences = (minAbsences != null && minAbsences > 0) ? minAbsences : 3;
+        var rows = fanpageStatisticRepositoryImpl.getStudentAbsenceCounts(fanpageId, semesterId, resolvedMinAbsences);
+        return fanpageStatisticDtoMapper.toStudentAbsenceDtoList(rows);
+    }
+
     private void assertFanpageExists(Long fanpageId) {
         if (fanpageRepository.findByIdAndIsActive(fanpageId, true).isEmpty()) {
             throw new ResourceNotFoundException("Fanpage not found with id: " + fanpageId);

@@ -27,6 +27,14 @@ public interface FanpageStatisticDtoMapper {
 
     List<FanpageMonthlyTrendDto> toMonthlyTrendDtoList(List<MonthlyTrendRow> rows);
 
+    FanpageMonthlyAbsentRateDto toMonthlyAbsentRateDto(MonthlyAbsentRateRow row);
+
+    List<FanpageMonthlyAbsentRateDto> toMonthlyAbsentRateDtoList(List<MonthlyAbsentRateRow> rows);
+
+    FanpageStudentAbsenceDto toStudentAbsenceDto(StudentAbsenceRow row);
+
+    List<FanpageStudentAbsenceDto> toStudentAbsenceDtoList(List<StudentAbsenceRow> rows);
+
     default FanpageEventDistributionDto toDistributionDto(EventTypeDistributionRow row, long totalEvents) {
         if (row == null) return null;
         double percentage = totalEvents == 0 ? 0.0

@@ -14,4 +14,6 @@ public interface FanpageStatisticQueryService {
     default FanpageDashboardDto getDashboard(Long fanpageId, Integer year) {
         return getDashboard(fanpageId, year, null);
     }
+    List<FanpageMonthlyAbsentRateDto> getMonthlyAbsentRate(Long fanpageId, Integer year, Long semesterId);
+    List<FanpageStudentAbsenceDto> getStudentAbsenceCounts(Long fanpageId, Long semesterId, Integer minAbsences);
 }
