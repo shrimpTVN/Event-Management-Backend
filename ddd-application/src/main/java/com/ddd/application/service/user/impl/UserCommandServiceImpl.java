@@ -145,7 +145,34 @@ public class UserCommandServiceImpl implements UserCommandService {
     }
 
     @Override
-    public StudentProfileSummaryDto updateAvatar(String email, String avatarUrl) {
+    public UserSummaryDto updateAvatar(String avatarUrl) {
+        if (avatarUrl == null || avatarUrl.isBlank()) {
+            throw new IllegalArgumentException("Avatar URL must not be blank");
+        }
+
+        Long currentUserId = securityContextPort.getCurrentUserId();
+        UserJpaEntity user = null;
+        if (currentUserId != null) {
+            user = userJpaRepository.findById(currentUserId).orElse(null);
+        }
+        if (user == null) {
+            String email = securityContextPort.getCurrentUserEmail();
+            if (email != null) {
+                user = userJpaRepository.findByEmail(email);
+            }
+        }
+        if (user == null) {
+            throw new UnauthorizedException("User is not authenticated");
+        }
+
+        user.setAvatarUrl(avatarUrl.trim());
+        UserJpaEntity savedUser = userJpaRepository.save(user);
+
+        return userDtoMapper.toUserSummaryDto(savedUser);
+    }
+
+    @Override
+    public UserSummaryDto updateAvatar(String email, String avatarUrl) {
         if (avatarUrl == null || avatarUrl.isBlank()) {
             throw new IllegalArgumentException("Avatar URL must not be blank");
         }
@@ -156,11 +183,9 @@ public class UserCommandServiceImpl implements UserCommandService {
         }
 
         user.setAvatarUrl(avatarUrl.trim());
-        userJpaRepository.save(user);
+        UserJpaEntity savedUser = userJpaRepository.save(user);
 
-        StudentProfileJpaEntity profile = studentProfileJpaRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found for email: " + email));
-        return studentProfileDtoMapper.toStudentProfileSummaryDto(profile);
+        return userDtoMapper.toUserSummaryDto(savedUser);
     }
 
     @Override

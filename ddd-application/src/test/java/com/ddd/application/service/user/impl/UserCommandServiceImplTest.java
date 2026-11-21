@@ -218,4 +218,34 @@ class UserCommandServiceImplTest {
 
         assertThrows(BusinessException.class, () -> userCommandService.updateStaffProfile(updateDto));
     }
+
+    @Test
+    void updateAvatar_shouldUpdateAvatarUrlAndReturnUserSummaryDto_withoutQueryingStudentProfile() {
+        when(securityContextPort.getCurrentUserId()).thenReturn(15L);
+
+        UserJpaEntity user = new UserJpaEntity();
+        user.setId(15L);
+        user.setEmail("staff@example.com");
+        user.setAvatarUrl("https://old.png");
+        when(userJpaRepository.findById(15L)).thenReturn(Optional.of(user));
+        when(userJpaRepository.save(any(UserJpaEntity.class))).thenAnswer(i -> i.getArgument(0));
+
+        com.ddd.application.dto.user.UserSummaryDto summaryDto = new com.ddd.application.dto.user.UserSummaryDto(
+                15L, "staff@example.com", java.util.Set.of("FANPAGE_ADMIN"), "FANPAGE_ADMIN",
+                "Staff", "User", "MALE", true, null, "https://new.png"
+        );
+        when(userDtoMapper.toUserSummaryDto(any(UserJpaEntity.class))).thenReturn(summaryDto);
+
+        com.ddd.application.dto.user.UserSummaryDto result = userCommandService.updateAvatar("https://new.png");
+
+        assertNotNull(result);
+        assertEquals("https://new.png", user.getAvatarUrl());
+        verify(studentProfileJpaRepository, never()).findByEmail(anyString());
+        verify(studentProfileJpaRepository, never()).findByUserId(anyLong());
+    }
+
+    @Test
+    void updateAvatar_shouldThrowIllegalArgumentException_whenAvatarUrlIsBlank() {
+        assertThrows(IllegalArgumentException.class, () -> userCommandService.updateAvatar("   "));
+    }
 }

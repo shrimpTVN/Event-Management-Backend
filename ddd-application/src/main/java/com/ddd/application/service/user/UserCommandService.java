@@ -18,7 +18,11 @@ public interface UserCommandService {
 
     StudentProfileSummaryDto updateStudentProfileById(Long id, StudentProfileUpdateDto updateDto);
 
-    StudentProfileSummaryDto updateAvatar(String email, String avatarUrl);
+    UserSummaryDto updateAvatar(String avatarUrl);
+
+    default UserSummaryDto updateAvatar(String email, String avatarUrl) {
+        return updateAvatar(avatarUrl);
+    }
 
     UserSummaryDto updateProfileStatusById(Long id);
 

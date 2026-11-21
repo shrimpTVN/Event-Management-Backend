@@ -100,13 +100,11 @@ public class UserController {
     }
 
     @PatchMapping("/me/profile/change-avatar")
-    public BaseResponse<StudentProfileResponseDto> updateAvatar(
-            Authentication authentication,
+    public BaseResponse<UserResponseDto> updateAvatar(
             @RequestBody UpdateAvatarRequestDto updateAvatarRequestDto) {
-        String email = authentication.getName();
-        String url = updateAvatarRequestDto.avatarUrl();
-        StudentProfileSummaryDto summary = userCommandService.updateAvatar(email, url);
-        return BaseResponse.of(studentProfileApiMapper.toStudentProfileResponseDto(summary));
+        String url = updateAvatarRequestDto != null ? updateAvatarRequestDto.avatarUrl() : null;
+        UserSummaryDto summary = userCommandService.updateAvatar(url);
+        return BaseResponse.of(userApiMapper.toUserResponseDto(summary));
     }
 
     @PutMapping("/admin/{id}/profile")
