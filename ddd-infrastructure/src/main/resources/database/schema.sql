@@ -126,7 +126,7 @@ CREATE TABLE fanpage_admin_profiles
 (
     id           BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
     staff_id     VARCHAR(20) NOT NULL,
-    org_name     VARCHAR(20),
+    org_name     VARCHAR(255),
     title        VARCHAR(100),
     dob          DATE,
     phone_number VARCHAR(20),
