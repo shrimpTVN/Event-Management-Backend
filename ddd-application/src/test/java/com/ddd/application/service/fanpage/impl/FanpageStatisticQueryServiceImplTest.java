@@ -189,9 +189,9 @@ public class FanpageStatisticQueryServiceImplTest {
                     new MonthlyTrendRow("2026-08", 2, 50, 45),
                     new MonthlyTrendRow("2026-09", 3, 80, 70)
             );
-            when(fanpageStatisticRepositoryImpl.getMonthlyTrends(eq(fanpageId), anyInt())).thenReturn(mockRows);
+            when(fanpageStatisticRepositoryImpl.getMonthlyTrends(eq(fanpageId), anyInt(), any())).thenReturn(mockRows);
 
-            List<FanpageMonthlyTrendDto> result = service.getMonthlyTrends(fanpageId, 2026);
+            List<FanpageMonthlyTrendDto> result = service.getMonthlyTrends(fanpageId, 2026, 5L);
 
             assertEquals(2, result.size());
             assertEquals("2026-08", result.get(0).monthYear());
@@ -251,7 +251,7 @@ public class FanpageStatisticQueryServiceImplTest {
                     .thenReturn(new FanpageOverviewRow(2, 10, 2, 50, 40));
             when(followingRepository.countByFanpageIdAndFolStatus(fanpageId, FollowingStatusEnum.FOLLOWING))
                     .thenReturn(10L);
-            when(fanpageStatisticRepositoryImpl.getMonthlyTrends(eq(fanpageId), anyInt()))
+            when(fanpageStatisticRepositoryImpl.getMonthlyTrends(eq(fanpageId), anyInt(), any()))
                     .thenReturn(List.of());
             when(fanpageStatisticRepositoryImpl.getEventDistribution(fanpageId))
                     .thenReturn(List.of());

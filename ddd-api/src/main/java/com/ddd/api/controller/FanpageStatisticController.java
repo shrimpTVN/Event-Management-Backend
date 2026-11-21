@@ -30,9 +30,10 @@ public class FanpageStatisticController {
     @GetMapping("/trends")
     public BaseResponse<List<FanpageMonthlyTrendResponseDto>> getMonthlyTrends(
             @PathVariable Long fanpageId,
-            @RequestParam(required = false) Integer year) {
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Long semesterId) {
         return BaseResponse.of(fanpageStatisticApiMapper.toMonthlyTrendResponseList(
-                fanpageStatisticQueryService.getMonthlyTrends(fanpageId, year)));
+                fanpageStatisticQueryService.getMonthlyTrends(fanpageId, year, semesterId)));
     }
 
     @GetMapping("/event-distribution")

@@ -60,10 +60,10 @@ public class FanpageStatisticControllerTest {
         List<FanpageMonthlyTrendDto> appList = List.of(new FanpageMonthlyTrendDto("2026-08", 2, 50, 40));
         List<FanpageMonthlyTrendResponseDto> resList = List.of(new FanpageMonthlyTrendResponseDto("2026-08", 2, 50, 40));
 
-        when(fanpageStatisticQueryService.getMonthlyTrends(fanpageId, 2026)).thenReturn(appList);
+        when(fanpageStatisticQueryService.getMonthlyTrends(fanpageId, 2026, 5L)).thenReturn(appList);
         when(fanpageStatisticApiMapper.toMonthlyTrendResponseList(appList)).thenReturn(resList);
 
-        BaseResponse<List<FanpageMonthlyTrendResponseDto>> response = controller.getMonthlyTrends(fanpageId, 2026);
+        BaseResponse<List<FanpageMonthlyTrendResponseDto>> response = controller.getMonthlyTrends(fanpageId, 2026, 5L);
 
         assertNotNull(response);
         assertEquals(1, response.data().size());

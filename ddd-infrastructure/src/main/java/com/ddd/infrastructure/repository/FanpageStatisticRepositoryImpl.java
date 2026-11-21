@@ -68,12 +68,17 @@ public class FanpageStatisticRepositoryImpl implements FanpageStatisticRepositor
                 .single();
     }
 
-    public List<MonthlyTrendRow> getMonthlyTrends(Long fanpageId, int year) {
+    public List<MonthlyTrendRow> getMonthlyTrends(Long fanpageId, Integer year, Long semesterId) {
         return jdbcClient.sql(MONTHLY_TRENDS_SQL)
                 .param("fanpageId", fanpageId)
                 .param("year", year)
+                .param("semesterId", semesterId)
                 .query(MonthlyTrendRow.class)
                 .list();
+    }
+
+    public List<MonthlyTrendRow> getMonthlyTrends(Long fanpageId, int year) {
+        return getMonthlyTrends(fanpageId, year, null);
     }
 
     public List<EventTypeDistributionRow> getEventDistribution(Long fanpageId) {
