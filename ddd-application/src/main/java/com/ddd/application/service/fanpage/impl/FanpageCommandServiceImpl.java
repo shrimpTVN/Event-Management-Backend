@@ -15,10 +15,13 @@ import com.ddd.domain.event.FanpageRejectedEvent;
 import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.DuplicateResourceException;
+import com.ddd.domain.exception.FanpageAdminProfileRequiredException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.*;
 import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
+import com.ddd.infrastructure.entity.FanpageAdminProfileJpaEntity;
+import com.ddd.infrastructure.repository.jpaRepository.FanpageAdminProfileJpaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -41,9 +44,17 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
     private final FollowingRepository followingRepository;
     private final SecurityContextPort securityContextPort;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final FanpageAdminProfileJpaRepository fanpageAdminProfileJpaRepository;
 
     @Override
     public void createFanpage(FanpageRegisterDto registerDto, String email) {
+        FanpageAdminProfileJpaEntity profile = fanpageAdminProfileJpaRepository.findByUserEmail(email)
+                .orElseThrow(FanpageAdminProfileRequiredException::new);
+        if (profile.getStaffId() == null || profile.getStaffId().isBlank()
+                || profile.getOrgName() == null || profile.getOrgName().isBlank()) {
+            throw new FanpageAdminProfileRequiredException();
+        }
+
         //check duplicate  fanpage name
         if (fanpageRepository.existsByName(registerDto.name())) {
             throw new DuplicateResourceException("Fanpage name already exists");
@@ -86,6 +97,20 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
         fanpage.setStatus(FanpageStatusEnum.BANNED.name());
         fanpageRepository.save(fanpage);
         log.info("Fanpage banned successfully: {}", fanpage.getName());
+        applicationEventPublisher.publishEvent(new FanpageRejectedEvent(
+                fanpage.getId(),
+                fanpage.getName(),
+                fanpage.getAvatarUrl(),
+                fanpage.getCreatedBy()
+        ));
+    }
+
+    @Override
+    public void rejectFanpage(Long fanpageId, String reason) {
+        Fanpage fanpage = fanpageRepository.findById(fanpageId).orElseThrow(() -> new ResourceNotFoundException("Fanpage not found"));
+        fanpage.reject(reason);
+        fanpageRepository.save(fanpage);
+        log.info("Fanpage rejected successfully: {}, reason: {}", fanpage.getName(), reason);
         applicationEventPublisher.publishEvent(new FanpageRejectedEvent(
                 fanpage.getId(),
                 fanpage.getName(),

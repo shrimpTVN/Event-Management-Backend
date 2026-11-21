@@ -38,18 +38,32 @@ class StudentCriteriaProgressCommandServiceImplTest {
     private final Long academicYearId = 2024L;
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when leaf progress record is not found")
-    void markUncompleted_whenProgressNotFound_shouldThrowIllegalArgumentException() {
+    @DisplayName("Should return safely without exception when leaf progress record is not found")
+    void markUncompleted_whenProgressNotFound_shouldReturnSafelyWithoutException() {
         Long criteriaId = 10L;
         when(progressRepository.findByUserIdAndCriteriaIdAndAcademicYearId(userId, criteriaId, academicYearId))
                 .thenReturn(Optional.empty());
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> service.markUncompleted(userId, criteriaId, academicYearId)
-        );
+        assertDoesNotThrow(() -> service.markUncompleted(userId, criteriaId, academicYearId));
 
-        assertTrue(exception.getMessage().contains("No progress found for user: " + userId));
+        verify(progressRepository, never()).delete(any());
+        verify(progressRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("Should return early without delete or save when leaf progress isCompleted is null")
+    void markUncompleted_whenProgressIsCompletedIsNull_shouldReturnEarlyWithoutDeletingOrSaving() {
+        Long criteriaId = 10L;
+        StudentCriteriaProgress leafProgress = new StudentCriteriaProgress(userId, criteriaId, academicYearId);
+        leafProgress.setIsCompleted(null);
+
+        when(progressRepository.findByUserIdAndCriteriaIdAndAcademicYearId(userId, criteriaId, academicYearId))
+                .thenReturn(Optional.of(leafProgress));
+
+        service.markUncompleted(userId, criteriaId, academicYearId);
+
+        verify(progressRepository, never()).findAllByUserIdAndAcademicYearId(any(), any());
+        verify(criteriaRepository, never()).findAllById(any());
         verify(progressRepository, never()).delete(any());
         verify(progressRepository, never()).saveAll(anyList());
     }

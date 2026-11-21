@@ -24,6 +24,12 @@ public record EventCreateRequestDto(
         @Positive Long criteriaId,
         @NotNull @Positive Long fanpageId,
         @NotNull @Positive Long semesterId,
+        Boolean allowSelfCheck,
         List<@Valid EventPointRequestDto> eventPoints
 ) {
+    public EventCreateRequestDto {
+        if (allowSelfCheck == null) {
+            allowSelfCheck = true;
+        }
+    }
 }

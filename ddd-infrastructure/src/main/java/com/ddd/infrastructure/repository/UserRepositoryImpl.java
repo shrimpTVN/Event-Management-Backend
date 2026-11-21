@@ -1,20 +1,17 @@
 package com.ddd.infrastructure.repository;
 
-import com.ddd.domain.enums.RoleEnum;
 import com.ddd.domain.model.User;
+import com.ddd.domain.repository.UserRepository;
 import com.ddd.infrastructure.entity.RoleJpaEntity;
 import com.ddd.infrastructure.entity.UserJpaEntity;
 import com.ddd.infrastructure.mapper.UserMapper;
 import com.ddd.infrastructure.repository.jpaRepository.RoleJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.UserJpaRepository;
-import com.ddd.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Component
 @RequiredArgsConstructor
@@ -30,7 +27,7 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public List<User> findAll(){
+    public List<User> findAll() {
         return userJpaRepository.findAll().stream().map(userMapper::toDomain).toList();
     }
 
@@ -42,7 +39,7 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public User save(User user, Set<String> roleNames) {
-        java.util.Set<String> searchNames = new java.util.HashSet<>();
+        Set<String> searchNames = new java.util.HashSet<>();
         for (String r : roleNames) {
             searchNames.add(r);
             if (r.startsWith("ROLE_")) {
@@ -79,6 +76,16 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public Optional<User> findById(Long userId) {
         return userJpaRepository.findById(userId).map(userMapper::toDomain);
+    }
+
+    @Override
+    public List<User> findAllByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return userJpaRepository.findAllById(ids).stream()
+                .map(userMapper::toDomain)
+                .toList();
     }
 
     @Override

@@ -1,7 +1,7 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
-import com.ddd.api.dto.statistic.res.*;
+import com.ddd.api.dto.statistic.res.fanpage.*;
 import com.ddd.api.mapper.FanpageStatisticApiMapper;
 import com.ddd.application.service.fanpage.FanpageStatisticQueryService;
 import lombok.RequiredArgsConstructor;
@@ -46,11 +46,21 @@ public class FanpageStatisticController {
                 fanpageStatisticQueryService.getTopEvents(fanpageId, limit)));
     }
 
+    @GetMapping("/demographics")
+    public BaseResponse<FanpageDemographicsResponseDto> getDemographics(
+            @PathVariable Long fanpageId,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Long semesterId) {
+        return BaseResponse.of(fanpageStatisticApiMapper.toResponseDto(
+                fanpageStatisticQueryService.getDemographics(fanpageId, year, semesterId)));
+    }
+
     @GetMapping("/dashboard")
     public BaseResponse<FanpageDashboardResponseDto> getDashboard(
             @PathVariable Long fanpageId,
-            @RequestParam(required = false) Integer year) {
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Long semesterId) {
         return BaseResponse.of(fanpageStatisticApiMapper.toResponseDto(
-                fanpageStatisticQueryService.getDashboard(fanpageId, year)));
+                fanpageStatisticQueryService.getDashboard(fanpageId, year, semesterId)));
     }
 }

@@ -1,7 +1,7 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
-import com.ddd.api.dto.statistic.res.*;
+import com.ddd.api.dto.statistic.res.fanpage.*;
 import com.ddd.api.mapper.FanpageStatisticApiMapper;
 import com.ddd.application.dto.statistic.*;
 import com.ddd.application.service.fanpage.FanpageStatisticQueryService;
@@ -110,10 +110,10 @@ public class FanpageStatisticControllerTest {
                 List.of(), List.of(), List.of()
         );
 
-        when(fanpageStatisticQueryService.getDashboard(fanpageId, 2026)).thenReturn(appDto);
+        when(fanpageStatisticQueryService.getDashboard(fanpageId, 2026, 1L)).thenReturn(appDto);
         when(fanpageStatisticApiMapper.toResponseDto(appDto)).thenReturn(resDto);
 
-        BaseResponse<FanpageDashboardResponseDto> response = controller.getDashboard(fanpageId, 2026);
+        BaseResponse<FanpageDashboardResponseDto> response = controller.getDashboard(fanpageId, 2026, 1L);
 
         assertNotNull(response);
         assertEquals(BaseResponse.SUCCESS_REQUEST_MESSAGE, response.message());

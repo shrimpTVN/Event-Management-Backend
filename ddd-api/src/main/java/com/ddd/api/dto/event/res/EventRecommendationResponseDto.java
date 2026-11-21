@@ -10,6 +10,6 @@ public record EventRecommendationResponseDto(
         long daysUntilHappen,
         boolean fulfillsCriteria,
         List<PointCategoryGainResponseDto> pointGains,
-        boolean isFollowedFanpage,
+        boolean isFollowedFanpage
 ) {}
 

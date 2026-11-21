@@ -65,6 +65,7 @@ class NotificationCommandServiceImplTest {
                 NotificationStatusEnum.UNREAD, "icon.png", "/events/1", 1L, Instant.now()
         );
 
+        when(notificationDtoMapper.toModel(dto)).thenReturn(saved);
         when(notificationRepository.save(any(Notification.class))).thenReturn(saved);
         when(notificationDtoMapper.toInfoDto(saved)).thenReturn(expectedDto);
 
@@ -94,6 +95,7 @@ class NotificationCommandServiceImplTest {
                 NotificationStatusEnum.UNREAD, "avatar.png", "/fanpages/100", null, fanpageId, Instant.now()
         );
 
+        when(notificationDtoMapper.toModel(dto)).thenReturn(saved);
         when(notificationRepository.save(any(Notification.class))).thenReturn(saved);
         when(notificationDtoMapper.toInfoDto(saved)).thenReturn(expectedDto);
 

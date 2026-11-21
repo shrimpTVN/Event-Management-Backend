@@ -21,4 +21,5 @@ public interface RegistrationCommandService {
     void fanpageMemberBatchAbsent(Long eventId, List<Long> studentUserIds);
 
 
+    void fanpageMemberMarkEventAsCompleted(Long eventId);
 }

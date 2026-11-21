@@ -26,6 +26,7 @@ public class Event extends BaseModel {
     private Long criteriaId;
     private Long fanpageId;
     private Long semesterId;
+    private boolean allowSelfCheck = true;
     private List<EventPoint> eventPoints = new ArrayList<>();
 
     public void validateEventDates() {

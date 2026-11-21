@@ -25,8 +25,8 @@ public class FanpageAdminProfileJpaEntity extends BaseEntityJpa {
     @Column(name = "staff_id", nullable = false, length = 20)
     private String staffId;
 
-    @Size(max = 20)
-    @Column(name = "org_name", length = 20)
+    @Size(max = 255)
+    @Column(name = "org_name", length = 255)
     private String orgName;
 
     @Size(max = 100)

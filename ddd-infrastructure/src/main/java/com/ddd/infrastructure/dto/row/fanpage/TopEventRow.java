@@ -1,14 +1,16 @@
-package com.ddd.api.dto.statistic.res;
+package com.ddd.infrastructure.dto.row.fanpage;
 
 import java.time.Instant;
 
-public record FanpageTopEventResponseDto(
+/**
+ * Internal JDBC result row for top-events aggregate queries.
+ */
+public record TopEventRow(
         Long eventId,
         String eventName,
         String bannerUrl,
         Instant dateHappen,
         int capacity,
         long registrationCount,
-        long attendeeCount,
-        double attendanceRate
+        long attendeeCount
 ) {}

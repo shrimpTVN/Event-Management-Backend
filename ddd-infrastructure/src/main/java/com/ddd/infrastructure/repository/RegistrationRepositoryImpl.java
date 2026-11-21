@@ -100,4 +100,11 @@ public class RegistrationRepositoryImpl implements RegistrationRepository {
                 .map(registrationMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public List<Registration> findAllByEvent(Long eventId) {
+        return registrationJpaRepository.findAllByEventId(eventId).stream()
+                .map(registrationMapper::toDomain)
+                .toList();
+    }
 }

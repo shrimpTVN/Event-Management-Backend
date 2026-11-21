@@ -449,7 +449,7 @@ class EventRecommendationServiceImplTest {
     private EventInfoDto createEventInfoDto(Long id, String name) {
         return new EventInfoDto(
                 id, name, "desc", "loc",
-                LocalDate.now(), LocalDate.now().plusDays(10), LocalDate.now().plusDays(15),
+                Instant.now(), Instant.now().plus(10, ChronoUnit.DAYS), Instant.now().plus(15, ChronoUnit.DAYS),
                 100, 50, 50, "url", "PUBLISHED", "TYPE", "CRIT", "PAGE", 1L, true, null, Instant.now(), List.of()
         );
     }

@@ -6,5 +6,15 @@ public record FanpageDashboardDto(
         FanpageOverviewStatisticDto overview,
         List<FanpageMonthlyTrendDto> monthlyTrends,
         List<FanpageEventDistributionDto> eventsByType,
-        List<FanpageTopEventDto> topEvents
-) {}
+        List<FanpageTopEventDto> topEvents,
+        FanpageDemographicsDto demographics
+) {
+    public FanpageDashboardDto(
+            FanpageOverviewStatisticDto overview,
+            List<FanpageMonthlyTrendDto> monthlyTrends,
+            List<FanpageEventDistributionDto> eventsByType,
+            List<FanpageTopEventDto> topEvents
+    ) {
+        this(overview, monthlyTrends, eventsByType, topEvents, null);
+    }
+}
