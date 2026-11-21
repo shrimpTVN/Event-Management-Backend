@@ -1,17 +1,16 @@
-SELECT 
-    fp.id                                                                                  AS fanpage_id,
-    fp.name                                                                                AS fanpage_name,
-    fp.avatar_url                                                                          AS avatar_url,
-    COUNT(DISTINCT e.id)                                                                   AS event_count,
-    COUNT(DISTINCT fol.user_id)                                                            AS follower_count,
-    COUNT(r.user_id) FILTER (WHERE r.status IN ('CHECKED_IN', 'CHECKED_OUT', 'COMPLETED'))  AS attendee_count
+SELECT fp.id                                                                                  AS fanpage_id,
+       fp.name                                                                                AS fanpage_name,
+       fp.avatar_url                                                                          AS avatar_url,
+       COUNT(DISTINCT e.id)                                                                   AS event_count,
+       COUNT(DISTINCT fol.user_id)                                                            AS follower_count,
+       COUNT(r.user_id) FILTER (WHERE r.status IN ('CHECKED_IN', 'CHECKED_OUT', 'COMPLETED')) AS attendee_count
 FROM fanpages fp
-LEFT JOIN events e ON fp.id = e.fanpage_id 
+         LEFT JOIN events e ON fp.id = e.fanpage_id
     AND e.is_active = true
     AND (:year::int IS NULL OR EXTRACT(YEAR FROM e.date_happen) = :year::int)
     AND (:semesterId::bigint IS NULL OR e.semester_id = :semesterId::bigint)
-LEFT JOIN registrations r ON r.event_id = e.id
-LEFT JOIN followings fol ON fol.fanpage_id = fp.id AND fol.status = 'FOLLOWING'
+         LEFT JOIN registrations r ON r.event_id = e.id
+         LEFT JOIN followings fol ON fol.fanpage_id = fp.id AND fol.fol_status = 'FOLLOWING' AND fol.is_active = true
 WHERE fp.is_active = true
   AND fp.status = 'ACTIVE'
 GROUP BY fp.id, fp.name, fp.avatar_url
