@@ -1,12 +1,16 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
+import com.ddd.api.dto.user.req.StaffProfileUpdateRequestDto;
 import com.ddd.api.dto.user.req.StudentProfileRequestDto;
 import com.ddd.api.dto.user.req.UpdateAvatarRequestDto;
+import com.ddd.api.dto.user.res.StaffProfileResponseDto;
 import com.ddd.api.dto.user.res.StudentProfileResponseDto;
 import com.ddd.api.dto.user.res.UserResponseDto;
+import com.ddd.api.mapper.StaffProfileApiMapper;
 import com.ddd.api.mapper.StudentProfileApiMapper;
 import com.ddd.api.mapper.UserApiMapper;
+import com.ddd.application.dto.user.StaffProfileSummaryDto;
 import com.ddd.application.dto.user.StudentProfileSummaryDto;
 import com.ddd.application.dto.user.UserSummaryDto;
 import com.ddd.application.service.user.UserCommandService;
@@ -28,7 +32,22 @@ public class UserController {
     private final UserQueryService userQueryService;
     private final UserCommandService userCommandService;
     private final StudentProfileApiMapper studentProfileApiMapper;
+    private final StaffProfileApiMapper staffProfileApiMapper;
     private final UserApiMapper userApiMapper;
+
+    @GetMapping("/me/staff-profile")
+    public BaseResponse<StaffProfileResponseDto> getStaffProfile() {
+        StaffProfileSummaryDto summary = userQueryService.getStaffProfile();
+        return BaseResponse.of(staffProfileApiMapper.toStaffProfileResponseDto(summary));
+    }
+
+    @PatchMapping("/me/staff-profile")
+    public BaseResponse<StaffProfileResponseDto> updateStaffProfile(
+            @RequestBody @Valid StaffProfileUpdateRequestDto requestDto) {
+        StaffProfileSummaryDto summary = userCommandService.updateStaffProfile(
+                staffProfileApiMapper.toStaffProfileUpdateDto(requestDto));
+        return BaseResponse.of(staffProfileApiMapper.toStaffProfileResponseDto(summary));
+    }
 
     @GetMapping("/search-users")
     public BaseResponse<List<UserResponseDto>> searchUsers(@RequestParam(required = false) String keyword) {

@@ -23,4 +23,6 @@ public interface UserCommandService {
     UserSummaryDto updateProfileStatusById(Long id);
 
     void outFanpageMember(Long fanpageId);
+
+    com.ddd.application.dto.user.StaffProfileSummaryDto updateStaffProfile(com.ddd.application.dto.user.StaffProfileUpdateDto updateDto);
 }
