@@ -14,6 +14,7 @@ public enum NotificationTypeEnum {
     // Events
     EVENT_CREATED,
     EVENT_CHECKOUT_AWARDED,
+    EVENT_ABSENCE_ALERT,
 
     // Generic / Fallback
     SYSTEM

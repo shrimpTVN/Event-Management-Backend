@@ -7,5 +7,6 @@ FROM events e
 WHERE e.fanpage_id = :fanpageId
   AND e.is_active = true
   AND (:year::int IS NULL OR EXTRACT(YEAR FROM e.date_happen) = :year::int)
+  AND (:semesterId::bigint IS NULL OR e.semester_id = :semesterId::bigint)
 GROUP BY TO_CHAR(e.date_happen, 'YYYY-MM')
 ORDER BY month_year ASC;

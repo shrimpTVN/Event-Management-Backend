@@ -46,12 +46,12 @@ public class FanpageStatisticQueryServiceImpl implements FanpageStatisticQuerySe
     }
 
     @Override
-    public List<FanpageMonthlyTrendDto> getMonthlyTrends(Long fanpageId, Integer year) {
+    public List<FanpageMonthlyTrendDto> getMonthlyTrends(Long fanpageId, Integer year, Long semesterId) {
         assertFanpageExists(fanpageId);
         assertCallerIsAdminOfFanpage(fanpageId);
 
         int resolvedYear = (year != null) ? year : LocalDate.now().getYear();
-        var rows = fanpageStatisticRepositoryImpl.getMonthlyTrends(fanpageId, resolvedYear);
+        var rows = fanpageStatisticRepositoryImpl.getMonthlyTrends(fanpageId, resolvedYear, semesterId);
 
         return fanpageStatisticDtoMapper.toMonthlyTrendDtoList(rows);
     }
@@ -102,7 +102,7 @@ public class FanpageStatisticQueryServiceImpl implements FanpageStatisticQuerySe
         FanpageOverviewStatisticDto overview = fanpageStatisticDtoMapper.toOverviewDto(overviewRow, totalFollowers);
 
         List<FanpageMonthlyTrendDto> trends = fanpageStatisticDtoMapper.toMonthlyTrendDtoList(
-                fanpageStatisticRepositoryImpl.getMonthlyTrends(fanpageId, resolvedYear));
+                fanpageStatisticRepositoryImpl.getMonthlyTrends(fanpageId, resolvedYear, semesterId));
 
         List<FanpageEventDistributionDto> distribution = fanpageStatisticDtoMapper.toDistributionDtoList(
                 fanpageStatisticRepositoryImpl.getEventDistribution(fanpageId), overviewRow.totalEvents());
@@ -113,6 +113,25 @@ public class FanpageStatisticQueryServiceImpl implements FanpageStatisticQuerySe
         FanpageDemographicsDto demographics = getDemographics(fanpageId, resolvedYear, semesterId);
 
         return fanpageStatisticDtoMapper.toDashboardDto(overview, trends, distribution, topEvents, demographics);
+    }
+
+    @Override
+    public List<FanpageMonthlyAbsentRateDto> getMonthlyAbsentRate(Long fanpageId, Integer year, Long semesterId) {
+        assertFanpageExists(fanpageId);
+        assertCallerIsAdminOfFanpage(fanpageId);
+
+        var rows = fanpageStatisticRepositoryImpl.getMonthlyAbsentRate(fanpageId, year, semesterId);
+        return fanpageStatisticDtoMapper.toMonthlyAbsentRateDtoList(rows);
+    }
+
+    @Override
+    public List<FanpageStudentAbsenceDto> getStudentAbsenceCounts(Long fanpageId, Long semesterId, Integer minAbsences) {
+        assertFanpageExists(fanpageId);
+        assertCallerIsAdminOfFanpage(fanpageId);
+
+        int resolvedMinAbsences = (minAbsences != null && minAbsences > 0) ? minAbsences : 3;
+        var rows = fanpageStatisticRepositoryImpl.getStudentAbsenceCounts(fanpageId, semesterId, resolvedMinAbsences);
+        return fanpageStatisticDtoMapper.toStudentAbsenceDtoList(rows);
     }
 
     private void assertFanpageExists(Long fanpageId) {

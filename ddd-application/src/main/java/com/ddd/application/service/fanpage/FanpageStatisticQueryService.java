@@ -6,7 +6,10 @@ import java.util.List;
 
 public interface FanpageStatisticQueryService {
     FanpageOverviewStatisticDto getOverview(Long fanpageId);
-    List<FanpageMonthlyTrendDto> getMonthlyTrends(Long fanpageId, Integer year);
+    List<FanpageMonthlyTrendDto> getMonthlyTrends(Long fanpageId, Integer year, Long semesterId);
+    default List<FanpageMonthlyTrendDto> getMonthlyTrends(Long fanpageId, Integer year) {
+        return getMonthlyTrends(fanpageId, year, null);
+    }
     List<FanpageEventDistributionDto> getEventDistribution(Long fanpageId);
     List<FanpageTopEventDto> getTopEvents(Long fanpageId, int limit);
     FanpageDemographicsDto getDemographics(Long fanpageId, Integer year, Long semesterId);
@@ -14,4 +17,6 @@ public interface FanpageStatisticQueryService {
     default FanpageDashboardDto getDashboard(Long fanpageId, Integer year) {
         return getDashboard(fanpageId, year, null);
     }
+    List<FanpageMonthlyAbsentRateDto> getMonthlyAbsentRate(Long fanpageId, Integer year, Long semesterId);
+    List<FanpageStudentAbsenceDto> getStudentAbsenceCounts(Long fanpageId, Long semesterId, Integer minAbsences);
 }
