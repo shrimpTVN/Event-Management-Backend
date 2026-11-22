@@ -68,5 +68,46 @@ class GeminiEventRecommendationAdapterTest {
         assertTrue(res.aiExplanation().contains("2 ngày tới"));
         assertTrue(res.aiExplanation().contains("15 slot"));
     }
+
+    @Test
+    @DisplayName("Should support context with named criteria and point categories")
+    void generateExplanations_withNamedContext_returnsFallbackExplanation() {
+        GeminiEventRecommendationAdapter adapter = new GeminiEventRecommendationAdapter(
+                "", "gemini-1.5-flash", objectMapper
+        );
+
+        StudentRecommendationContext context = new StudentRecommendationContext(
+                1L,
+                "sv@test.com",
+                Map.of(1L, 10),
+                Set.of(2L),
+                Map.of("Ý thức tham gia học tập", 10),
+                List.of("Tình nguyện tốt")
+        );
+
+        CandidateEventRecommendation candidate = new CandidateEventRecommendation(
+                202L,
+                "Chiến dịch Tiếp sức Mùa thi",
+                "Mô tả chiến dịch",
+                5,
+                1,
+                15,
+                true,
+                "Tình nguyện tốt",
+                90.0,
+                true,
+                60.0
+        );
+
+        List<AiRecommendationResult> results = adapter.generateExplanations(context, List.of(candidate));
+
+        assertNotNull(results);
+        assertEquals(1, results.size());
+        AiRecommendationResult res = results.get(0);
+        assertEquals(202L, res.eventId());
+        assertTrue(res.aiExplanation().contains("15 điểm rèn luyện"));
+        assertTrue(res.aiExplanation().contains("Tình nguyện tốt"));
+        assertTrue(res.aiExplanation().contains("CLB/Đơn vị bạn đang theo dõi"));
+    }
 }
 

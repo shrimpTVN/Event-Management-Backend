@@ -80,7 +80,8 @@ public class EventRecommendationServiceImpl implements EventRecommendationServic
 
         // 4. Fetch student's achieved SV5T criteria and calculate missing criteria for the active academic year
         Set<Long> completedCriteriaIds = fetchCompletedCriteriaIds(user.getId(), activeAcademicYear);
-        Set<Long> allActiveCriteriaIds = criteriaJpaRepository.findAllByIsActive(true).stream()
+        List<CriteriaJpaEntity> activeCriteriaList = criteriaJpaRepository.findAllByIsActive(true);
+        Set<Long> allActiveCriteriaIds = activeCriteriaList.stream()
                 .map(CriteriaJpaEntity::getId)
                 .collect(Collectors.toSet());
         Set<Long> missingCriteriaIds = new HashSet<>(allActiveCriteriaIds);
@@ -301,11 +302,31 @@ public class EventRecommendationServiceImpl implements EventRecommendationServic
                 ))
                 .toList();
 
+        // Build human-readable names for AI context
+        Map<Long, String> categoryNameMap = allCategories.stream()
+                .filter(c -> c.getId() != null && c.getName() != null)
+                .collect(Collectors.toMap(PointCategoryJpaEntity::getId, PointCategoryJpaEntity::getName, (a, b) -> a));
+
+        Map<String, Integer> missingPointGapsNamed = new LinkedHashMap<>();
+        missingPointGaps.forEach((catId, gap) -> {
+            if (gap != null && gap > 0) {
+                missingPointGapsNamed.put(categoryNameMap.getOrDefault(catId, "Mục " + catId), gap);
+            }
+        });
+
+        List<String> missingCriteriaNames = activeCriteriaList.stream()
+                .filter(c -> missingCriteriaIds.contains(c.getId()))
+                .map(CriteriaJpaEntity::getName)
+                .filter(Objects::nonNull)
+                .toList();
+
         StudentRecommendationContext aiContext = new StudentRecommendationContext(
                 user.getId(),
                 email,
                 missingPointGaps,
-                missingCriteriaIds
+                missingCriteriaIds,
+                missingPointGapsNamed,
+                missingCriteriaNames
         );
 
         // Safe Resilient Fallback: Wrap AI call with try-catch

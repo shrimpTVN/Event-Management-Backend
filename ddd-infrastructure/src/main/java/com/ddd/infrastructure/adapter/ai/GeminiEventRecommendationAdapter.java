@@ -84,12 +84,54 @@ public class GeminiEventRecommendationAdapter implements EventRecommendationAiPo
 
         Map<String, Object> textPart = Map.of("text", prompt);
         Map<String, Object> contentObj = Map.of("role", "user", "parts", List.of(textPart));
+
+        Map<String, Object> systemInstructionObj = Map.of(
+                "parts", List.of(Map.of("text", """
+                        Bạn là Cố vấn học tập AI chuyên nghiệp và tận tâm tại Trường Đại học.
+                        Nhiệm vụ của bạn là phân tích danh sách các sự kiện sắp diễn ra và đưa ra đánh giá điểm phù hợp (aiScore: 0.0 - 100.0) cùng lời giải thích (aiExplanation) cá nhân hóa cho sinh viên nhằm tối ưu hóa Điểm Rèn Luyện (ĐRL) và đạt các Tiêu chí Sinh viên 5 Tốt (SV5T).
+
+                        Quy tắc đánh giá và phản hồi:
+                        1. aiScore (0.0 đến 100.0):
+                           - 85 - 100: Rất ưu tiên (Bù đắp điểm ĐRL còn thiếu ở các mục trọng điểm HOẶC đáp ứng tiêu chí SV5T còn nợ).
+                           - 70 - 84: Phù hợp cao (Có điểm ĐRL tốt, thuộc CLB sinh viên theo dõi, hoặc sự kiện khẩn cấp sắp hết hạn/hết slot).
+                           - 50 - 69: Phù hợp vừa (Phù hợp với sở thích/lịch sử tham gia).
+                           - Dưới 50: Ít phù hợp hơn so với các sự kiện khác.
+                        2. aiExplanation:
+                           - Viết bằng tiếng Việt tự nhiên, súc tích (1-2 câu ngắn), xưng hô "Bạn".
+                           - Nêu RÕ RÀNG lý do: nêu cụ thể tên danh mục ĐRL được cộng (nếu có), số điểm nhận được, tên tiêu chí SV5T cụ thể mà sự kiện đáp ứng (nếu có).
+                           - Nếu sự kiện diễn ra trong 3 ngày tới hoặc còn ít slot, hãy nhắc nhẹ để sinh viên không bỏ lỡ.
+                           - Không lặp lại cùng một khuôn mẫu cho tất cả các sự kiện.
+                        """))
+        );
+
+        // Define JSON schema for structured outputs
+        Map<String, Object> eventIdProp = Map.of("type", "INTEGER");
+        Map<String, Object> aiScoreProp = Map.of("type", "NUMBER", "description", "Điểm đánh giá từ 0.0 đến 100.0");
+        Map<String, Object> explanationProp = Map.of("type", "STRING", "description", "Lời giải thích 1-2 câu tiếng Việt");
+
+        Map<String, Object> itemSchema = Map.of(
+                "type", "OBJECT",
+                "properties", Map.of(
+                        "eventId", eventIdProp,
+                        "aiScore", aiScoreProp,
+                        "aiExplanation", explanationProp
+                ),
+                "required", List.of("eventId", "aiScore", "aiExplanation")
+        );
+
+        Map<String, Object> responseSchema = Map.of(
+                "type", "ARRAY",
+                "items", itemSchema
+        );
+
         Map<String, Object> generationConfig = Map.of(
                 "responseMimeType", "application/json",
+                "responseSchema", responseSchema,
                 "temperature", 0.3
         );
 
         Map<String, Object> requestPayload = Map.of(
+                "systemInstruction", systemInstructionObj,
                 "contents", List.of(contentObj),
                 "generationConfig", generationConfig
         );
@@ -110,32 +152,33 @@ public class GeminiEventRecommendationAdapter implements EventRecommendationAiPo
 
     private String buildPrompt(StudentRecommendationContext context, List<CandidateEventRecommendation> candidates) throws Exception {
         String candidatesJson = objectMapper.writeValueAsString(candidates);
+
+        String pointGapsDisplay = (context.missingPointGapsNamed() != null && !context.missingPointGapsNamed().isEmpty())
+                ? context.missingPointGapsNamed().toString()
+                : (context.missingPointGaps() != null && !context.missingPointGaps().isEmpty()
+                    ? context.missingPointGaps().toString()
+                    : "Không còn thiếu mục nào");
+
+        String criteriaDisplay = (context.missingCriteriaNames() != null && !context.missingCriteriaNames().isEmpty())
+                ? String.join(", ", context.missingCriteriaNames())
+                : (context.missingCriteriaIds() != null && !context.missingCriteriaIds().isEmpty()
+                    ? context.missingCriteriaIds().toString()
+                    : "Đã hoàn thành toàn bộ");
+
         return """
-                Bạn là trợ lý AI thông minh phân tích và gợi ý sự kiện cho sinh viên đại học.
-                Dưới đây là thông tin sinh viên và danh sách các sự kiện ứng viên đã được sàng lọc:
-                
                 [THÔNG TIN SINH VIÊN]
                 - Email: %s
-                - Các danh mục điểm rèn luyện còn thiếu (categoryId -> số điểm còn thiếu): %s
-                - Các tiêu chí Sinh viên 5 tốt chưa hoàn thành (criteriaIds): %s
-                
-                [DANH SÁCH SỰ KIỆN ỨNG VIÊN]
+                - Các mục Điểm Rèn Luyện (ĐRL) còn thiếu: %s
+                - Các Tiêu chí Sinh viên 5 Tốt (SV5T) chưa hoàn thành: %s
+
+                [DANH SÁCH SỰ KIỆN ỨNG VIÊN ĐÃ ĐƯỢC CHỌN LỌC]
                 %s
-                
-                [YÊU CẦU ĐẦU RA]
-                Trả về DUY NHẤT một mảng JSON theo cấu trúc:
-                [
-                  {
-                    "eventId": <Long>,
-                    "aiScore": <Double từ 0.0 đến 100.0>,
-                    "aiExplanation": "<Lời giải thích ngắn gọn, súc tích 1-2 câu tiếng Việt chỉ rõ vì sao sự kiện phù hợp với sinh viên (nhấn mạnh điểm rèn luyện được bù, tiêu chí SV5T, CLB theo dõi, hoặc số slot/thời gian khẩn cấp)>"
-                  }
-                ]
-                Không trả về markdown backticks hay văn bản phụ.
+
+                Hãy chấm điểm (aiScore) và tạo lời giải thích (aiExplanation) cá nhân hóa cho từng sự kiện trên.
                 """.formatted(
                 context.email(),
-                context.missingPointGaps(),
-                context.missingCriteriaIds(),
+                pointGapsDisplay,
+                criteriaDisplay,
                 candidatesJson
         );
     }
@@ -239,4 +282,3 @@ public class GeminiEventRecommendationAdapter implements EventRecommendationAiPo
         return new AiRecommendationResult(c.eventId(), c.baseScore(), explanation.toString().trim());
     }
 }
-
