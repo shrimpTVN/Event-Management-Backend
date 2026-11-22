@@ -47,10 +47,17 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
 
     @Override
     public List<FanpageMemberDto> getMembersOfFanpage(Long fanpageId) {
-        if (fanpageRepository.findByIdAndIsActive(fanpageId, true).isEmpty()) {
+        boolean isAdmin = securityContextPort.hasRole("ADMIN");
+        var fanpageOpt = isAdmin
+                ? fanpageRepository.findById(fanpageId)
+                : fanpageRepository.findByIdAndIsActive(fanpageId, true);
+
+        if (fanpageOpt.isEmpty()) {
             throw new ResourceNotFoundException("Fanpage not found with id: " + fanpageId);
         }
-        List<FanpageMemberJpaEntity> members = fanpageMemberJpaRepository.findAllByFanpageIdAndIsActive(fanpageId, true);
+        List<FanpageMemberJpaEntity> members = isAdmin
+                ? fanpageMemberJpaRepository.findAllByFanpageId(fanpageId)
+                : fanpageMemberJpaRepository.findAllByFanpageIdAndIsActive(fanpageId, true);
         return members.stream().map(fanpageMemberDtoMapper::toDto).toList();
     }
 

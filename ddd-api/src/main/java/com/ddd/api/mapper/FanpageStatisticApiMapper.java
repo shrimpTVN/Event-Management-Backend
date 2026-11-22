@@ -1,5 +1,6 @@
 package com.ddd.api.mapper;
 
+import com.ddd.api.dto.statistic.req.fanpage.AlertAbsentStudentsRequestDto;
 import com.ddd.api.dto.statistic.res.fanpage.*;
 import com.ddd.application.dto.statistic.*;
 import org.mapstruct.Mapper;
@@ -15,6 +16,14 @@ public interface FanpageStatisticApiMapper {
     FanpageDashboardResponseDto toResponseDto(FanpageDashboardDto dto);
     DemographicItemResponseDto toResponseDto(FanpageDemographicItemDto dto);
     FanpageDemographicsResponseDto toResponseDto(FanpageDemographicsDto dto);
+
+    FanpageMonthlyAbsentRateResponseDto toResponseDto(FanpageMonthlyAbsentRateDto dto);
+    List<FanpageMonthlyAbsentRateResponseDto> toMonthlyAbsentRateResponseList(List<FanpageMonthlyAbsentRateDto> dtos);
+
+    FanpageStudentAbsenceResponseDto toResponseDto(FanpageStudentAbsenceDto dto);
+    List<FanpageStudentAbsenceResponseDto> toStudentAbsenceResponseList(List<FanpageStudentAbsenceDto> dtos);
+
+    AlertAbsentStudentsDto toCommandDto(AlertAbsentStudentsRequestDto requestDto);
 
     List<FanpageMonthlyTrendResponseDto> toMonthlyTrendResponseList(List<FanpageMonthlyTrendDto> dtos);
     List<FanpageEventDistributionResponseDto> toDistributionResponseList(List<FanpageEventDistributionDto> dtos);

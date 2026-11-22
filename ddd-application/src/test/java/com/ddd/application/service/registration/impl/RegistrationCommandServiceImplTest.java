@@ -4,6 +4,7 @@ import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.RegistrationStatusEnum;
 import com.ddd.domain.exception.EventAttendanceException;
 import com.ddd.domain.exception.EventRegistrationException;
+import com.ddd.domain.exception.StudentProfileRequiredException;
 import com.ddd.domain.model.Event;
 import com.ddd.domain.model.Registration;
 import com.ddd.domain.model.StudentProfile;
@@ -14,6 +15,7 @@ import com.ddd.application.service.criteriaprogress.StudentCriteriaTransactionCo
 import com.ddd.application.service.semesterpoint.StudentSemesterPointCommandService;
 import com.ddd.application.mapper.RegistrationDtoMapper;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -69,6 +71,9 @@ class RegistrationCommandServiceImplTest {
 
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
+
+    @Mock
+    private StudentProfileRepository studentProfileRepository;
 
     @InjectMocks
     private RegistrationCommandServiceImpl registrationCommandService;
@@ -341,5 +346,75 @@ class RegistrationCommandServiceImplTest {
                 registrationCommandService.registerEvent(eventId));
         assertTrue(ex.getMessage().contains("only open to students from the designated school"));
         verify(registrationRepository, never()).save(any(Registration.class));
+    @Nested
+    @DisplayName("Event Registration StudentProfile Gating Tests")
+    class RegisterEventGateTests {
+
+        @Test
+        @DisplayName("shouldThrowStudentProfileRequiredExceptionWhenProfileDoesNotExist")
+        void shouldThrowStudentProfileRequiredExceptionWhenProfileDoesNotExist() {
+            Long eventId = 10L;
+            Event event = createTestEvent(eventId, 20L);
+            event.setDateOpen(Instant.now().minus(1, ChronoUnit.DAYS));
+            event.setDateClose(Instant.now().plus(1, ChronoUnit.DAYS));
+
+            User user = new User();
+            user.setId(101L);
+
+            when(eventRepository.findById(eventId)).thenReturn(event);
+            when(securityContextPort.getCurrentUserId()).thenReturn(101L);
+            when(userRepository.findById(101L)).thenReturn(Optional.of(user));
+            when(studentProfileRepository.findByUserId(101L)).thenReturn(Optional.empty());
+
+            assertThrows(StudentProfileRequiredException.class, () ->
+                    registrationCommandService.registerEvent(eventId));
+            verify(registrationRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("shouldThrowStudentProfileRequiredExceptionWhenProfileIsIncomplete")
+        void shouldThrowStudentProfileRequiredExceptionWhenProfileIsIncomplete() {
+            Long eventId = 10L;
+            Event event = createTestEvent(eventId, 20L);
+            event.setDateOpen(Instant.now().minus(1, ChronoUnit.DAYS));
+            event.setDateClose(Instant.now().plus(1, ChronoUnit.DAYS));
+
+            User user = new User();
+            user.setId(101L);
+
+            StudentProfile incompleteProfile = new StudentProfile(null, 19, 1L, 101L);
+
+            when(eventRepository.findById(eventId)).thenReturn(event);
+            when(securityContextPort.getCurrentUserId()).thenReturn(101L);
+            when(userRepository.findById(101L)).thenReturn(Optional.of(user));
+            when(studentProfileRepository.findByUserId(101L)).thenReturn(Optional.of(incompleteProfile));
+
+            assertThrows(StudentProfileRequiredException.class, () ->
+                    registrationCommandService.registerEvent(eventId));
+            verify(registrationRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("shouldProceedWithRegistrationWhenStudentProfileIsComplete")
+        void shouldProceedWithRegistrationWhenStudentProfileIsComplete() {
+            Long eventId = 10L;
+            Event event = createTestEvent(eventId, 20L);
+            event.setDateOpen(Instant.now().minus(1, ChronoUnit.DAYS));
+            event.setDateClose(Instant.now().plus(1, ChronoUnit.DAYS));
+
+            User user = new User();
+            user.setId(101L);
+
+            StudentProfile completeProfile = new StudentProfile("SE12345", 19, 1L, 101L);
+
+            when(eventRepository.findById(eventId)).thenReturn(event);
+            when(securityContextPort.getCurrentUserId()).thenReturn(101L);
+            when(userRepository.findById(101L)).thenReturn(Optional.of(user));
+            when(studentProfileRepository.findByUserId(101L)).thenReturn(Optional.of(completeProfile));
+            when(registrationRepository.isRegistered(101L, eventId)).thenReturn(false);
+
+            assertDoesNotThrow(() -> registrationCommandService.registerEvent(eventId));
+            verify(registrationRepository).save(any(Registration.class));
+        }
     }
 }

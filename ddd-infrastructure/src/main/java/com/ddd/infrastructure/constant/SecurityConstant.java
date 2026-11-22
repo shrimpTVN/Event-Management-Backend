@@ -9,7 +9,9 @@ public class SecurityConstant {
             "/api/fanpages/admin/**",
             "/api/point-categories/admin/**",
             "/api/events/admin/**",
-            "/api/criterias/admin/**"
+            "/api/criterias/admin/**",
+            "/admin/statistics/**",
+            "/api/admin/statistics/**"
     };
 
     public static final String[] FANPAGE_ADMIN_ENDPOINTS = {

@@ -17,6 +17,8 @@ public interface FanpageCommandService {
 
     void unbanFanpage(Long fanpageId);
 
+    void rejectFanpage(Long fanpageId, String reason);
+
     void updateFanpageByFanpageAdmin(Long fanpageId, FanpageAdminUpdateDto updateDto, String email);
 
     void updateFanpageByAdmin(Long fanpageId, FanpageSystemAdminUpdateDto updateDto);

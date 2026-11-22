@@ -1,9 +1,11 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
+import com.ddd.api.dto.statistic.req.fanpage.AlertAbsentStudentsRequestDto;
 import com.ddd.api.dto.statistic.res.fanpage.*;
 import com.ddd.api.mapper.FanpageStatisticApiMapper;
 import com.ddd.application.dto.statistic.*;
+import com.ddd.application.service.fanpage.FanpageStatisticCommandService;
 import com.ddd.application.service.fanpage.FanpageStatisticQueryService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,9 @@ public class FanpageStatisticControllerTest {
 
     @Mock
     private FanpageStatisticQueryService fanpageStatisticQueryService;
+
+    @Mock
+    private FanpageStatisticCommandService fanpageStatisticCommandService;
 
     @Mock
     private FanpageStatisticApiMapper fanpageStatisticApiMapper;
@@ -55,10 +60,10 @@ public class FanpageStatisticControllerTest {
         List<FanpageMonthlyTrendDto> appList = List.of(new FanpageMonthlyTrendDto("2026-08", 2, 50, 40));
         List<FanpageMonthlyTrendResponseDto> resList = List.of(new FanpageMonthlyTrendResponseDto("2026-08", 2, 50, 40));
 
-        when(fanpageStatisticQueryService.getMonthlyTrends(fanpageId, 2026)).thenReturn(appList);
+        when(fanpageStatisticQueryService.getMonthlyTrends(fanpageId, 2026, 5L)).thenReturn(appList);
         when(fanpageStatisticApiMapper.toMonthlyTrendResponseList(appList)).thenReturn(resList);
 
-        BaseResponse<List<FanpageMonthlyTrendResponseDto>> response = controller.getMonthlyTrends(fanpageId, 2026);
+        BaseResponse<List<FanpageMonthlyTrendResponseDto>> response = controller.getMonthlyTrends(fanpageId, 2026, 5L);
 
         assertNotNull(response);
         assertEquals(1, response.data().size());
@@ -118,5 +123,60 @@ public class FanpageStatisticControllerTest {
         assertNotNull(response);
         assertEquals(BaseResponse.SUCCESS_REQUEST_MESSAGE, response.message());
         assertEquals(resDto, response.data());
+    }
+
+    @Test
+    @DisplayName("getMonthlyAbsentRate should return wrapped monthly absent rate list")
+    void getMonthlyAbsentRate() {
+        List<FanpageMonthlyAbsentRateDto> appList = List.of(new FanpageMonthlyAbsentRateDto(9, "Sep", 50, 10, 20.0));
+        List<FanpageMonthlyAbsentRateResponseDto> resList = List.of(new FanpageMonthlyAbsentRateResponseDto(9, "Sep", 50, 10, 20.0));
+
+        when(fanpageStatisticQueryService.getMonthlyAbsentRate(fanpageId, 2026, 5L)).thenReturn(appList);
+        when(fanpageStatisticApiMapper.toMonthlyAbsentRateResponseList(appList)).thenReturn(resList);
+
+        BaseResponse<List<FanpageMonthlyAbsentRateResponseDto>> response =
+                controller.getMonthlyAbsentRate(fanpageId, 2026, 5L);
+
+        assertNotNull(response);
+        assertEquals(1, response.data().size());
+        assertEquals(9, response.data().get(0).month());
+        assertEquals(20.0, response.data().get(0).absentRate());
+    }
+
+    @Test
+    @DisplayName("getStudentAbsenceCounts should return wrapped student absence list")
+    void getStudentAbsenceCounts() {
+        List<FanpageStudentAbsenceDto> appList = List.of(
+                new FanpageStudentAbsenceDto("SE170123", 42L, "Nguyen Van A", "a@fpt.edu.vn", "avatar.png", 4)
+        );
+        List<FanpageStudentAbsenceResponseDto> resList = List.of(
+                new FanpageStudentAbsenceResponseDto("SE170123", 42L, "Nguyen Van A", "a@fpt.edu.vn", "avatar.png", 4)
+        );
+
+        when(fanpageStatisticQueryService.getStudentAbsenceCounts(fanpageId, 5L, 3)).thenReturn(appList);
+        when(fanpageStatisticApiMapper.toStudentAbsenceResponseList(appList)).thenReturn(resList);
+
+        BaseResponse<List<FanpageStudentAbsenceResponseDto>> response =
+                controller.getStudentAbsenceCounts(fanpageId, 5L, 3);
+
+        assertNotNull(response);
+        assertEquals(1, response.data().size());
+        assertEquals("SE170123", response.data().get(0).studentId());
+        assertEquals(4, response.data().get(0).absenceCount());
+    }
+
+    @Test
+    @DisplayName("alertAbsentStudents should delegate to command service and return BaseResponse.ok")
+    void alertAbsentStudents() {
+        AlertAbsentStudentsRequestDto requestDto = new AlertAbsentStudentsRequestDto(5L, List.of(42L), "Warning");
+        AlertAbsentStudentsDto commandDto = new AlertAbsentStudentsDto(5L, List.of(42L), "Warning");
+
+        when(fanpageStatisticApiMapper.toCommandDto(requestDto)).thenReturn(commandDto);
+
+        BaseResponse<Void> response = controller.alertAbsentStudents(fanpageId, requestDto);
+
+        assertNotNull(response);
+        assertEquals(BaseResponse.SUCCESS_REQUEST_MESSAGE, response.message());
+        verify(fanpageStatisticCommandService).alertAbsentStudents(fanpageId, commandDto);
     }
 }

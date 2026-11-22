@@ -23,6 +23,12 @@ public record EventUpdateRequestDto(
         @Positive Long criteriaId,
         @NotNull @Positive Long semesterId,
         @Positive Long schoolId,
+        Boolean allowSelfCheck,
         @NotNull List<EventPointRequestDto> eventPoints
 ) {
+    public EventUpdateRequestDto {
+        if (allowSelfCheck == null) {
+            allowSelfCheck = true;
+        }
+    }
 }

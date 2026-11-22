@@ -121,12 +121,15 @@ class StoredEventQueryServiceImplTest {
                 50,
                 "banner",
                 "ACTIVE",
+                1L,
                 "Type",
+                2L,
                 "Criteria",
                 "Fanpage",
                 1L,
                 1L,
                 "School Name",
+                true,
                 true,
                 null,
                 null,
@@ -145,6 +148,8 @@ class StoredEventQueryServiceImplTest {
         assertEquals(1, result.getTotalElements());
         assertEquals(100L, result.getContent().get(0).id());
         assertEquals("Coding Contest", result.getContent().get(0).name());
+        assertEquals(1L, result.getContent().get(0).eventTypeId());
+        assertEquals(2L, result.getContent().get(0).criteriaId());
     }
 
     @Test

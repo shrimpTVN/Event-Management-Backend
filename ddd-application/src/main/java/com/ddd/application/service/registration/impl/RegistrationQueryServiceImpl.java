@@ -30,8 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Service
 @Transactional(readOnly = true)
@@ -42,6 +41,7 @@ public class RegistrationQueryServiceImpl implements RegistrationQueryService {
     private final FanpageMemberJpaRepository fanpageMemberJpaRepository;
     private final EventJpaRepository eventJpaRepository;
     private final SecurityContextPort securityContextPort;
+    private final UserRepository userRepository;
 
     @Override
     public Page<AttendeeInfoDto> getAttendeesOfEvent(Long fanpageId, Long eventId,
@@ -63,19 +63,60 @@ public class RegistrationQueryServiceImpl implements RegistrationQueryService {
         verifyFanpageMember(fanpageId, eventId);
         Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
         Page<RegistrationJpaEntity> registrations = registrationJpaRepository.findAllByEventId(eventId, pageable);
-        return registrations.map(registrationDtoMapper::toStudentRegistrationInfoDto);
+        Set<Long> checkerIds = new HashSet<>();
+        for (RegistrationJpaEntity reg : registrations) {
+            if (reg.getCheckInBy() != null) checkerIds.add(reg.getCheckInBy());
+            if (reg.getCheckOutBy() != null) checkerIds.add(reg.getCheckOutBy());
+        }
+
+        Map<Long, String> checkerNameMap = new HashMap<>();
+        if (!checkerIds.isEmpty()) {
+            List<User> checkers = userRepository.findAllByIds(checkerIds);
+            for (User checker : checkers) {
+                checkerNameMap.put(checker.getId(), formatFullName(checker.getFirstName(), checker.getLastName(), checker.getEmail()));
+            }
+        }
+
+        return registrations.map(reg -> {
+            String inName = reg.getCheckInBy() != null ? checkerNameMap.get(reg.getCheckInBy()) : null;
+            String outName = reg.getCheckOutBy() != null ? checkerNameMap.get(reg.getCheckOutBy()) : null;
+            return registrationDtoMapper.toStudentRegistrationInfoDto(reg, inName, outName);
+        });
+    }
+
+    private String formatFullName(String firstName, String lastName, String email) {
+        String first = firstName != null ? firstName.trim() : "";
+        String last = lastName != null ? lastName.trim() : "";
+        String fullName = (first + " " + last).trim();
+        return fullName.isEmpty() ? email : fullName;
     }
 
     @Override
     public Page<RegistrationInfoDto> getHistory(int page, int size) {
         Long userId = securityContextPort.getCurrentUserId();
-        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
-        Pageable pageable = PageRequest.of(page, size, sort);
+        Pageable pageable = ServiceUtil.createPageable(page, size, "createdAt", "desc");
 
         Page<RegistrationJpaEntity> entityPage = registrationJpaRepository.findAllByUserId(userId, pageable);
 
-        return entityPage.map(registrationDtoMapper::toInfoDto);
+        Set<Long> checkerIds = new HashSet<>();
+        for (RegistrationJpaEntity reg : entityPage) {
+            if (reg.getCheckInBy() != null) checkerIds.add(reg.getCheckInBy());
+            if (reg.getCheckOutBy() != null) checkerIds.add(reg.getCheckOutBy());
+        }
 
+        Map<Long, String> checkerNameMap = new HashMap<>();
+        if (!checkerIds.isEmpty()) {
+            List<User> checkers = userRepository.findAllByIds(checkerIds);
+            for (User checker : checkers) {
+                checkerNameMap.put(checker.getId(), formatFullName(checker.getFirstName(), checker.getLastName(), checker.getEmail()));
+            }
+        }
+
+        return entityPage.map(reg -> {
+            String inName = reg.getCheckInBy() != null ? checkerNameMap.get(reg.getCheckInBy()) : null;
+            String outName = reg.getCheckOutBy() != null ? checkerNameMap.get(reg.getCheckOutBy()) : null;
+            return registrationDtoMapper.toInfoDto(reg, inName, outName);
+        });
     }
 
     @Override

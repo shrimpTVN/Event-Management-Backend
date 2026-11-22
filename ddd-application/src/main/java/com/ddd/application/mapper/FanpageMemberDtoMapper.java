@@ -13,6 +13,8 @@ public interface FanpageMemberDtoMapper {
     @Mapping(source = "entity.user.firstName", target = "firstName")
     @Mapping(source = "entity.user.lastName", target = "lastName")
     @Mapping(source = "entity.user.avatarUrl", target = "avatarUrl")
+    @Mapping(source = "entity.user.fanpageAdminProfile.staffId", target = "staffId")
+    @Mapping(source = "entity.user.fanpageAdminProfile.phoneNumber", target = "phoneNumber")
     FanpageMemberDto toDto(FanpageMemberJpaEntity entity);
 
     FanpageMemberJpaEntity toEntity(FanpageMemberDto dto);

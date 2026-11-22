@@ -44,7 +44,9 @@ public interface EventDtoMapper {
     @Mapping(target = "updatedBy", ignore = true)
     void updateEventFromDto(@MappingTarget Event event, EventUpdateDto dto);
 
+    @Mapping(target = "eventTypeId", source = "eventType.id")
     @Mapping(target = "eventTypeName", source = "eventType.name")
+    @Mapping(target = "criteriaId", source = "criteria.id")
     @Mapping(target = "criteriaName", source = "criteria.name")
     @Mapping(target = "fanpageName", source = "fanpage.name")
     @Mapping(target = "fanpageId", source = "fanpage.id")
