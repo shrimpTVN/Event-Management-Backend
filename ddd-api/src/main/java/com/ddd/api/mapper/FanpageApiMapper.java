@@ -12,6 +12,7 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface FanpageApiMapper {
     FanpageResponseDto toResponseDto(FanpageInfoDto fanpageInfoDto);
+
     ManagedFanpageResponseDto toResponseDto(ManagedFanpageInfoDto managedFanpageInfoDto);
 
     FanpageRegisterDto toRegisterDto(FanpageRegisterRequestDto requestDto);

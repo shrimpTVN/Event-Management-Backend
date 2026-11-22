@@ -10,6 +10,7 @@ public record FanpageRegisterDto(
         @NotNull @NotBlank String orgType,
         @NotNull @NotBlank String orgName,
         @NotNull @NotBlank String parentOrg,
+        @NotNull @NotBlank String evidenceUrl,
         String helpContact,
         String helpPhone
 ) {

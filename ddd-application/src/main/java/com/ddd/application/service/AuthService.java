@@ -27,6 +27,8 @@ public interface AuthService {
 
     void changePassword(@NotNull @Size(min=6) String oldPassword, @NotNull @Size(min=6) String newPassword, String email);
 
+    String createPassword(@NotNull @Size(min=6) String newPassword);
+
     TokenRefreshResultDto refreshToken(String rawRefreshToken);
     void logout(String rawRefreshToken);
 }

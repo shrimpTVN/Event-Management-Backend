@@ -154,6 +154,7 @@ CREATE TABLE fanpages
     parent_org   VARCHAR(255) NOT NULL,
     help_contact VARCHAR(255),
     help_phone   VARCHAR(20),
+    evidence_url TEXT,
     is_active    BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_by   BIGINT,

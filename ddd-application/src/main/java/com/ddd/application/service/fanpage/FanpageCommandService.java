@@ -5,7 +5,7 @@ import com.ddd.application.dto.fanpage.FanpageRegisterDto;
 import com.ddd.application.dto.fanpage.FanpageSystemAdminUpdateDto;
 
 public interface FanpageCommandService {
-    void createFanpage(FanpageRegisterDto registerDto, String email);
+    void createFanpage(FanpageRegisterDto registerDto);
 
     void acceptFanpage(Long fanpageId);
 

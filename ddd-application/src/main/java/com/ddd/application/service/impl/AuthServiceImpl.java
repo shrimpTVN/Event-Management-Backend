@@ -15,8 +15,10 @@ import com.ddd.application.service.AuthService;
 import com.ddd.domain.enums.RoleEnum;
 import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.ResourceNotFoundException;
+import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.RefreshToken;
 import com.ddd.domain.model.User;
+import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.RefreshTokenRepository;
 import com.ddd.domain.repository.UserRepository;
 import com.ddd.infrastructure.config.security.custom.UserDetailsCustom;
@@ -38,6 +40,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class AuthServiceImpl implements AuthService {
 
     private final AuthenticationManager authenticationManager;
@@ -50,6 +53,7 @@ public class AuthServiceImpl implements AuthService {
     private final TokenHashUtil tokenHashUtil;
     private final UserRepository userRepository;
     private final OtpCommandService otpCommandService;
+    private final SecurityContextPort securityContextPort;
 
     private String createAndSaveRefreshToken(Long userId) {
         String rawToken = UUID.randomUUID().toString();
@@ -68,7 +72,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
     public LoginResult login(String email, String password) {
         var resultAuthentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email, password));
@@ -95,7 +98,6 @@ public class AuthServiceImpl implements AuthService {
         return new LoginResult(loginDto, jwtToken, rawRefreshToken);
     }
 
-    @Transactional
     @Override
     public LoginResult loginWithGoogle(String idToken) {
         // 1. Verify Google ID Token and extract user info
@@ -135,7 +137,7 @@ public class AuthServiceImpl implements AuthService {
         return new LoginResult(loginDto, jwtToken, rawRefreshToken);
     }
 
-    @Transactional
+
     @Override
     public void register(UserDto userDto, String otpCode) {
         otpCommandService.verifyOtp(userDto.email(), otpCode);
@@ -143,7 +145,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("User:{} registered successfully with role STUDENT", userDto.email());
     }
 
-    @Transactional
+
     @Override
     public void createUser(UserDto userDto, StudentProfileDto studentProfileDto) {
         Long userId = userCommandService.createUser(userDto, RoleEnum.STUDENT.name());
@@ -151,7 +153,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("Student:{} created successfully", userDto.email());
     }
 
-    @Transactional
+
     @Override
     public void createFanpageAdmin(UserDto userDto, FanpageAdminProfileDto fanpageAdminProfileDto) {
         Long userId = userCommandService.createUser(userDto, RoleEnum.FANPAGE_ADMIN.name());
@@ -160,7 +162,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
     public void changePassword(String oldPassword, String newPassword, String email) {
         userCommandService.changePassword(oldPassword, newPassword, email);
         User user = userRepository.findByEmail(email);
@@ -171,7 +172,18 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    public String createPassword(String newPassword) {
+        Long userId = securityContextPort.getCurrentUserId();
+        if (userId == null) {
+            throw new UnauthorizedException("Authentication required to create a password");
+        }
+        userCommandService.createPassword(newPassword);
+        refreshTokenRepository.revokeAllByUserId(userId);
+        log.info("User id:{} created password successfully", userId);
+        return createAndSaveRefreshToken(userId);
+    }
+
+    @Override
     public TokenRefreshResultDto refreshToken(String rawRefreshToken) {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             throw new AuthException("Refresh token is missing or empty");
@@ -201,7 +213,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
     public void logout(String rawRefreshToken) {
         if (rawRefreshToken != null && !rawRefreshToken.isBlank()) {
             String hashed = tokenHashUtil.hash(rawRefreshToken);
@@ -210,6 +221,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseCookie getUserCookie(String jwtToken) {
         return ResponseCookie.from(jwtUtil.getCookieName(), jwtToken)
                 .httpOnly(true)
@@ -221,6 +233,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseCookie getLogoutCookie() {
         return ResponseCookie.from(jwtUtil.getCookieName(), "")
                 .httpOnly(true)
@@ -232,16 +245,19 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseCookie getRefreshCookie(String rawRefreshToken) {
         return jwtUtil.buildRefreshCookie(rawRefreshToken, jwtUtil.getRefreshExpirationMs() / 1000);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseCookie getClearRefreshCookie() {
         return jwtUtil.buildClearRefreshCookie();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public String extractRefreshToken(jakarta.servlet.http.HttpServletRequest request) {
         return jwtUtil.extractRefreshToken(request);
     }

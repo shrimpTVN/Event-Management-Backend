@@ -101,6 +101,15 @@ public class AuthController {
         return BaseResponse.ok();
     }
 
+    @PostMapping("/create-password")
+    public ResponseEntity<BaseResponse<Void>> createPassword(@RequestBody @Valid CreatePasswordRequestDto requestDto) {
+        String newRawRefreshToken = authService.createPassword(requestDto.newPassword());
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .header(HttpHeaders.SET_COOKIE, authService.getRefreshCookie(newRawRefreshToken).toString())
+                .body(BaseResponse.ok());
+    }
+
     @PostMapping("/login/google")
     public ResponseEntity<BaseResponse<LoginResponseDto>> loginWithGoogle(
             @RequestBody @Valid GoogleLoginRequestDto requestDto) {

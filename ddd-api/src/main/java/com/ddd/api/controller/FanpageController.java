@@ -80,10 +80,8 @@ public class FanpageController {
     }
 
     @PostMapping("/fanpage-admin/register")
-    public BaseResponse<?> registerFanpage(@RequestBody @Valid FanpageRegisterRequestDto request,
-                                           Authentication authentication) {
-        String email = authentication.getName();
-        fanpageCommandService.createFanpage(fanpageApiMapper.toRegisterDto(request), email);
+    public BaseResponse<?> registerFanpage(@RequestBody @Valid FanpageRegisterRequestDto request) {
+        fanpageCommandService.createFanpage(fanpageApiMapper.toRegisterDto(request));
         return BaseResponse.ok();
     }
 

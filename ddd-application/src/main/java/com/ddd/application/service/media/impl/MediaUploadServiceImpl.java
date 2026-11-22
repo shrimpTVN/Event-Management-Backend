@@ -19,7 +19,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class MediaUploadServiceImpl implements MediaUploadService {
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg","jpeg","png","webp");
+    private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
+    private static final Set<String> ALLOWED_EVIDENCE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "pdf");
     private final FileStoragePort fileStoragePort;
     private final SecurityContextPort securityContextPort;
 
@@ -31,7 +32,10 @@ public class MediaUploadServiceImpl implements MediaUploadService {
 
         if (request.fileExtension() != null && !request.fileExtension().isBlank()){
             String ext = request.fileExtension().toLowerCase().replace(".","");
-            if(!ALLOWED_EXTENSIONS.contains(ext)){
+            Set<String> allowedExtensions = category == MediaCategoryEnum.EVIDENCE
+                    ? ALLOWED_EVIDENCE_EXTENSIONS
+                    : ALLOWED_IMAGE_EXTENSIONS;
+            if(!allowedExtensions.contains(ext)){
                 throw new InvalidFileException("Unsupported file extension: " + ext);
             }
         }

@@ -93,6 +93,24 @@ public class UserCommandServiceImpl implements UserCommandService {
     }
 
     @Override
+    public void createPassword(String newPassword) {
+        Long userId = securityContextPort.getCurrentUserId();
+        if (userId == null) {
+            throw new UnauthorizedException("Authentication required to create a password");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            throw new BusinessException("User already has a password set. Please use change-password instead.");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        log.info("Password created successfully for user id: {}", userId);
+    }
+
+    @Override
     public StudentProfileSummaryDto updateStudentProfile(String email, StudentProfileUpdateDto updateDto) {
         UserJpaEntity user = userJpaRepository.findByEmail(email);
         if (user == null) {
