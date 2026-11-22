@@ -57,6 +57,8 @@ class AuthServiceImplTest {
     private UserRepository userRepository;
     @Mock
     private OtpCommandService otpCommandService;
+    @Mock
+    private com.ddd.domain.model.port.security.SecurityContextPort securityContextPort;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -205,6 +207,41 @@ class AuthServiceImplTest {
             assertEquals("google-sub-99999", existingUser.getProviderId());
             verify(userRepository).update(existingUser);
             verifyNoInteractions(userCommandService);
+        }
+    }
+
+    @Nested
+    @DisplayName("Create Password Tests")
+    class CreatePasswordTests {
+
+        @Test
+        @DisplayName("shouldCreatePasswordSuccessfully: delegates, revokes tokens, returns new refresh token")
+        void shouldCreatePasswordSuccessfully() {
+            Long userId = 1L;
+            String newPassword = "newSecurePassword123";
+
+            when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+            when(tokenHashUtil.hash(anyString())).thenReturn("hashed-token");
+            when(jwtUtil.getRefreshExpirationMs()).thenReturn(604800000L);
+
+            String result = authService.createPassword(newPassword);
+
+            assertNotNull(result);
+            verify(userCommandService).createPassword(newPassword);
+            verify(refreshTokenRepository).revokeAllByUserId(userId);
+            verify(refreshTokenRepository).save(any(RefreshToken.class));
+        }
+
+        @Test
+        @DisplayName("shouldThrowUnauthorizedExceptionWhenUserNotAuthenticated")
+        void shouldThrowUnauthorizedExceptionWhenUserNotAuthenticated() {
+            when(securityContextPort.getCurrentUserId()).thenReturn(null);
+
+            assertThrows(com.ddd.domain.exception.UnauthorizedException.class, () ->
+                    authService.createPassword("newSecurePassword123")
+            );
+            verifyNoInteractions(userCommandService);
+            verifyNoInteractions(refreshTokenRepository);
         }
     }
 }

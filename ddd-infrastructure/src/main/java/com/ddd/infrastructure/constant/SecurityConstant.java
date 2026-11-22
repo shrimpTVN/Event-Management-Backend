@@ -45,6 +45,10 @@ public class SecurityConstant {
     };
 
     public static final String[] SECURE_ENDPOINTS = {
+            "/auth/create-password",
+            "/api/auth/create-password",
+            "/auth/change-password",
+            "/api/auth/change-password",
             "/api/events/fanpage-member/**",
             "/api/media/**",
             "/media/**",

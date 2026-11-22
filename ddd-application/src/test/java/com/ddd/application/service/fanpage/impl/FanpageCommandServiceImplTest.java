@@ -67,6 +67,7 @@ class FanpageCommandServiceImplTest {
                 "ACADEMIC",
                 "School of Computing",
                 "University",
+                "https://cloudinary.com/evidence.pdf",
                 "help@example.com",
                 "123456789"
         );
@@ -74,11 +75,12 @@ class FanpageCommandServiceImplTest {
         @Test
         @DisplayName("shouldThrowFanpageAdminProfileRequiredExceptionWhenProfileMissing")
         void shouldThrowFanpageAdminProfileRequiredExceptionWhenProfileMissing() {
+            when(securityContextPort.getCurrentUserEmail()).thenReturn(testEmail);
             when(fanpageAdminProfileJpaRepository.findByUserEmail(testEmail))
                     .thenReturn(Optional.empty());
 
             assertThrows(FanpageAdminProfileRequiredException.class, () ->
-                    fanpageCommandService.createFanpage(registerDto, testEmail));
+                    fanpageCommandService.createFanpage(registerDto));
 
             verify(fanpageRepository, never()).save(any());
             verify(fanpageMemberRepository, never()).save(any());
@@ -91,11 +93,12 @@ class FanpageCommandServiceImplTest {
             profile.setStaffId("");
             profile.setOrgName("School of Computing");
 
+            when(securityContextPort.getCurrentUserEmail()).thenReturn(testEmail);
             when(fanpageAdminProfileJpaRepository.findByUserEmail(testEmail))
                     .thenReturn(Optional.of(profile));
 
             assertThrows(FanpageAdminProfileRequiredException.class, () ->
-                    fanpageCommandService.createFanpage(registerDto, testEmail));
+                    fanpageCommandService.createFanpage(registerDto));
 
             verify(fanpageRepository, never()).save(any());
         }
@@ -107,11 +110,12 @@ class FanpageCommandServiceImplTest {
             profile.setStaffId("STAFF001");
             profile.setOrgName("   ");
 
+            when(securityContextPort.getCurrentUserEmail()).thenReturn(testEmail);
             when(fanpageAdminProfileJpaRepository.findByUserEmail(testEmail))
                     .thenReturn(Optional.of(profile));
 
             assertThrows(FanpageAdminProfileRequiredException.class, () ->
-                    fanpageCommandService.createFanpage(registerDto, testEmail));
+                    fanpageCommandService.createFanpage(registerDto));
 
             verify(fanpageRepository, never()).save(any());
         }
@@ -135,6 +139,7 @@ class FanpageCommandServiceImplTest {
             savedFanpage.setName("Tech Club");
             savedFanpage.setStatus(FanpageStatusEnum.PENDING.name());
 
+            when(securityContextPort.getCurrentUserEmail()).thenReturn(testEmail);
             when(fanpageAdminProfileJpaRepository.findByUserEmail(testEmail))
                     .thenReturn(Optional.of(profile));
             when(fanpageRepository.existsByName(registerDto.name())).thenReturn(false);
@@ -143,7 +148,7 @@ class FanpageCommandServiceImplTest {
             when(fanpageDtoMapper.toFanpage(registerDto)).thenReturn(fanpage);
             when(fanpageRepository.save(fanpage)).thenReturn(savedFanpage);
 
-            assertDoesNotThrow(() -> fanpageCommandService.createFanpage(registerDto, testEmail));
+            assertDoesNotThrow(() -> fanpageCommandService.createFanpage(registerDto));
 
             verify(fanpageRepository).save(fanpage);
             verify(fanpageMemberRepository).save(any(FanpageMember.class));

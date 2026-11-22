@@ -47,7 +47,8 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
     private final FanpageAdminProfileJpaRepository fanpageAdminProfileJpaRepository;
 
     @Override
-    public void createFanpage(FanpageRegisterDto registerDto, String email) {
+    public void createFanpage(FanpageRegisterDto registerDto) {
+        String email = securityContextPort.getCurrentUserEmail();
         FanpageAdminProfileJpaEntity profile = fanpageAdminProfileJpaRepository.findByUserEmail(email)
                 .orElseThrow(FanpageAdminProfileRequiredException::new);
         if (profile.getStaffId() == null || profile.getStaffId().isBlank()
@@ -63,15 +64,16 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
         User user = userRepository.findByEmail(email);
 
         //check whether fanpage admin already has a fanpage
-        if (fanpageMemberRepository.isAlreadyHasFanpage(user.getId())) {
-            throw new DuplicateResourceException("Fanpage admin already has a fanpage");
-        }
+//        if (fanpageMemberRepository.isAlreadyHasFanpage(user.getId())) {
+//            throw new DuplicateResourceException("Fanpage admin already has a fanpage");
+//        }
 
         Fanpage fanpage = fanpageDtoMapper.toFanpage(registerDto);
         fanpage.setStatus(FanpageStatusEnum.PENDING.name());
         Fanpage savedFanpage = fanpageRepository.save(fanpage);
 
-        FanpageMember fanpageMember = new FanpageMember(savedFanpage.getId(), user.getId(), FanpageRoleEnum.ADMIN.name());
+        FanpageMember fanpageMember = new FanpageMember(savedFanpage.getId(), user.getId(),
+                FanpageRoleEnum.ADMIN.name());
         fanpageMemberRepository.save(fanpageMember);
 
         log.info("Fanpage created successfully: {}", savedFanpage.getName());

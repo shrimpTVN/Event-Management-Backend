@@ -10,6 +10,7 @@ public record FanpageInfoDto(
         String orgType,
         String orgName,
         String parentOrg,
+        String evidenceUrl,
         String helpContact,
         String helpPhone,
         Instant createdAt,

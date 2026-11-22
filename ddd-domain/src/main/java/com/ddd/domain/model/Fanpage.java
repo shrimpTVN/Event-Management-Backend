@@ -16,6 +16,7 @@ public class Fanpage extends BaseModel {
     private String helpContact;
     private String helpPhone;
     private String rejectionReason;
+    private String evidenceUrl;
 
     public void updateByFanpageAdmin(String description, String avatarUrl, String helpContact, String helpPhone) {
         if (description != null) this.description = description.trim();

@@ -248,4 +248,65 @@ class UserCommandServiceImplTest {
     void updateAvatar_shouldThrowIllegalArgumentException_whenAvatarUrlIsBlank() {
         assertThrows(IllegalArgumentException.class, () -> userCommandService.updateAvatar("   "));
     }
+
+    @Test
+    void createPassword_shouldEncodeAndSavePassword_whenUserHasNoPassword() {
+        Long userId = 10L;
+        String rawPassword = "securePassword123";
+        String encodedPassword = "encodedSecurePassword123";
+
+        com.ddd.domain.model.User user = new com.ddd.domain.model.User();
+        user.setId(userId);
+        user.setEmail("googleuser@example.com");
+        user.setPassword(null);
+
+        when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(rawPassword)).thenReturn(encodedPassword);
+
+        userCommandService.createPassword(rawPassword);
+
+        assertEquals(encodedPassword, user.getPassword());
+        verify(passwordEncoder).encode(rawPassword);
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void createPassword_shouldThrowBusinessException_whenUserAlreadyHasPassword() {
+        Long userId = 10L;
+        com.ddd.domain.model.User user = new com.ddd.domain.model.User();
+        user.setId(userId);
+        user.setEmail("user@example.com");
+        user.setPassword("alreadyExistingHashedPassword");
+
+        when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        assertThrows(BusinessException.class, () -> userCommandService.createPassword("newPassword123"));
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void createPassword_shouldThrowUnauthorizedException_whenNotAuthenticated() {
+        when(securityContextPort.getCurrentUserId()).thenReturn(null);
+
+        assertThrows(com.ddd.domain.exception.UnauthorizedException.class, () ->
+                userCommandService.createPassword("newPassword123")
+        );
+        verifyNoInteractions(userRepository);
+    }
+
+    @Test
+    void createPassword_shouldThrowResourceNotFoundException_whenUserNotFound() {
+        Long userId = 10L;
+        when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () ->
+                userCommandService.createPassword("newPassword123")
+        );
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).save(any());
+    }
 }

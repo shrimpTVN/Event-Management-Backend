@@ -14,6 +14,8 @@ public interface UserCommandService {
 
     void changePassword(String oldpPassword, String newPassword, String email);
 
+    void createPassword(String newPassword);
+
     StudentProfileSummaryDto updateStudentProfile(String email, StudentProfileUpdateDto updateDto);
 
     StudentProfileSummaryDto updateStudentProfileById(Long id, StudentProfileUpdateDto updateDto);
