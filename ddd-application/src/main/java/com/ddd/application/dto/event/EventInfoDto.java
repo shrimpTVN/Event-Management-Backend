@@ -24,6 +24,8 @@ public record EventInfoDto(
         String criteriaName,
         String fanpageName,
         Long fanpageId,
+        Long schoolId,
+        String schoolName,
         boolean isActive,
         boolean allowSelfCheck,
         SemesterDto semester,

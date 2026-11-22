@@ -127,6 +127,8 @@ class StoredEventQueryServiceImplTest {
                 "Criteria",
                 "Fanpage",
                 1L,
+                1L,
+                "School Name",
                 true,
                 true,
                 null,

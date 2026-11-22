@@ -81,6 +81,12 @@ public class EventRepositoryImpl implements EventRepository {
         } else {
             entity.setCriteria(null);
         }
+
+        if (event.getSchoolId() != null) {
+            entity.setSchool(entityManager.getReference(SchoolJpaEntity.class, event.getSchoolId()));
+        } else {
+            entity.setSchool(null);
+        }
     }
 
     private void syncEventPoints(Event event, EventJpaEntity entity) {
