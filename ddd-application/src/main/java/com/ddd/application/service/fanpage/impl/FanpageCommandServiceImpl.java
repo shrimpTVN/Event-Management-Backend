@@ -63,11 +63,6 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
 
         User user = userRepository.findByEmail(email);
 
-        //check whether fanpage admin already has a fanpage
-//        if (fanpageMemberRepository.isAlreadyHasFanpage(user.getId())) {
-//            throw new DuplicateResourceException("Fanpage admin already has a fanpage");
-//        }
-
         Fanpage fanpage = fanpageDtoMapper.toFanpage(registerDto);
         fanpage.setStatus(FanpageStatusEnum.PENDING.name());
         Fanpage savedFanpage = fanpageRepository.save(fanpage);

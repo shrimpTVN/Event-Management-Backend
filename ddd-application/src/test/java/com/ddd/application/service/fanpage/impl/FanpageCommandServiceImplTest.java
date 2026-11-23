@@ -144,7 +144,6 @@ class FanpageCommandServiceImplTest {
                     .thenReturn(Optional.of(profile));
             when(fanpageRepository.existsByName(registerDto.name())).thenReturn(false);
             when(userRepository.findByEmail(testEmail)).thenReturn(user);
-            when(fanpageMemberRepository.isAlreadyHasFanpage(50L)).thenReturn(false);
             when(fanpageDtoMapper.toFanpage(registerDto)).thenReturn(fanpage);
             when(fanpageRepository.save(fanpage)).thenReturn(savedFanpage);
 
