@@ -57,6 +57,8 @@ public class SecurityConstant {
             "/api/events/*/is-stored",
             "/events/me/stored",
             "/api/events/me/stored",
+            "/events/views",
+            "/api/events/views",
             "/events/recommendations",
             "/api/events/recommendations",
     };

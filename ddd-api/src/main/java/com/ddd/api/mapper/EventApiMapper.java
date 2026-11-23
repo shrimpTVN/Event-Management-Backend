@@ -12,11 +12,15 @@ import com.ddd.api.dto.event.res.StoredEventStatusResponseDto;
 import com.ddd.application.dto.event.*;
 import com.ddd.application.dto.recommendation.EventRecommendationDto;
 import com.ddd.application.dto.recommendation.PointCategoryGainDto;
+import com.ddd.api.dto.event.req.ViewedEventsRequestDto;
+import com.ddd.application.dto.recommendation.ViewedEventsDto;
 import org.mapstruct.Mapper;
 
 
 @Mapper(componentModel = "spring", uses = {SemesterApiMapper.class})
 public interface EventApiMapper {
+
+    ViewedEventsDto toViewedEventsDto(ViewedEventsRequestDto request);
 
     EventCreateDto toCreateDto(EventCreateRequestDto requestDto);
 

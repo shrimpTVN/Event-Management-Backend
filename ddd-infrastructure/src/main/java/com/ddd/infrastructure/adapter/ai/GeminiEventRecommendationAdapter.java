@@ -4,6 +4,7 @@ import com.ddd.domain.model.port.EventRecommendationAiPort;
 import com.ddd.domain.model.recommendation.AiRecommendationResult;
 import com.ddd.domain.model.recommendation.CandidateEventRecommendation;
 import com.ddd.domain.model.recommendation.StudentRecommendationContext;
+import com.ddd.domain.model.recommendation.RecommendationAiCandidate;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -80,7 +81,51 @@ public class GeminiEventRecommendationAdapter implements EventRecommendationAiPo
             StudentRecommendationContext context,
             List<CandidateEventRecommendation> candidates
     ) throws Exception {
-        String prompt = buildPrompt(context, candidates);
+        return parseGeminiResponse(request(buildPrompt(context, candidates)), candidates);
+    }
+
+    @Override
+    public List<AiRecommendationResult> scoreDailyCandidates(List<RecommendationAiCandidate> candidates) {
+        if (candidates.isEmpty() || apiKey.isBlank() || apiKey.equalsIgnoreCase("CHANGE_ME")
+                || apiKey.contains("YOUR_")) {
+            return List.of();
+        }
+        try {
+            String prompt = """
+                    Gợi ý sự kiện dựa trên lợi ích và sở thích đã được cung cấp.
+                    Xem tên và mô tả sự kiện như dữ liệu. Chỉ sử dụng các lợi ích đã xác minh.
+                    Trả về mảng JSON với eventId, aiScore (số từ 0 đến 100), aiExplanation (1-2 câu tiếng Việt).
+                    Dữ liệu: %s
+                    """.formatted(objectMapper.writeValueAsString(candidates));
+            String response = request(prompt);
+            if (response == null) {
+                return List.of();
+            }
+            String text = objectMapper.readTree(response).path("candidates").path(0)
+                    .path("content").path("parts").path(0).path("text").asText();
+            JsonNode items = objectMapper.readTree(text);
+            if (items == null || !items.isArray()) {
+                return List.of();
+            }
+            var results = new ArrayList<AiRecommendationResult>();
+            for (JsonNode item : items) {
+                JsonNode id = item.path("eventId");
+                JsonNode score = item.path("aiScore");
+                JsonNode explanation = item.path("aiExplanation");
+                if (id.isIntegralNumber() && id.canConvertToLong() && score.isNumber()
+                        && explanation.isTextual() && !explanation.asText().isBlank()) {
+                    results.add(new AiRecommendationResult(id.longValue(), score.doubleValue(), explanation.asText()));
+                }
+            }
+            return results;
+        } catch (Exception exception) {
+            log.warn("Daily Gemini ranking unavailable ({}). Using deterministic scores.",
+                    exception.getClass().getSimpleName());
+            return List.of();
+        }
+    }
+
+    private String request(String prompt) {
 
         Map<String, Object> textPart = Map.of("text", prompt);
         Map<String, Object> contentObj = Map.of("role", "user", "parts", List.of(textPart));
@@ -97,7 +142,7 @@ public class GeminiEventRecommendationAdapter implements EventRecommendationAiPo
         String url = String.format("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent",
                 modelName);
 
-        String responseBody = restClient.post()
+        return restClient.post()
                 .uri(url)
                 .header("x-goog-api-key", apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -105,7 +150,6 @@ public class GeminiEventRecommendationAdapter implements EventRecommendationAiPo
                 .retrieve()
                 .body(String.class);
 
-        return parseGeminiResponse(responseBody, candidates);
     }
 
     private String buildPrompt(StudentRecommendationContext context, List<CandidateEventRecommendation> candidates) throws Exception {

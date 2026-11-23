@@ -4,7 +4,10 @@ import com.ddd.application.dto.event.EventInfoDto;
 import com.ddd.application.dto.event.EventSearchCriteriaDto;
 import com.ddd.application.mapper.EventDtoMapper;
 import com.ddd.application.service.event.EventQueryService;
-import com.ddd.application.service.event.EventRecommendationService;
+import com.ddd.application.service.event.DailyEventRecommendationService;
+import com.ddd.domain.exception.UnauthorizedException;
+import com.ddd.domain.model.port.security.SecurityContextPort;
+import org.springframework.transaction.annotation.Propagation;
 import com.ddd.application.dto.recommendation.EventRecommendationDto;
 import com.ddd.application.utils.ServiceUtil;
 import com.ddd.domain.exception.ResourceNotFoundException;
@@ -32,7 +35,8 @@ public class EventQueryServiceImpl implements EventQueryService {
     private final EventJpaRepository eventJpaRepository;
     private final EventDtoMapper eventDtoMapper;
     private final RegistrationJpaRepository registrationJpaRepository;
-    private final EventRecommendationService eventRecommendationService;
+    private final DailyEventRecommendationService eventRecommendationService;
+    private final SecurityContextPort security;
 
     @Override
     public EventInfoDto getEventById(Long id) {
@@ -80,8 +84,12 @@ public class EventQueryServiceImpl implements EventQueryService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Page<EventInfoDto> getRecommendEvents(String email) {
-        return eventRecommendationService.getRecommendationsForStudent(email, PageRequest.of(0, 10))
+        if (email == null || !email.equals(security.getCurrentUserEmail())) {
+            throw new UnauthorizedException("User is not authenticated");
+        }
+        return eventRecommendationService.getRecommendations(PageRequest.of(0, 10))
                 .map(EventRecommendationDto::event);
     }
 

@@ -12,6 +12,7 @@ import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.port.EventRecommendationAiPort;
 import com.ddd.domain.model.recommendation.AiRecommendationResult;
 import com.ddd.domain.model.recommendation.StudentRecommendationContext;
+import com.ddd.domain.repository.EventViewRepository;
 import com.ddd.infrastructure.entity.*;
 import com.ddd.infrastructure.repository.jpaRepository.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -69,6 +71,9 @@ class EventRecommendationServiceImplTest {
     private EventRecommendationAiPort aiPort;
     @Mock
     private EventDtoMapper eventDtoMapper;
+
+    @Mock
+    private EventViewRepository eventViewRepository;
 
     @InjectMocks
     private EventRecommendationServiceImpl eventRecommendationService;
@@ -126,6 +131,27 @@ class EventRecommendationServiceImplTest {
         // Zero DB queries or AI calls should have been triggered
         verify(eventJpaRepository, never()).findUpcomingPublishedEvents(any(), any());
         verify(aiPort, never()).generateExplanations(any(), any());
+    }
+
+    @Test
+    void ordersUnseenFirstAndAppliesPenaltiesBeforePaginatingCachedResults() {
+        when(userJpaRepository.findByEmail(testUser.getEmail())).thenReturn(testUser);
+        var heavilyViewed = new EventRecommendationDto(
+                createEventInfoDto(101L, "Repeated"), 95, "", 10, 2, false, List.of());
+        var lightlyViewed = new EventRecommendationDto(
+                createEventInfoDto(102L, "Viewed"), 86, "", 10, 2, false, List.of());
+        var unseen = new EventRecommendationDto(
+                createEventInfoDto(103L, "Unseen"), 20, "", 10, 2, false, List.of());
+        when(recommendationCacheService.get(1L)).thenReturn(List.of(heavilyViewed, lightlyViewed, unseen));
+        when(eventViewRepository.findPenalties(1L)).thenReturn(Map.of(101L, 20, 102L, 5));
+
+        Page<EventRecommendationDto> result = eventRecommendationService
+                .getRecommendationsForStudent(testUser.getEmail(), PageRequest.of(0, 2));
+
+        assertEquals(3, result.getTotalElements());
+        assertEquals(List.of(103L, 102L), result.getContent().stream()
+                .map(event -> event.event().id()).toList());
+        verifyNoInteractions(aiPort);
     }
 
     @Test

@@ -14,6 +14,7 @@ import com.ddd.domain.model.port.EventRecommendationAiPort;
 import com.ddd.domain.model.recommendation.AiRecommendationResult;
 import com.ddd.domain.model.recommendation.CandidateEventRecommendation;
 import com.ddd.domain.model.recommendation.StudentRecommendationContext;
+import com.ddd.domain.repository.EventViewRepository;
 import com.ddd.infrastructure.entity.*;
 import com.ddd.infrastructure.repository.jpaRepository.*;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,7 @@ public class EventRecommendationServiceImpl implements EventRecommendationServic
     private final FollowingJpaRepository followingJpaRepository;
     private final FanpageMemberJpaRepository fanpageMemberJpaRepository;
     private final RecommendationCacheService recommendationCacheService;
+    private final EventViewRepository eventViewRepository;
     private final EventRecommendationAiPort aiPort;
     private final EventDtoMapper eventDtoMapper;
 
@@ -64,7 +66,7 @@ public class EventRecommendationServiceImpl implements EventRecommendationServic
         List<EventRecommendationDto> cached = recommendationCacheService.get(user.getId());
         if (cached != null) {
             log.info("Serving event recommendations from cache for userId: {}", user.getId());
-            return paginate(cached, pageable);
+            return paginate(applyViewRanking(user.getId(), cached), pageable);
         }
 
         LocalDate today = LocalDate.now(VIETNAM_ZONE);
@@ -383,7 +385,22 @@ public class EventRecommendationServiceImpl implements EventRecommendationServic
         recommendationCacheService.put(user.getId(), finalRecommendations);
 
         // 15. Paginate and return
-        return paginate(finalRecommendations, pageable);
+        return paginate(applyViewRanking(user.getId(), finalRecommendations), pageable);
+    }
+
+    private List<EventRecommendationDto> applyViewRanking(long studentId, List<EventRecommendationDto> recommendations) {
+        if (recommendations.isEmpty()) {
+            return recommendations;
+        }
+        Map<Long, Integer> penalties = eventViewRepository.findPenalties(studentId);
+        if (penalties.isEmpty()) {
+            return recommendations;
+        }
+        return recommendations.stream()
+                .sorted(Comparator.comparing((EventRecommendationDto event) -> penalties.containsKey(event.event().id()))
+                        .thenComparing(Comparator.comparingDouble((EventRecommendationDto event) ->
+                                event.matchScore() - penalties.getOrDefault(event.event().id(), 0)).reversed()))
+                .toList();
     }
 
     private Page<EventRecommendationDto> paginate(List<EventRecommendationDto> list, Pageable pageable) {

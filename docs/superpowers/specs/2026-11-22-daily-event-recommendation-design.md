@@ -14,7 +14,7 @@ The agreed requirements are:
 2. Refresh a student's personalization snapshot on their first recommendation access each Vietnam calendar day. Later point awards, criteria completion, and affiliation changes take effect the next day.
 3. Persist personalized scores per student and event. Recalculate them on a new day, when absent, or when the event's scoring features have changed.
 4. Event changes update the event summary once. They do not trigger recalculation for every student. Each returning student updates only their missing or outdated scores.
-5. Every distinct event view increases a persistent penalty, up to a cap. Daily recalculation preserves penalties and view history.
+5. Each event reported in a distinct frontend batch increases a persistent penalty, up to a cap. Daily recalculation preserves penalties and view history.
 6. Include active, published events whose happen date is today or later in Vietnam time. A happen timestamp earlier today does not remove the event until that calendar day ends.
 7. Use strict priority groups: available and unseen; available and viewed; then unavailable. Unavailable means registration has closed or capacity is full.
 8. Within a priority group, order by daily personalized score plus current registration urgency minus persistent read penalty.
@@ -27,7 +27,7 @@ The following fill implementation details that have not yet been explicitly sele
 | Setting or boundary | Proposed behavior |
 |---|---|
 | Time zone | `Asia/Ho_Chi_Minh`; use an injected `Clock` for every time-dependent calculation |
-| View deduction | 5 score points per distinct view request |
+| View deduction | 5 score points per event per acknowledged batch |
 | Penalty cap | 20 score points, preserved across days |
 | Registration urgency | Maximum 10 points, increasing linearly over the last 72 hours before `dateClose` |
 | Gemini batch size | At most 10 outdated or missing event scores per call; evaluate all such events in batches rather than privileging only the first ten |
@@ -75,11 +75,9 @@ Daily or event-version score updates modify only score-related fields. View upda
 
 Do not store a position number or registration urgency: both depend on current request context. An existing row with `lastReadAt` set remains viewed after its daily score changes.
 
-### View request receipts
+### View batch receipts
 
-Every user navigation into event details gets a new client-generated `viewRequestId`. Retrying that navigation reuses its ID. Store a receipt with a unique `(studentId, eventId, viewRequestId)` key in a small supporting table. Insert the receipt and update the penalty atomically. Duplicate IDs are successful no-ops; distinct IDs each apply a deduction until the cap.
-
-This supporting storage distinguishes genuine repeated views from network retries. Do not implement the penalty as a side effect of the existing public event-detail GET: prefetches, anonymous requests, and retries would otherwise create unintended penalties. Receipt cleanup is outside the initial scope; storage growth must be monitored and a future retention policy must preserve the documented retry contract.
+The frontend collects event IDs after the student opens event details. When the student returns to the main page it sends an authenticated report with a stable `batchId` and the viewed IDs. Apply one deduction per distinct event in each batch. Store a unique `(studentId, eventId, batchId)` receipt so retries cannot repeat a deduction. Insert receipts and update view state in the same transaction. The backend uses report acceptance time for `lastReadAt`. Receipt retention is outside the initial scope.
 
 ## Personalized scoring and live ranking
 
@@ -152,11 +150,9 @@ Save the event and its summary together. Advance only the affected event's scori
 
 Capture the evaluated event version with its scoring inputs. If an event changes while Gemini is evaluating it, the saved score must retain that old evaluated version; never label it as evaluated against the newer version. The next request detects and repairs the mismatch. Current eligibility still comes from current event state.
 
-### Event view
+### View batch report
 
-The authenticated frontend posts `eventId` and `viewRequestId` after the user opens event details. Resolve the student from the security port. Validate event visibility, insert the receipt, and atomically set `readPenalty = min(readPenalty + 5, 20)` and `lastReadAt` for a new receipt.
-
-A view can arrive before any recommendation request. Create a student-event row containing view state without forcing a daily snapshot or Gemini call; leave score freshness unset so the next recommendation request computes it. Being at the cap still records the event as viewed. No global ranking recomputation is necessary.
+`POST /api/events/views` receives the frontend batch ID and the viewed event IDs. Resolve the student from the security port and batch-check visibility. Deduct five points up to a cap of twenty for each newly accepted receipt. Score fields and the daily snapshot stay independent of the write. Before first scoring, create a row with view fields populated and score freshness unset. Ranking reflects the batch on the next request after commit.
 
 ## Components and repository boundaries
 
@@ -185,7 +181,7 @@ This design reduces repeated work; it does not eliminate repository queries or g
 
 Tests must cover strict group precedence even under extreme AI scores; deadline equality; events earlier today versus yesterday; full-to-available transitions; Vietnam midnight; unchanged same-day requests making no AI/history calls; new and edited events affecting only the requesting student; penalty preservation across refreshes; distinct versus retried views; concurrent refreshes/views; invalid and partially valid AI output; award-period isolation; inactive criteria; maximum-child marginal benefit; and pagination totals after live filtering.
 
-Use database-backed PostgreSQL tests for unique constraints, row locking, atomic capped updates, and backfill idempotence. Mocks alone cannot verify those guarantees. Existing source-level repository tests and the current Maven module build remain part of regression verification. The frontend must send distinct view IDs for distinct navigations and reuse IDs for retries; implementing only the backend endpoint does not complete view tracking in a separate frontend.
+Use database-backed PostgreSQL tests for unique constraints, row locking, atomic capped updates, and backfill idempotence. Mocks alone cannot verify those guarantees. Existing source-level repository tests and the current Maven module build remain part of regression verification. The frontend must send pending IDs on return to the main page and reuse the batch ID for retries; implementing only the backend endpoint does not complete view tracking in a separate frontend.
 
 Create a migration using the repository's existing SQL migration convention, including summary tables, uniqueness and lookup indexes, and existing-event backfill. Keep it additive and document how it is applied; do not assume the project already runs Flyway. Rebuild summary data from source records if needed, but never discard persistent read penalties during routine refresh or backfill.
 

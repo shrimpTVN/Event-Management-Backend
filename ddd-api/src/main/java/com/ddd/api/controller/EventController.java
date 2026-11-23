@@ -4,6 +4,7 @@ import com.ddd.api.common.BaseResponse;
 import com.ddd.api.dto.event.req.EventCreateRequestDto;
 import com.ddd.api.dto.event.req.EventFilterRequestDto;
 import com.ddd.api.dto.event.req.EventUpdateRequestDto;
+import com.ddd.api.dto.event.req.ViewedEventsRequestDto;
 import com.ddd.api.dto.event.res.EventRecommendationResponseDto;
 import com.ddd.api.dto.event.res.EventResponseDto;
 import com.ddd.api.dto.event.res.StoredEventStatusResponseDto;
@@ -15,7 +16,8 @@ import com.ddd.application.dto.event.StoredEventStatusDto;
 import com.ddd.application.dto.recommendation.EventRecommendationDto;
 import com.ddd.application.service.event.EventCommandService;
 import com.ddd.application.service.event.EventQueryService;
-import com.ddd.application.service.event.EventRecommendationService;
+import com.ddd.application.service.event.DailyEventRecommendationService;
+import com.ddd.application.service.event.EventViewCommandService;
 import com.ddd.application.service.event.StoredEventCommandService;
 import com.ddd.application.service.event.StoredEventQueryService;
 import com.ddd.application.utils.ServiceUtil;
@@ -38,8 +40,9 @@ public class EventController {
     private final EventQueryService eventQueryService;
     private final StoredEventCommandService storedEventCommandService;
     private final StoredEventQueryService storedEventQueryService;
-    private final EventRecommendationService eventRecommendationService;
+    private final DailyEventRecommendationService eventRecommendationService;
     private final EventApiMapper eventApiMapper;
+    private final EventViewCommandService eventViewCommandService;
 
     @PostMapping("/fanpage-member")
     public BaseResponse<Long> createEvent(
@@ -160,18 +163,18 @@ public class EventController {
         return BaseResponse.of(storedEvents.map(eventApiMapper::toResponseDto));
     }
 
+    @PostMapping("/views")
+    public BaseResponse<Void> recordViews(@Valid @RequestBody ViewedEventsRequestDto request) {
+        eventViewCommandService.recordViews(eventApiMapper.toViewedEventsDto(request));
+        return BaseResponse.ok();
+    }
+
     @GetMapping("/recommendations")
     public BaseResponse<Page<EventRecommendationResponseDto>> getRecommendations(
-            Authentication authentication,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        if (authentication == null || authentication.getName() == null) {
-            throw new UnauthorizedException("User is not authenticated");
-        }
-        String email = authentication.getName();
         Pageable pageable = PageRequest.of(page, size);
-        Page<EventRecommendationDto> recommendations =
-                eventRecommendationService.getRecommendationsForStudent(email, pageable);
+        Page<EventRecommendationDto> recommendations = eventRecommendationService.getRecommendations(pageable);
         return BaseResponse.of(recommendations.map(eventApiMapper::toRecommendationResponseDto));
     }
 }
