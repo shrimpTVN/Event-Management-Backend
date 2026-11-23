@@ -1,5 +1,6 @@
 package com.ddd.infrastructure.repository;
 
+import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.User;
 import com.ddd.domain.repository.UserRepository;
 import com.ddd.infrastructure.entity.RoleJpaEntity;
@@ -95,6 +96,20 @@ public class UserRepositoryImpl implements UserRepository {
         existing.setProviderId(user.getProviderId());
         existing.setPassword(user.getPassword() != null ? user.getPassword() : existing.getPassword());
         return userMapper.toDomain(userJpaRepository.save(existing));
+    }
+
+    @Override
+    public boolean setPasswordIfAbsent(Long userId, String encodedPassword) {
+        UserJpaEntity user = userJpaRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            return false;
+        }
+
+        user.setPassword(encodedPassword);
+        userJpaRepository.save(user);
+        return true;
     }
 
 }

@@ -75,7 +75,15 @@ public enum ErrorCodeEnum {
 
     // USER / PROFILE GATING
     STUDENT_PROFILE_REQUIRED("USER.001", HttpStatus.FORBIDDEN, "Student profile is required to perform this action"),
-    FANPAGE_ADMIN_PROFILE_REQUIRED("USER.002", HttpStatus.FORBIDDEN, "Fanpage admin profile is required to perform this action");
+    FANPAGE_ADMIN_PROFILE_REQUIRED("USER.002", HttpStatus.FORBIDDEN, "Fanpage admin profile is required to perform this action"),
+
+    // PASSWORD SECURITY
+    PASSWORD_ALREADY_SET("PASSWORD_ALREADY_SET", HttpStatus.CONFLICT, "User already has a password set. Please use change-password instead."),
+    PASSWORD_NOT_SET("PASSWORD_NOT_SET", HttpStatus.CONFLICT, "User does not have a password set. Please use create-password instead."),
+
+    // STAFF PROFILE
+    STAFF_PROFILE_ALREADY_EXISTS("STAFF_PROFILE_ALREADY_EXISTS", HttpStatus.CONFLICT, "User already has a staff profile."),
+    STAFF_ID_ALREADY_EXISTS("STAFF_ID_ALREADY_EXISTS", HttpStatus.CONFLICT, "Staff ID already exists.");
 
     private final String code;
     private final HttpStatus status;

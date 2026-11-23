@@ -23,5 +23,6 @@ public interface UserRepository {
     }
     Optional<User> findById(Long userId);
     List<User> findAllByIds(Collection<Long> ids);
+    boolean setPasswordIfAbsent(Long userId, String encodedPassword);
 }
 

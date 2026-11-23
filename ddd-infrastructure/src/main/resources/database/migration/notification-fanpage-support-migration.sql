@@ -8,14 +8,21 @@ ALTER TABLE notifications
 
 -- 2. Add fanpage_id column
 ALTER TABLE notifications
-    ADD COLUMN fanpage_id BIGINT;
+    ADD COLUMN IF NOT EXISTS fanpage_id BIGINT;
 
--- 3. Add foreign key constraint to fanpages table
-ALTER TABLE notifications
-    ADD CONSTRAINT fk_notifications_fanpages
-        FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE CASCADE;
+-- 3. Add foreign key constraint to fanpages table if not exists
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'fk_notifications_fanpages'
+    ) THEN
+        ALTER TABLE notifications
+            ADD CONSTRAINT fk_notifications_fanpages
+                FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- 4. Create performance indexes for fanpage notifications
-CREATE INDEX idx_notifications_fanpage_id ON notifications (fanpage_id);
-CREATE INDEX idx_notifications_fanpage_status ON notifications (fanpage_id, status);
-CREATE INDEX idx_notifications_fanpage_created ON notifications (fanpage_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_fanpage_id ON notifications (fanpage_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_fanpage_status ON notifications (fanpage_id, status);
+CREATE INDEX IF NOT EXISTS idx_notifications_fanpage_created ON notifications (fanpage_id, created_at);

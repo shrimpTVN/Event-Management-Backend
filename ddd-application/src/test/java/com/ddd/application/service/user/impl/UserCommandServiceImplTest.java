@@ -250,41 +250,35 @@ class UserCommandServiceImplTest {
     }
 
     @Test
-    void createPassword_shouldEncodeAndSavePassword_whenUserHasNoPassword() {
+    void createPassword_shouldEncodeAndSetPassword_whenUserHasNoPassword() {
         Long userId = 10L;
         String rawPassword = "securePassword123";
         String encodedPassword = "encodedSecurePassword123";
 
-        com.ddd.domain.model.User user = new com.ddd.domain.model.User();
-        user.setId(userId);
-        user.setEmail("googleuser@example.com");
-        user.setPassword(null);
-
         when(securityContextPort.getCurrentUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode(rawPassword)).thenReturn(encodedPassword);
+        when(userRepository.setPasswordIfAbsent(userId, encodedPassword)).thenReturn(true);
 
-        userCommandService.createPassword(rawPassword);
+        assertDoesNotThrow(() -> userCommandService.createPassword(rawPassword));
 
-        assertEquals(encodedPassword, user.getPassword());
         verify(passwordEncoder).encode(rawPassword);
-        verify(userRepository).save(user);
+        verify(userRepository).setPasswordIfAbsent(userId, encodedPassword);
     }
 
     @Test
-    void createPassword_shouldThrowBusinessException_whenUserAlreadyHasPassword() {
+    void createPassword_shouldThrowPasswordAlreadySetException_whenPasswordAlreadyExists() {
         Long userId = 10L;
-        com.ddd.domain.model.User user = new com.ddd.domain.model.User();
-        user.setId(userId);
-        user.setEmail("user@example.com");
-        user.setPassword("alreadyExistingHashedPassword");
+        String rawPassword = "newPassword123";
+        String encodedPassword = "encodedPassword123";
 
         when(securityContextPort.getCurrentUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(rawPassword)).thenReturn(encodedPassword);
+        when(userRepository.setPasswordIfAbsent(userId, encodedPassword)).thenReturn(false);
 
-        assertThrows(BusinessException.class, () -> userCommandService.createPassword("newPassword123"));
-        verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).save(any());
+        assertThrows(com.ddd.domain.exception.PasswordAlreadySetException.class,
+                () -> userCommandService.createPassword(rawPassword));
+        verify(passwordEncoder).encode(rawPassword);
+        verify(userRepository).setPasswordIfAbsent(userId, encodedPassword);
     }
 
     @Test
@@ -298,15 +292,62 @@ class UserCommandServiceImplTest {
     }
 
     @Test
-    void createPassword_shouldThrowResourceNotFoundException_whenUserNotFound() {
-        Long userId = 10L;
-        when(securityContextPort.getCurrentUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+    void changePassword_shouldThrowPasswordNotSetException_whenPasswordIsNull() {
+        String email = "google@example.com";
+        com.ddd.domain.model.User user = new com.ddd.domain.model.User();
+        user.setEmail(email);
+        user.setPassword(null);
 
-        assertThrows(ResourceNotFoundException.class, () ->
-                userCommandService.createPassword("newPassword123")
-        );
-        verify(passwordEncoder, never()).encode(anyString());
+        when(userRepository.findByEmail(email)).thenReturn(user);
+
+        assertThrows(com.ddd.domain.exception.PasswordNotSetException.class,
+                () -> userCommandService.changePassword("oldPass", "newPass", email));
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void changePassword_shouldThrowPasswordNotSetException_whenPasswordIsBlank() {
+        String email = "google@example.com";
+        com.ddd.domain.model.User user = new com.ddd.domain.model.User();
+        user.setEmail(email);
+        user.setPassword("   ");
+
+        when(userRepository.findByEmail(email)).thenReturn(user);
+
+        assertThrows(com.ddd.domain.exception.PasswordNotSetException.class,
+                () -> userCommandService.changePassword("oldPass", "newPass", email));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void changePassword_shouldThrowAuthException_whenOldPasswordDoesNotMatch() {
+        String email = "user@example.com";
+        com.ddd.domain.model.User user = new com.ddd.domain.model.User();
+        user.setEmail(email);
+        user.setPassword("hashedOldPassword");
+
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(passwordEncoder.matches("wrongOldPass", "hashedOldPassword")).thenReturn(false);
+
+        assertThrows(com.ddd.domain.exception.AuthException.class,
+                () -> userCommandService.changePassword("wrongOldPass", "newPass", email));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void changePassword_shouldUpdatePassword_whenOldPasswordMatches() {
+        String email = "user@example.com";
+        com.ddd.domain.model.User user = new com.ddd.domain.model.User();
+        user.setEmail(email);
+        user.setPassword("hashedOldPassword");
+
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(passwordEncoder.matches("correctOldPass", "hashedOldPassword")).thenReturn(true);
+        when(passwordEncoder.encode("newPass")).thenReturn("hashedNewPass");
+
+        userCommandService.changePassword("correctOldPass", "newPass", email);
+
+        assertEquals("hashedNewPass", user.getPassword());
+        verify(userRepository).save(user);
     }
 }

@@ -5,6 +5,7 @@ import com.ddd.application.dto.fanpage.FanpageRegisterDto;
 import com.ddd.application.dto.fanpage.FanpageSystemAdminUpdateDto;
 import com.ddd.application.mapper.FanpageDtoMapper;
 import com.ddd.application.service.fanpage.FanpageCommandService;
+import com.ddd.application.service.fanpage.FanpageRegistrationEligibilityService;
 import com.ddd.domain.enums.FanpageRoleEnum;
 import com.ddd.domain.enums.FanpageStatusEnum;
 import com.ddd.domain.enums.RoleEnum;
@@ -20,8 +21,6 @@ import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.*;
 import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
-import com.ddd.infrastructure.entity.FanpageAdminProfileJpaEntity;
-import com.ddd.infrastructure.repository.jpaRepository.FanpageAdminProfileJpaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -44,29 +43,19 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
     private final FollowingRepository followingRepository;
     private final SecurityContextPort securityContextPort;
     private final ApplicationEventPublisher applicationEventPublisher;
-    private final FanpageAdminProfileJpaRepository fanpageAdminProfileJpaRepository;
+    private final FanpageRegistrationEligibilityService fanpageRegistrationEligibilityService;
 
     @Override
     public void createFanpage(FanpageRegisterDto registerDto) {
-        String email = securityContextPort.getCurrentUserEmail();
-        FanpageAdminProfileJpaEntity profile = fanpageAdminProfileJpaRepository.findByUserEmail(email)
-                .orElseThrow(FanpageAdminProfileRequiredException::new);
-        if (profile.getStaffId() == null || profile.getStaffId().isBlank()
-                || profile.getOrgName() == null || profile.getOrgName().isBlank()) {
-            throw new FanpageAdminProfileRequiredException();
-        }
+        fanpageRegistrationEligibilityService.assertCurrentUserCanRegister();
 
         //check duplicate  fanpage name
         if (fanpageRepository.existsByName(registerDto.name())) {
             throw new DuplicateResourceException("Fanpage name already exists");
         }
 
+        String email = securityContextPort.getCurrentUserEmail();
         User user = userRepository.findByEmail(email);
-
-        //check whether fanpage admin already has a fanpage
-//        if (fanpageMemberRepository.isAlreadyHasFanpage(user.getId())) {
-//            throw new DuplicateResourceException("Fanpage admin already has a fanpage");
-//        }
 
         Fanpage fanpage = fanpageDtoMapper.toFanpage(registerDto);
         fanpage.setStatus(FanpageStatusEnum.PENDING.name());

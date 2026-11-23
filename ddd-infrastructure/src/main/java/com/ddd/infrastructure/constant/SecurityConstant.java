@@ -6,6 +6,7 @@ public class SecurityConstant {
     public static final String[] ADMIN_ENDPOINTS = {
             "/api/semesters/admin/**",
             "/api/users/admin/**",
+            "/users/admin/**",
             "/api/fanpages/admin/**",
             "/api/point-categories/admin/**",
             "/api/events/admin/**",
@@ -49,6 +50,10 @@ public class SecurityConstant {
             "/api/auth/create-password",
             "/auth/change-password",
             "/api/auth/change-password",
+            "/users/me/security",
+            "/api/users/me/security",
+            "/users/me/staff-profile",
+            "/api/users/me/staff-profile",
             "/api/events/fanpage-member/**",
             "/api/media/**",
             "/media/**",
