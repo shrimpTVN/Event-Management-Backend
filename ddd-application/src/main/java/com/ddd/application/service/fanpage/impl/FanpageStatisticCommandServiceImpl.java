@@ -67,9 +67,8 @@ public class FanpageStatisticCommandServiceImpl implements FanpageStatisticComma
         if (currentUserId == null) {
             throw new UnauthorizedException("User is not authenticated");
         }
-        if (securityContextPort.hasRole("ADMIN")) return;
-        if (!fanpageMemberRepository.isActiveMember(fanpageId, currentUserId)) {
-            throw new AuthException("You do not have permission to send alerts for this fanpage. Only the fanpage members can access this action.");
+        if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, currentUserId)) {
+            throw new AuthException("You do not have permission to send alerts for this fanpage. Only the fanpage admin can access this action.");
         }
     }
 }

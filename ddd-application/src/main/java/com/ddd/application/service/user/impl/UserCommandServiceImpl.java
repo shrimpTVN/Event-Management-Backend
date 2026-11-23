@@ -12,8 +12,11 @@ import com.ddd.application.mapper.StudentProfileDtoMapper;
 import com.ddd.application.mapper.UserDtoMapper;
 import com.ddd.application.service.user.UserCommandService;
 import com.ddd.domain.enums.FanpageRoleEnum;
+import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.DuplicateResourceException;
+import com.ddd.domain.exception.PasswordAlreadySetException;
+import com.ddd.domain.exception.PasswordNotSetException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.FanpageMember;
@@ -83,9 +86,16 @@ public class UserCommandServiceImpl implements UserCommandService {
     @Override
     public void changePassword(String oldpPassword, String newPassword, String email) {
         User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with email: " + email);
+        }
+
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new PasswordNotSetException();
+        }
 
         if (!passwordEncoder.matches(oldpPassword, user.getPassword())) {
-            throw new IllegalArgumentException("Old password is incorrect.");
+            throw new AuthException("Old password is incorrect.");
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
@@ -98,15 +108,12 @@ public class UserCommandServiceImpl implements UserCommandService {
         if (userId == null) {
             throw new UnauthorizedException("Authentication required to create a password");
         }
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
-        if (user.getPassword() != null && !user.getPassword().isBlank()) {
-            throw new BusinessException("User already has a password set. Please use change-password instead.");
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        boolean updated = userRepository.setPasswordIfAbsent(userId, encodedPassword);
+        if (!updated) {
+            throw new PasswordAlreadySetException();
         }
-
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
         log.info("Password created successfully for user id: {}", userId);
     }
 

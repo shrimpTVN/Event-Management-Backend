@@ -2,6 +2,7 @@ package com.ddd.application.service.fanpage.impl;
 
 import com.ddd.application.dto.fanpage.FanpageRegisterDto;
 import com.ddd.application.mapper.FanpageDtoMapper;
+import com.ddd.application.service.fanpage.FanpageRegistrationEligibilityService;
 import com.ddd.domain.enums.FanpageRoleEnum;
 import com.ddd.domain.enums.FanpageStatusEnum;
 import com.ddd.domain.exception.FanpageAdminProfileRequiredException;
@@ -10,8 +11,6 @@ import com.ddd.domain.model.FanpageMember;
 import com.ddd.domain.model.User;
 import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
-import com.ddd.infrastructure.entity.FanpageAdminProfileJpaEntity;
-import com.ddd.infrastructure.repository.jpaRepository.FanpageAdminProfileJpaRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -50,7 +49,7 @@ class FanpageCommandServiceImplTest {
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
     @Mock
-    private FanpageAdminProfileJpaRepository fanpageAdminProfileJpaRepository;
+    private FanpageRegistrationEligibilityService fanpageRegistrationEligibilityService;
 
     @InjectMocks
     private FanpageCommandServiceImpl fanpageCommandService;
@@ -73,11 +72,10 @@ class FanpageCommandServiceImplTest {
         );
 
         @Test
-        @DisplayName("shouldThrowFanpageAdminProfileRequiredExceptionWhenProfileMissing")
-        void shouldThrowFanpageAdminProfileRequiredExceptionWhenProfileMissing() {
-            when(securityContextPort.getCurrentUserEmail()).thenReturn(testEmail);
-            when(fanpageAdminProfileJpaRepository.findByUserEmail(testEmail))
-                    .thenReturn(Optional.empty());
+        @DisplayName("shouldThrowFanpageAdminProfileRequiredExceptionWhenEligibilityFails")
+        void shouldThrowFanpageAdminProfileRequiredExceptionWhenEligibilityFails() {
+            doThrow(new FanpageAdminProfileRequiredException())
+                    .when(fanpageRegistrationEligibilityService).assertCurrentUserCanRegister();
 
             assertThrows(FanpageAdminProfileRequiredException.class, () ->
                     fanpageCommandService.createFanpage(registerDto));
@@ -87,45 +85,11 @@ class FanpageCommandServiceImplTest {
         }
 
         @Test
-        @DisplayName("shouldThrowFanpageAdminProfileRequiredExceptionWhenStaffIdIsBlank")
-        void shouldThrowFanpageAdminProfileRequiredExceptionWhenStaffIdIsBlank() {
-            FanpageAdminProfileJpaEntity profile = new FanpageAdminProfileJpaEntity();
-            profile.setStaffId("");
-            profile.setOrgName("School of Computing");
-
-            when(securityContextPort.getCurrentUserEmail()).thenReturn(testEmail);
-            when(fanpageAdminProfileJpaRepository.findByUserEmail(testEmail))
-                    .thenReturn(Optional.of(profile));
-
-            assertThrows(FanpageAdminProfileRequiredException.class, () ->
-                    fanpageCommandService.createFanpage(registerDto));
-
-            verify(fanpageRepository, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("shouldThrowFanpageAdminProfileRequiredExceptionWhenOrgNameIsBlank")
-        void shouldThrowFanpageAdminProfileRequiredExceptionWhenOrgNameIsBlank() {
-            FanpageAdminProfileJpaEntity profile = new FanpageAdminProfileJpaEntity();
-            profile.setStaffId("STAFF001");
-            profile.setOrgName("   ");
-
-            when(securityContextPort.getCurrentUserEmail()).thenReturn(testEmail);
-            when(fanpageAdminProfileJpaRepository.findByUserEmail(testEmail))
-                    .thenReturn(Optional.of(profile));
-
-            assertThrows(FanpageAdminProfileRequiredException.class, () ->
-                    fanpageCommandService.createFanpage(registerDto));
-
-            verify(fanpageRepository, never()).save(any());
-        }
-
-        @Test
         @DisplayName("shouldAllowFanpageCreationWhenProfileComplete")
         void shouldAllowFanpageCreationWhenProfileComplete() {
-            FanpageAdminProfileJpaEntity profile = new FanpageAdminProfileJpaEntity();
-            profile.setStaffId("STAFF001");
-            profile.setOrgName("School of Computing");
+            doNothing().when(fanpageRegistrationEligibilityService).assertCurrentUserCanRegister();
+            when(fanpageRepository.existsByName(registerDto.name())).thenReturn(false);
+            when(securityContextPort.getCurrentUserEmail()).thenReturn(testEmail);
 
             User user = new User();
             user.setId(50L);
@@ -139,10 +103,6 @@ class FanpageCommandServiceImplTest {
             savedFanpage.setName("Tech Club");
             savedFanpage.setStatus(FanpageStatusEnum.PENDING.name());
 
-            when(securityContextPort.getCurrentUserEmail()).thenReturn(testEmail);
-            when(fanpageAdminProfileJpaRepository.findByUserEmail(testEmail))
-                    .thenReturn(Optional.of(profile));
-            when(fanpageRepository.existsByName(registerDto.name())).thenReturn(false);
             when(userRepository.findByEmail(testEmail)).thenReturn(user);
             when(fanpageDtoMapper.toFanpage(registerDto)).thenReturn(fanpage);
             when(fanpageRepository.save(fanpage)).thenReturn(savedFanpage);

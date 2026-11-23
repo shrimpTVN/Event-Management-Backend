@@ -58,14 +58,13 @@ class FanpageStatisticCommandServiceImplTest {
     }
 
     @Test
-    @DisplayName("Should throw AuthException when caller is not an active member")
-    void shouldThrowWhenCallerNotActiveMember() {
+    @DisplayName("Should throw AuthException when caller is not an active admin of the target fanpage")
+    void shouldThrowWhenCallerNotActiveAdminOfTargetFanpage() {
         Fanpage fanpage = new Fanpage();
         fanpage.setId(fanpageId);
         when(fanpageRepository.findByIdAndIsActive(fanpageId, true)).thenReturn(Optional.of(fanpage));
         when(securityContextPort.getCurrentUserId()).thenReturn(currentUserId);
-        when(securityContextPort.hasRole("ADMIN")).thenReturn(false);
-        when(fanpageMemberRepository.isActiveMember(fanpageId, currentUserId)).thenReturn(false);
+        when(fanpageMemberRepository.isAdminOfFanpage(fanpageId, currentUserId)).thenReturn(false);
 
         AlertAbsentStudentsDto dto = new AlertAbsentStudentsDto(5L, List.of(42L), "Warning message");
 
@@ -75,7 +74,23 @@ class FanpageStatisticCommandServiceImplTest {
     }
 
     @Test
-    @DisplayName("Should successfully dispatch notifications to all students")
+    @DisplayName("Should throw AuthException even if caller is system ADMIN when not an admin of target fanpage")
+    void shouldThrowWhenSuperadminNotAdminOfTargetFanpage() {
+        Fanpage fanpage = new Fanpage();
+        fanpage.setId(fanpageId);
+        when(fanpageRepository.findByIdAndIsActive(fanpageId, true)).thenReturn(Optional.of(fanpage));
+        when(securityContextPort.getCurrentUserId()).thenReturn(currentUserId);
+        when(fanpageMemberRepository.isAdminOfFanpage(fanpageId, currentUserId)).thenReturn(false);
+
+        AlertAbsentStudentsDto dto = new AlertAbsentStudentsDto(5L, List.of(42L), "Warning message");
+
+        assertThrows(AuthException.class, () ->
+                commandService.alertAbsentStudents(fanpageId, dto));
+        verifyNoInteractions(notificationCommandService);
+    }
+
+    @Test
+    @DisplayName("Should successfully dispatch notifications when caller is active target-fanpage admin")
     void shouldDispatchNotificationsSuccessfully() {
         Fanpage fanpage = new Fanpage();
         fanpage.setId(fanpageId);
@@ -84,7 +99,7 @@ class FanpageStatisticCommandServiceImplTest {
 
         when(fanpageRepository.findByIdAndIsActive(fanpageId, true)).thenReturn(Optional.of(fanpage));
         when(securityContextPort.getCurrentUserId()).thenReturn(currentUserId);
-        when(securityContextPort.hasRole("ADMIN")).thenReturn(true);
+        when(fanpageMemberRepository.isAdminOfFanpage(fanpageId, currentUserId)).thenReturn(true);
 
         AlertAbsentStudentsDto dto = new AlertAbsentStudentsDto(
                 5L,
@@ -117,7 +132,7 @@ class FanpageStatisticCommandServiceImplTest {
 
         when(fanpageRepository.findByIdAndIsActive(fanpageId, true)).thenReturn(Optional.of(fanpage));
         when(securityContextPort.getCurrentUserId()).thenReturn(currentUserId);
-        when(securityContextPort.hasRole("ADMIN")).thenReturn(true);
+        when(fanpageMemberRepository.isAdminOfFanpage(fanpageId, currentUserId)).thenReturn(true);
 
         AlertAbsentStudentsDto dto = new AlertAbsentStudentsDto(5L, List.of(42L), "   ");
 

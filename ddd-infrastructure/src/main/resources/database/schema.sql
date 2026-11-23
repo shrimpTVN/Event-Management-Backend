@@ -130,13 +130,15 @@ CREATE TABLE fanpage_admin_profiles
     title        VARCHAR(100),
     dob          DATE,
     phone_number VARCHAR(20),
-    user_id      BIGINT      NOT NULL UNIQUE,
+    user_id      BIGINT      NOT NULL,
     is_active    BOOLEAN     NOT NULL DEFAULT TRUE,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by   BIGINT,
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by   BIGINT,
-    CONSTRAINT pk_fanpage_admin_profiles PRIMARY KEY (id)
+    CONSTRAINT pk_fanpage_admin_profiles PRIMARY KEY (id),
+    CONSTRAINT uk_staff_profile_user_id UNIQUE (user_id),
+    CONSTRAINT uk_staff_profile_staff_id UNIQUE (staff_id)
 );
 
 -- ============================================================

@@ -115,10 +115,11 @@ public class AuthServiceImpl implements AuthService {
                     null,
                     googleUserInfo.pictureUrl()
             );
-            Long userId = userCommandService.createUser(newUserDto, RoleEnum.STUDENT.name());
+            RoleEnum role = resolveRoleByEmail(googleUserInfo.email());
+            Long userId = userCommandService.createUser(newUserDto, role.name());
             user = userRepository.findById(userId)
                     .orElseThrow(() -> new ResourceNotFoundException("User not found after creation: " + userId));
-            log.info("Google user:{} auto-provisioned successfully with ID:{}", googleUserInfo.email(), userId);
+            log.info("Google user:{} auto-provisioned successfully with role:{} and ID:{}", googleUserInfo.email(), role.name(), userId);
         } else {
             if (user.getProviderId() == null || user.getProviderId().isBlank()) {
                 user.setProviderId(googleUserInfo.googleId());
@@ -141,8 +142,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void register(UserDto userDto, String otpCode) {
         otpCommandService.verifyOtp(userDto.email(), otpCode);
-        userCommandService.createUser(userDto, RoleEnum.STUDENT.name());
-        log.info("User:{} registered successfully with role STUDENT", userDto.email());
+        RoleEnum role = resolveRoleByEmail(userDto.email());
+        userCommandService.createUser(userDto, role.name());
+        log.info("User:{} registered successfully with role {}", userDto.email(), role.name());
+    }
+
+    private RoleEnum resolveRoleByEmail(String email) {
+        if (email != null && email.trim().toLowerCase().endsWith("@student.ctu.edu.vn")) {
+            return RoleEnum.STUDENT;
+        }
+        return RoleEnum.FANPAGE_ADMIN;
     }
 
 

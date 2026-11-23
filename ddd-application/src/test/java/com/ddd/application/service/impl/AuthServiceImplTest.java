@@ -68,10 +68,10 @@ class AuthServiceImplTest {
     class RegisterTests {
 
         @Test
-        @DisplayName("shouldRegisterSuccessfullyWithValidOtp: verifies OTP and creates user without profile")
-        void shouldRegisterSuccessfullyWithValidOtp() {
+        @DisplayName("shouldRegisterSuccessfullyWithStudentEmail: assigns STUDENT role when email ends with @student.ctu.edu.vn")
+        void shouldRegisterSuccessfullyWithStudentEmail() {
             UserDto userDto = new UserDto(
-                    "student@example.com",
+                    "b2100001@student.ctu.edu.vn",
                     "password123",
                     null,
                     "John",
@@ -81,13 +81,37 @@ class AuthServiceImplTest {
             );
             String otpCode = "123456";
 
-            doNothing().when(otpCommandService).verifyOtp("student@example.com", otpCode);
+            doNothing().when(otpCommandService).verifyOtp("b2100001@student.ctu.edu.vn", otpCode);
             when(userCommandService.createUser(userDto, RoleEnum.STUDENT.name())).thenReturn(1L);
 
             authService.register(userDto, otpCode);
 
-            verify(otpCommandService).verifyOtp("student@example.com", otpCode);
+            verify(otpCommandService).verifyOtp("b2100001@student.ctu.edu.vn", otpCode);
             verify(userCommandService).createUser(userDto, RoleEnum.STUDENT.name());
+            verifyNoInteractions(studentProfileCommandService);
+        }
+
+        @Test
+        @DisplayName("shouldRegisterSuccessfullyWithNonStudentEmail: assigns FANPAGE_ADMIN role when email does not end with @student.ctu.edu.vn")
+        void shouldRegisterSuccessfullyWithNonStudentEmail() {
+            UserDto userDto = new UserDto(
+                    "lecturer@ctu.edu.vn",
+                    "password123",
+                    null,
+                    "Nguyen",
+                    "Van A",
+                    null,
+                    null
+            );
+            String otpCode = "123456";
+
+            doNothing().when(otpCommandService).verifyOtp("lecturer@ctu.edu.vn", otpCode);
+            when(userCommandService.createUser(userDto, RoleEnum.FANPAGE_ADMIN.name())).thenReturn(2L);
+
+            authService.register(userDto, otpCode);
+
+            verify(otpCommandService).verifyOtp("lecturer@ctu.edu.vn", otpCode);
+            verify(userCommandService).createUser(userDto, RoleEnum.FANPAGE_ADMIN.name());
             verifyNoInteractions(studentProfileCommandService);
         }
 
@@ -121,11 +145,11 @@ class AuthServiceImplTest {
     class GoogleOAuth2Tests {
 
         @Test
-        @DisplayName("shouldAutoProvisionNewUserOnGoogleLogin: creates User with STUDENT role if not exists")
-        void shouldAutoProvisionNewUserOnGoogleLogin() {
+        @DisplayName("shouldAutoProvisionStudentUserOnGoogleLogin: creates User with STUDENT role if email ends with @student.ctu.edu.vn")
+        void shouldAutoProvisionStudentUserOnGoogleLogin() {
             String idToken = "valid-google-id-token";
             GoogleUserInfo googleUserInfo = GoogleUserInfo.builder()
-                    .email("newgoogleuser@example.com")
+                    .email("b2100002@student.ctu.edu.vn")
                     .googleId("google-sub-12345")
                     .firstName("Jane")
                     .lastName("Doe")
@@ -133,10 +157,10 @@ class AuthServiceImplTest {
                     .build();
 
             when(googleTokenVerifier.verifyToken(idToken)).thenReturn(googleUserInfo);
-            when(userRepository.findByEmail("newgoogleuser@example.com")).thenReturn(null);
+            when(userRepository.findByEmail("b2100002@student.ctu.edu.vn")).thenReturn(null);
 
             UserDto expectedUserDto = new UserDto(
-                    "newgoogleuser@example.com",
+                    "b2100002@student.ctu.edu.vn",
                     null,
                     "google-sub-12345",
                     "Jane",
@@ -148,7 +172,7 @@ class AuthServiceImplTest {
 
             User provisionedUser = new User();
             provisionedUser.setId(10L);
-            provisionedUser.setEmail("newgoogleuser@example.com");
+            provisionedUser.setEmail("b2100002@student.ctu.edu.vn");
             provisionedUser.setProviderId("google-sub-12345");
             Role studentRole = new Role();
             studentRole.setId(1L);
@@ -165,12 +189,57 @@ class AuthServiceImplTest {
             assertNotNull(result);
             assertEquals("mock-jwt-token", result.jwtToken());
             assertEquals(10L, result.loginDto().userId());
-            assertEquals("newgoogleuser@example.com", result.loginDto().email());
+            assertEquals("b2100002@student.ctu.edu.vn", result.loginDto().email());
             assertTrue(result.loginDto().roles().contains(RoleEnum.STUDENT.name()));
+        }
 
-            verify(userCommandService).createUser(expectedUserDto, RoleEnum.STUDENT.name());
-            verify(refreshTokenRepository).save(any(RefreshToken.class));
-            verifyNoInteractions(studentProfileCommandService);
+        @Test
+        @DisplayName("shouldAutoProvisionStaffUserOnGoogleLogin: creates User with FANPAGE_ADMIN role if email is staff/non-student")
+        void shouldAutoProvisionStaffUserOnGoogleLogin() {
+            String idToken = "valid-google-id-token-staff";
+            GoogleUserInfo googleUserInfo = GoogleUserInfo.builder()
+                    .email("lecturer@ctu.edu.vn")
+                    .googleId("google-sub-67890")
+                    .firstName("Minh")
+                    .lastName("Nguyen")
+                    .pictureUrl("https://example.com/staff-photo.jpg")
+                    .build();
+
+            when(googleTokenVerifier.verifyToken(idToken)).thenReturn(googleUserInfo);
+            when(userRepository.findByEmail("lecturer@ctu.edu.vn")).thenReturn(null);
+
+            UserDto expectedUserDto = new UserDto(
+                    "lecturer@ctu.edu.vn",
+                    null,
+                    "google-sub-67890",
+                    "Minh",
+                    "Nguyen",
+                    null,
+                    "https://example.com/staff-photo.jpg"
+            );
+            when(userCommandService.createUser(expectedUserDto, RoleEnum.FANPAGE_ADMIN.name())).thenReturn(20L);
+
+            User provisionedUser = new User();
+            provisionedUser.setId(20L);
+            provisionedUser.setEmail("lecturer@ctu.edu.vn");
+            provisionedUser.setProviderId("google-sub-67890");
+            Role staffRole = new Role();
+            staffRole.setId(2L);
+            staffRole.setName(RoleEnum.FANPAGE_ADMIN.name());
+            provisionedUser.setRoles(Set.of(staffRole));
+
+            when(userRepository.findById(20L)).thenReturn(Optional.of(provisionedUser));
+            when(jwtUtil.generateJwtTokenFromUser(provisionedUser)).thenReturn("mock-jwt-token-staff");
+            when(tokenHashUtil.hash(anyString())).thenReturn("hashed-refresh-token-staff");
+            when(jwtUtil.getRefreshExpirationMs()).thenReturn(604800000L);
+
+            LoginResult result = authService.loginWithGoogle(idToken);
+
+            assertNotNull(result);
+            assertEquals("mock-jwt-token-staff", result.jwtToken());
+            assertEquals(20L, result.loginDto().userId());
+            assertEquals("lecturer@ctu.edu.vn", result.loginDto().email());
+            assertTrue(result.loginDto().roles().contains(RoleEnum.FANPAGE_ADMIN.name()));
         }
 
         @Test
@@ -230,6 +299,23 @@ class AuthServiceImplTest {
             verify(userCommandService).createPassword(newPassword);
             verify(refreshTokenRepository).revokeAllByUserId(userId);
             verify(refreshTokenRepository).save(any(RefreshToken.class));
+        }
+
+        @Test
+        @DisplayName("shouldNotRevokeTokensWhenUserCommandServiceThrowsPasswordAlreadySetException")
+        void shouldNotRevokeTokensWhenUserCommandServiceThrowsPasswordAlreadySetException() {
+            Long userId = 1L;
+            String newPassword = "newSecurePassword123";
+
+            when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+            doThrow(new com.ddd.domain.exception.PasswordAlreadySetException())
+                    .when(userCommandService).createPassword(newPassword);
+
+            assertThrows(com.ddd.domain.exception.PasswordAlreadySetException.class,
+                    () -> authService.createPassword(newPassword));
+
+            verify(refreshTokenRepository, never()).revokeAllByUserId(anyLong());
+            verify(refreshTokenRepository, never()).save(any());
         }
 
         @Test
