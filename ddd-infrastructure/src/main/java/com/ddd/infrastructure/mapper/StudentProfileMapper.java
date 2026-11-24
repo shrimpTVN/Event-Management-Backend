@@ -15,5 +15,6 @@ public interface StudentProfileMapper {
 
     @Mapping(target="userId", source = "user.id")
     @Mapping(target="majorId", source = "major.id")
+    @Mapping(target="schoolId", source = "major.school.id")
     StudentProfile toDomain(StudentProfileJpaEntity studentProfileJpaEntity);
 }
