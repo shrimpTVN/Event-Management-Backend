@@ -1,5 +1,6 @@
 package com.ddd.application.service.registration.impl;
 
+import com.ddd.application.mapper.RegistrationDtoMapper;
 import com.ddd.application.service.criteriaprogress.StudentCriteriaTransactionCommandService;
 import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.application.service.event.cache.RecommendationCacheService;
@@ -44,6 +45,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final SecurityContextPort securityContextPort;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final StudentProfileRepository studentProfileRepository;
+    private final RegistrationDtoMapper registrationDtoMapper;
     private final RecommendationCacheService recommendationCacheService;
 
     private Registration isRegistered(User user,  Long eventId) {
@@ -62,7 +64,8 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     public void registerEvent(Long eventId) {
         Event event = eventRepository.findById(eventId);
         Instant now = Instant.now();
-        if (!EventStatusEnum.PUBLISHED.name().equalsIgnoreCase(event.getStatus())
+        if (!event.isActive()
+                || !EventStatusEnum.PUBLISHED.name().equalsIgnoreCase(event.getStatus())
                 || (event.getDateClose() != null && event.getDateClose().isBefore(now))
                 || (event.getDateOpen() != null && event.getDateOpen().isAfter(now))) {
             throw new EventRegistrationException("The event registration is not open yet or has already closed!");
@@ -79,11 +82,20 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
             throw new StudentProfileRequiredException();
         }
 
+        if (event.getSchoolId() != null) {
+            if (profile.getSchoolId() == null) {
+                throw new EventRegistrationException(
+                        "Student profile is missing major or school information. Please update your profile before registering!");
+            }
+
+            if (!event.getSchoolId().equals(profile.getSchoolId())) {
+                throw new EventRegistrationException(
+                        "This event is only open to students from the designated school!");
+            }
+        }
+
         Registration reg = isRegistered(user, eventId);
-        reg.setUserId(user.getId());
-        reg.setEventId(eventId);
-        reg.setRegDate(Instant.now());
-        reg.setStatus(RegistrationStatusEnum.REGISTERED);
+        registrationDtoMapper.updateRegistrationForRegister(reg, user.getId(), eventId, Instant.now(), RegistrationStatusEnum.REGISTERED);
         registrationRepository.save(reg);
         recommendationCacheService.evict(user.getId());
     }

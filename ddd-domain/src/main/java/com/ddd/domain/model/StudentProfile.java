@@ -14,7 +14,12 @@ public class StudentProfile extends BaseModel {
     private String studentId;
     private Integer kNumber;
     private Long majorId;
+    private Long schoolId;
     private Long userId;
+
+    public StudentProfile(String studentId, Integer kNumber, Long majorId, Long userId) {
+        this(studentId, kNumber, majorId, null, userId);
+    }
 
 
     public void assignUser(Long userId) {

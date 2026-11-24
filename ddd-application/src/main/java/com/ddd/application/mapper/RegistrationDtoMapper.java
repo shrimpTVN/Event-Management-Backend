@@ -6,13 +6,36 @@ import com.ddd.application.dto.registration.RegistrationArrangedInfoDto;
 import com.ddd.application.dto.registration.RegistrationInfoDto;
 import com.ddd.application.dto.registration.StudentProfileBasicInfoDto;
 import com.ddd.application.dto.registration.StudentRegistrationInfoDto;
+import com.ddd.domain.enums.RegistrationStatusEnum;
+import com.ddd.domain.model.Registration;
 import com.ddd.infrastructure.entity.RegistrationJpaEntity;
 import com.ddd.infrastructure.entity.UserJpaEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+
+import java.time.Instant;
 
 @Mapper(componentModel = "spring", uses = {EventDtoMapper.class})
 public interface RegistrationDtoMapper {
+
+    @Mapping(target = "userId", source = "userId")
+    @Mapping(target = "eventId", source = "eventId")
+    @Mapping(target = "regDate", source = "regDate")
+    @Mapping(target = "status", source = "status")
+    @Mapping(target = "reason", expression = "java(null)")
+    @Mapping(target = "checkInAt", ignore = true)
+    @Mapping(target = "checkOutAt", ignore = true)
+    @Mapping(target = "checkInEvidenceUrl", ignore = true)
+    @Mapping(target = "checkOutEvidenceUrl", ignore = true)
+    @Mapping(target = "checkInBy", ignore = true)
+    @Mapping(target = "checkOutBy", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    void updateRegistrationForRegister(@MappingTarget Registration registration, Long userId, Long eventId, Instant regDate, RegistrationStatusEnum status);
+
 
 
     @Mapping(target="eventInfo", source="entity.event")

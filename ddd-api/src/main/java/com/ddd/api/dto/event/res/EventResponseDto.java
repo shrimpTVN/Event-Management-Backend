@@ -25,6 +25,8 @@ public record EventResponseDto(
         String criteriaName,
         String fanpageName,
         Long fanpageId,
+        Long schoolId,
+        String schoolName,
         boolean isActive,
         boolean allowSelfCheck,
         SemesterResponseDto semester,
@@ -54,6 +56,8 @@ public record EventResponseDto(
             String criteriaName,
             String fanpageName,
             Long fanpageId,
+            Long schoolId,
+            String schoolName,
             boolean isActive,
             boolean allowSelfCheck,
             SemesterResponseDto semester,
@@ -61,7 +65,66 @@ public record EventResponseDto(
             Instant updatedAt
     ) {
         this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity, femaleQuantity,
-                bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName, fanpageId, isActive, allowSelfCheck, semester, eventPoints, updatedAt, 0L, false, false, false);
+                bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName, fanpageId,
+                schoolId, schoolName, isActive, allowSelfCheck, semester, eventPoints, updatedAt, 0L, false, false, false);
+    }
+
+    public EventResponseDto(
+            Long id,
+            String name,
+            String description,
+            String location,
+            Instant dateOpen,
+            Instant dateClose,
+            Instant dateHappen,
+            Integer capacity,
+            Integer maleQuantity,
+            Integer femaleQuantity,
+            String bannerUrl,
+            String status,
+            Long eventTypeId,
+            String eventTypeName,
+            Long criteriaId,
+            String criteriaName,
+            String fanpageName,
+            Long fanpageId,
+            boolean isActive,
+            boolean allowSelfCheck,
+            SemesterResponseDto semester,
+            List<EventPointResponseDto> eventPoints,
+            Instant updatedAt
+    ) {
+        this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity, femaleQuantity,
+                bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName, fanpageId,
+                null, null, isActive, allowSelfCheck, semester, eventPoints, updatedAt, 0L, false, false, false);
+    }
+
+    public EventResponseDto(
+            Long id,
+            String name,
+            String description,
+            String location,
+            Instant dateOpen,
+            Instant dateClose,
+            Instant dateHappen,
+            Integer capacity,
+            Integer maleQuantity,
+            Integer femaleQuantity,
+            String bannerUrl,
+            String status,
+            String eventTypeName,
+            String criteriaName,
+            String fanpageName,
+            Long fanpageId,
+            Long schoolId,
+            String schoolName,
+            boolean isActive,
+            SemesterResponseDto semester,
+            List<EventPointResponseDto> eventPoints,
+            Instant updatedAt) {
+        this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity, femaleQuantity,
+                bannerUrl, status, null, eventTypeName, null, criteriaName, fanpageName, fanpageId,
+                schoolId, schoolName, isActive, true, semester, eventPoints, updatedAt, 0L, false, false, false);
     }
 
     public EventResponseDto(
@@ -87,7 +150,8 @@ public record EventResponseDto(
             List<EventPointResponseDto> eventPoints,
             Instant updatedAt) {
         this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity, femaleQuantity,
-                bannerUrl, status, null, eventTypeName, null, criteriaName, fanpageName, fanpageId, isActive, allowSelfCheck, semester, eventPoints, updatedAt, 0L, false, false, false);
+                bannerUrl, status, null, eventTypeName, null, criteriaName, fanpageName, fanpageId,
+                null, null, isActive, allowSelfCheck, semester, eventPoints, updatedAt, 0L, false, false, false);
     }
 
     public EventResponseDto(
@@ -112,7 +176,8 @@ public record EventResponseDto(
             List<EventPointResponseDto> eventPoints,
             Instant updatedAt) {
         this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity, femaleQuantity,
-                bannerUrl, status, null, eventTypeName, null, criteriaName, fanpageName, fanpageId, isActive, true, semester, eventPoints, updatedAt, 0L, false, false, false);
+                bannerUrl, status, null, eventTypeName, null, criteriaName, fanpageName, fanpageId,
+                null, null, isActive, true, semester, eventPoints, updatedAt, 0L, false, false, false);
     }
 
     public EventResponseDto(
@@ -139,6 +204,7 @@ public record EventResponseDto(
             List<EventPointResponseDto> eventPoints,
             Instant updatedAt) {
         this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity, femaleQuantity,
-                bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName, fanpageId, isActive, true, semester, eventPoints, updatedAt, 0L, false, false, false);
+                bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName, fanpageId,
+                null, null, isActive, true, semester, eventPoints, updatedAt, 0L, false, false, false);
     }
 }

@@ -317,10 +317,12 @@ CREATE TABLE events
     female_quantity INTEGER               DEFAULT 0,
     banner_url      TEXT         NOT NULL,
     status          VARCHAR(50)  NOT NULL DEFAULT 'DRAFT',
+    allow_self_check BOOLEAN      NOT NULL DEFAULT TRUE,
     event_type_id   BIGINT,
     criteria_id     BIGINT,
     fanpage_id      BIGINT,
     semester_id     BIGINT,
+    school_id       BIGINT,
     is_active       BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_by      BIGINT,
@@ -632,7 +634,9 @@ ALTER TABLE events
     ADD CONSTRAINT fk_events_fanpages
         FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_events_semesters
-        FOREIGN KEY (semester_id) REFERENCES semesters (id) ON DELETE RESTRICT;
+        FOREIGN KEY (semester_id) REFERENCES semesters (id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_events_schools
+        FOREIGN KEY (school_id) REFERENCES schools (id) ON DELETE SET NULL;
 
 ALTER TABLE event_points
     ADD CONSTRAINT fk_event_points_events

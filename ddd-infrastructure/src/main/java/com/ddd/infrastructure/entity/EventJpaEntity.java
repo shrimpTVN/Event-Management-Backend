@@ -78,4 +78,8 @@ public class EventJpaEntity extends BaseEntityJpa {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "semester_id")
     private SemesterJpaEntity semester;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "school_id")
+    private SchoolJpaEntity school;
 }
