@@ -5,13 +5,22 @@ import com.ddd.api.dto.event.req.EventFilterRequestDto;
 import com.ddd.api.dto.event.req.EventPointRequestDto;
 import com.ddd.api.dto.event.req.EventUpdateRequestDto;
 import com.ddd.api.dto.event.res.EventPointResponseDto;
+import com.ddd.api.dto.event.res.EventRecommendationResponseDto;
 import com.ddd.api.dto.event.res.EventResponseDto;
+import com.ddd.api.dto.event.res.PointCategoryGainResponseDto;
+import com.ddd.api.dto.event.res.StoredEventStatusResponseDto;
 import com.ddd.application.dto.event.*;
+import com.ddd.application.dto.recommendation.EventRecommendationDto;
+import com.ddd.application.dto.recommendation.PointCategoryGainDto;
+import com.ddd.api.dto.event.req.ViewedEventsRequestDto;
+import com.ddd.application.dto.recommendation.ViewedEventsDto;
 import org.mapstruct.Mapper;
 
 
 @Mapper(componentModel = "spring", uses = {SemesterApiMapper.class})
 public interface EventApiMapper {
+
+    ViewedEventsDto toViewedEventsDto(ViewedEventsRequestDto request);
 
     EventCreateDto toCreateDto(EventCreateRequestDto requestDto);
 
@@ -23,7 +32,11 @@ public interface EventApiMapper {
 
     EventResponseDto toResponseDto(EventInfoDto eventInfoDto);
 
-    com.ddd.api.dto.event.res.StoredEventStatusResponseDto toStoredStatusResponseDto(StoredEventStatusDto dto);
+    StoredEventStatusResponseDto toStoredStatusResponseDto(StoredEventStatusDto dto);
 
     EventSearchCriteriaDto toEventSearchCriteriaDto(EventFilterRequestDto request);
+
+    EventRecommendationResponseDto toRecommendationResponseDto(EventRecommendationDto dto);
+
+    PointCategoryGainResponseDto toPointCategoryGainResponseDto(PointCategoryGainDto dto);
 }

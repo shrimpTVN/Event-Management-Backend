@@ -2,6 +2,7 @@ package com.ddd.application.service.registration.impl;
 
 import com.ddd.application.service.criteriaprogress.StudentCriteriaTransactionCommandService;
 import com.ddd.application.service.registration.RegistrationCommandService;
+import com.ddd.application.service.event.cache.RecommendationCacheService;
 import com.ddd.application.service.semesterpoint.StudentSemesterPointCommandService;
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.PointTransactionStatusEnum;
@@ -43,6 +44,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final SecurityContextPort securityContextPort;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final StudentProfileRepository studentProfileRepository;
+    private final RecommendationCacheService recommendationCacheService;
 
     private Registration isRegistered(User user,  Long eventId) {
         if (registrationRepository.isRegistered(user.getId(), eventId)) {
@@ -83,6 +85,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         reg.setRegDate(Instant.now());
         reg.setStatus(RegistrationStatusEnum.REGISTERED);
         registrationRepository.save(reg);
+        recommendationCacheService.evict(user.getId());
     }
 
     @Override
@@ -104,6 +107,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         reg.setReason(reason);
 
         registrationRepository.save(reg);
+        recommendationCacheService.evict(userId);
     }
 
     private void validateEventAttendanceReadiness(Event event) {
