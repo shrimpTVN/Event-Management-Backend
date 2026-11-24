@@ -8,6 +8,7 @@ public record EventSearchCriteriaDto(
         String status,
         List<Long> eventTypeIds,
         Long semesterId,
+        Long schoolId,
         List<Long> criteriaIds,
         List<Long> pointCategoryIds,
         Instant dateHappenFrom,

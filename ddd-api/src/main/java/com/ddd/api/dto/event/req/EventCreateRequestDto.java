@@ -24,6 +24,7 @@ public record EventCreateRequestDto(
         @Positive Long criteriaId,
         @NotNull @Positive Long fanpageId,
         @NotNull @Positive Long semesterId,
+        @Positive Long schoolId,
         List<@Valid EventPointRequestDto> eventPoints
 ) {
 }

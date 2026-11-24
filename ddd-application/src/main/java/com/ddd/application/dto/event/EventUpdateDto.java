@@ -17,6 +17,7 @@ public record EventUpdateDto(
         Long eventTypeId,
         Long criteriaId,
         Long semesterId,
+        Long schoolId,
         List<EventPointCreateDto> eventPoints
 ) {
 }

@@ -3,12 +3,16 @@ package com.ddd.application.service.registration.impl;
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.RegistrationStatusEnum;
 import com.ddd.domain.exception.EventAttendanceException;
+import com.ddd.domain.exception.EventRegistrationException;
 import com.ddd.domain.model.Event;
 import com.ddd.domain.model.Registration;
+import com.ddd.domain.model.StudentProfile;
+import com.ddd.domain.model.User;
 import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
 import com.ddd.application.service.criteriaprogress.StudentCriteriaTransactionCommandService;
 import com.ddd.application.service.semesterpoint.StudentSemesterPointCommandService;
+import com.ddd.application.mapper.RegistrationDtoMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +24,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,6 +57,12 @@ class RegistrationCommandServiceImplTest {
 
     @Mock
     private StudentCriteriaTransactionCommandService studentCriteriaTransactionCommandService;
+
+    @Mock
+    private StudentProfileRepository studentProfileRepository;
+
+    @Mock
+    private RegistrationDtoMapper registrationDtoMapper;
 
     @Mock
     private SecurityContextPort securityContextPort;
@@ -189,5 +200,161 @@ class RegistrationCommandServiceImplTest {
 
         assertThrows(EventAttendanceException.class, () ->
                 registrationCommandService.fanpageMemberBatchAbsent(eventId, studentUserIds));
+    }
+
+    @Test
+    @DisplayName("Should throw EventRegistrationException when event is inactive")
+    void registerEvent_throwsException_whenEventIsInactive() {
+        Long eventId = 10L;
+        Event event = createTestEvent(eventId, 20L);
+        event.setActive(false);
+        event.setDateOpen(Instant.now().minus(1, ChronoUnit.DAYS));
+        event.setDateClose(Instant.now().plus(1, ChronoUnit.DAYS));
+
+        when(eventRepository.findById(eventId)).thenReturn(event);
+
+        assertThrows(EventRegistrationException.class, () ->
+                registrationCommandService.registerEvent(eventId));
+    }
+
+    @Test
+    @DisplayName("Should successfully register when event has no school restriction (schoolId is null)")
+    void registerEvent_success_whenEventHasNoSchoolRestriction() {
+        Long eventId = 10L;
+        Long userId = 100L;
+
+        Event event = createTestEvent(eventId, 20L);
+        event.setDateOpen(Instant.now().minus(1, ChronoUnit.DAYS));
+        event.setDateClose(Instant.now().plus(1, ChronoUnit.DAYS));
+        event.setSchoolId(null);
+
+        User user = new User();
+        user.setId(userId);
+
+        when(eventRepository.findById(eventId)).thenReturn(event);
+        when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(registrationRepository.isRegistered(userId, eventId)).thenReturn(false);
+
+        assertDoesNotThrow(() -> registrationCommandService.registerEvent(eventId));
+        verify(registrationDtoMapper).updateRegistrationForRegister(any(Registration.class), eq(userId), eq(eventId), any(Instant.class), eq(RegistrationStatusEnum.REGISTERED));
+        verify(registrationRepository).save(any(Registration.class));
+    }
+
+    @Test
+    @DisplayName("Should successfully register when student belongs to the designated school")
+    void registerEvent_success_whenStudentBelongsToDesignatedSchool() {
+        Long eventId = 10L;
+        Long userId = 100L;
+        Long schoolId = 1L;
+
+        Event event = createTestEvent(eventId, 20L);
+        event.setDateOpen(Instant.now().minus(1, ChronoUnit.DAYS));
+        event.setDateClose(Instant.now().plus(1, ChronoUnit.DAYS));
+        event.setSchoolId(schoolId);
+
+        User user = new User();
+        user.setId(userId);
+
+        StudentProfile profile = new StudentProfile();
+        profile.setUserId(userId);
+        profile.setSchoolId(schoolId);
+
+        when(eventRepository.findById(eventId)).thenReturn(event);
+        when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(studentProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
+        when(registrationRepository.isRegistered(userId, eventId)).thenReturn(false);
+
+        assertDoesNotThrow(() -> registrationCommandService.registerEvent(eventId));
+        verify(registrationDtoMapper).updateRegistrationForRegister(any(Registration.class), eq(userId), eq(eventId), any(Instant.class), eq(RegistrationStatusEnum.REGISTERED));
+        verify(registrationRepository).save(any(Registration.class));
+    }
+
+    @Test
+    @DisplayName("Should throw EventRegistrationException when student has no profile and event has school restriction")
+    void registerEvent_throwsException_whenStudentHasNoProfile() {
+        Long eventId = 10L;
+        Long userId = 100L;
+        Long schoolId = 1L;
+
+        Event event = createTestEvent(eventId, 20L);
+        event.setDateOpen(Instant.now().minus(1, ChronoUnit.DAYS));
+        event.setDateClose(Instant.now().plus(1, ChronoUnit.DAYS));
+        event.setSchoolId(schoolId);
+
+        User user = new User();
+        user.setId(userId);
+
+        when(eventRepository.findById(eventId)).thenReturn(event);
+        when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(studentProfileRepository.findByUserId(userId)).thenReturn(Optional.empty());
+
+        EventRegistrationException ex = assertThrows(EventRegistrationException.class, () ->
+                registrationCommandService.registerEvent(eventId));
+        assertTrue(ex.getMessage().contains("Student profile not found"));
+        verify(registrationRepository, never()).save(any(Registration.class));
+    }
+
+    @Test
+    @DisplayName("Should throw EventRegistrationException when student profile has no school assigned")
+    void registerEvent_throwsException_whenStudentHasNoSchool() {
+        Long eventId = 10L;
+        Long userId = 100L;
+        Long schoolId = 1L;
+
+        Event event = createTestEvent(eventId, 20L);
+        event.setDateOpen(Instant.now().minus(1, ChronoUnit.DAYS));
+        event.setDateClose(Instant.now().plus(1, ChronoUnit.DAYS));
+        event.setSchoolId(schoolId);
+
+        User user = new User();
+        user.setId(userId);
+
+        StudentProfile profile = new StudentProfile();
+        profile.setUserId(userId);
+        profile.setSchoolId(null);
+
+        when(eventRepository.findById(eventId)).thenReturn(event);
+        when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(studentProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
+
+        EventRegistrationException ex = assertThrows(EventRegistrationException.class, () ->
+                registrationCommandService.registerEvent(eventId));
+        assertTrue(ex.getMessage().contains("missing major or school information"));
+        verify(registrationRepository, never()).save(any(Registration.class));
+    }
+
+    @Test
+    @DisplayName("Should throw EventRegistrationException when student belongs to a different school")
+    void registerEvent_throwsException_whenStudentBelongsToDifferentSchool() {
+        Long eventId = 10L;
+        Long userId = 100L;
+        Long eventSchoolId = 1L;
+        Long studentSchoolId = 2L;
+
+        Event event = createTestEvent(eventId, 20L);
+        event.setDateOpen(Instant.now().minus(1, ChronoUnit.DAYS));
+        event.setDateClose(Instant.now().plus(1, ChronoUnit.DAYS));
+        event.setSchoolId(eventSchoolId);
+
+        User user = new User();
+        user.setId(userId);
+
+        StudentProfile profile = new StudentProfile();
+        profile.setUserId(userId);
+        profile.setSchoolId(studentSchoolId);
+
+        when(eventRepository.findById(eventId)).thenReturn(event);
+        when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(studentProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
+
+        EventRegistrationException ex = assertThrows(EventRegistrationException.class, () ->
+                registrationCommandService.registerEvent(eventId));
+        assertTrue(ex.getMessage().contains("only open to students from the designated school"));
+        verify(registrationRepository, never()).save(any(Registration.class));
     }
 }

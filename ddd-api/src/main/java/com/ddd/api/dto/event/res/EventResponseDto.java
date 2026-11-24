@@ -22,6 +22,8 @@ public record EventResponseDto(
                 String criteriaName,
                 String fanpageName,
                 Long fanpageId,
+                Long schoolId,
+                String schoolName,
                 boolean isActive,
                 SemesterResponseDto semester,
                 List<EventPointResponseDto> eventPoints,

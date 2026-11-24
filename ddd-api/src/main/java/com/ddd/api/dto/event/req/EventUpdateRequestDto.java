@@ -22,6 +22,7 @@ public record EventUpdateRequestDto(
         @NotNull @Positive Long eventTypeId,
         @Positive Long criteriaId,
         @NotNull @Positive Long semesterId,
+        @Positive Long schoolId,
         @NotNull List<EventPointRequestDto> eventPoints
 ) {
 }

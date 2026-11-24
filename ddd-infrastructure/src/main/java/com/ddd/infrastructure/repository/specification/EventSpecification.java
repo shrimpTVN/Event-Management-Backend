@@ -18,6 +18,7 @@ public final class EventSpecification {
             String status,
             List<Long> eventTypeIds,
             Long semesterId,
+            Long schoolId,
             List<Long> criteriaIds,
             List<Long> pointCategoryIds,
             Instant dateHappenFrom,
@@ -57,6 +58,10 @@ public final class EventSpecification {
 
             if (semesterId != null) {
                 predicates.add(cb.equal(root.get("semester").get("id"), semesterId));
+            }
+
+            if (schoolId != null) {
+                predicates.add(cb.equal(root.get("school").get("id"), schoolId));
             }
 
             if (criteriaIds != null && !criteriaIds.isEmpty()) {

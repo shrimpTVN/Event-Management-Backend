@@ -12,6 +12,7 @@ public interface EventMapper {
     @Mapping(target = "criteriaId", source = "criteria.id")
     @Mapping(target = "fanpageId", source = "fanpage.id")
     @Mapping(target = "semesterId", source = "semester.id")
+    @Mapping(target = "schoolId", source = "school.id")
     @Mapping(target = "active", source = "isActive")
     @Mapping(target = "status", source = "status", qualifiedByName = "eventStatusEnumToString")
     Event toDomainModel(EventJpaEntity entity);
@@ -20,6 +21,7 @@ public interface EventMapper {
     @Mapping(target = "criteria", ignore = true)
     @Mapping(target = "fanpage", ignore = true)
     @Mapping(target = "semester", ignore = true)
+    @Mapping(target = "school", ignore = true)
     @Mapping(target = "eventPoints", ignore = true)
     @Mapping(target = "isActive", source = "active")
     @Mapping(target = "status", source = "status", qualifiedByName = "stringToEventStatusEnum")
@@ -32,6 +34,7 @@ public interface EventMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "eventPoints", ignore = true)
+    @Mapping(target = "school", ignore = true)
     void updateJpaEntity(Event domain, @MappingTarget EventJpaEntity entity);
 
     @Named("eventStatusEnumToString")

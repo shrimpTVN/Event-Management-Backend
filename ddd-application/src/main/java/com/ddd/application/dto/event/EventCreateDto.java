@@ -18,6 +18,7 @@ public record EventCreateDto(
         Long criteriaId,
         Long fanpageId,
         Long semesterId,
+        Long schoolId,
         List<EventPointCreateDto> eventPoints
 ) {
 }

@@ -317,6 +317,7 @@ CREATE TABLE events
     criteria_id     BIGINT,
     fanpage_id      BIGINT,
     semester_id     BIGINT,
+    school_id       BIGINT,
     is_active       BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_by      BIGINT,
@@ -615,7 +616,9 @@ ALTER TABLE events
     ADD CONSTRAINT fk_events_fanpages
         FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_events_semesters
-        FOREIGN KEY (semester_id) REFERENCES semesters (id) ON DELETE RESTRICT;
+        FOREIGN KEY (semester_id) REFERENCES semesters (id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_events_schools
+        FOREIGN KEY (school_id) REFERENCES schools (id) ON DELETE SET NULL;
 
 ALTER TABLE event_points
     ADD CONSTRAINT fk_event_points_events
@@ -850,6 +853,7 @@ CREATE INDEX idx_student_profiles_major_id ON student_profiles (major_id);
 CREATE INDEX idx_events_status ON events (status);
 CREATE INDEX idx_events_date_happen ON events (date_happen);
 CREATE INDEX idx_events_type_id ON events (event_type_id);
+CREATE INDEX idx_events_school_id ON events (school_id);
 CREATE INDEX idx_registrations_event_id ON registrations (event_id);
 CREATE INDEX idx_registrations_status ON registrations (status);
 CREATE INDEX idx_notifications_user_id ON notifications (user_id);

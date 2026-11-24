@@ -64,6 +64,7 @@ public class EventQueryServiceImpl implements EventQueryService {
                 criteria.status(),
                 criteria.eventTypeIds(),
                 criteria.semesterId(),
+                criteria.schoolId(),
                 criteria.criteriaIds(),
                 criteria.pointCategoryIds(),
                 criteria.dateHappenFrom(),

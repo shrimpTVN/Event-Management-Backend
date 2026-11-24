@@ -10,6 +10,7 @@ import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.FollowingStatusEnum;
 import com.ddd.domain.event.EventCreatedEvent;
 import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.*;
 import com.ddd.domain.model.port.security.SecurityContextPort;
@@ -36,6 +37,7 @@ public class EventCommandServiceImpl implements EventCommandService {
     private final CriteriaRepository criteriaRepository;
     private final EventDtoMapper eventDtoMapper;
     private final SemesterRepository semesterRepository;
+    private final SchoolRepository schoolRepository;
     private final PointCategoryRepository pointCategoryRepository;
     private final SecurityContextPort securityContextPort;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -163,6 +165,14 @@ public class EventCommandServiceImpl implements EventCommandService {
                     .orElseThrow(() -> new ResourceNotFoundException("Semester not found with id: " + dto.semesterId()));
         }
 
+        if (dto.schoolId() != null) {
+            School school = schoolRepository.findById(dto.schoolId())
+                    .orElseThrow(() -> new ResourceNotFoundException("School not found with id: " + dto.schoolId()));
+            if (!school.isActive()) {
+                throw new BusinessException("School has been deactivated or is no longer active!");
+            }
+        }
+
         if (dto.eventPoints() != null && !dto.eventPoints().isEmpty()) {
             for (EventPointCreateDto ep : dto.eventPoints()) {
                 if (ep.pointCategoryId() != null) {
@@ -187,6 +197,14 @@ public class EventCommandServiceImpl implements EventCommandService {
         if (dto.semesterId() != null) {
             semesterRepository.findById(dto.semesterId())
                     .orElseThrow(() -> new ResourceNotFoundException("Semester not found with id: " + dto.semesterId()));
+        }
+
+        if (dto.schoolId() != null) {
+            School school = schoolRepository.findById(dto.schoolId())
+                    .orElseThrow(() -> new ResourceNotFoundException("School not found with id: " + dto.schoolId()));
+            if (!school.isActive()) {
+                throw new BusinessException("School has been deactivated or is no longer active!");
+            }
         }
     }
 }

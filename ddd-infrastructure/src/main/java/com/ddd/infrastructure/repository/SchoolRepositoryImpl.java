@@ -1,5 +1,6 @@
 package com.ddd.infrastructure.repository;
 
+import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.School;
 import com.ddd.domain.repository.SchoolRepository;
 import com.ddd.infrastructure.entity.SchoolJpaEntity;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.awt.print.Pageable;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -27,10 +29,9 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     }
 
     @Override
-    public School findById(Long id){
-        SchoolJpaEntity schoolJpaEntity = schoolJpaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Not found school"));
-        return schoolMapper.toDomainModel(schoolJpaEntity);
+    public Optional<School> findById(Long id){
+        return schoolJpaRepository.findById(id)
+                .map(schoolMapper::toDomainModel);
     }
 
     @Override
@@ -42,7 +43,7 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     @Override
     public void deleteSchool(Long id){
         SchoolJpaEntity schoolJpaEntity = schoolJpaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Not found School"));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found with id: " + id));
         schoolJpaEntity.setIsActive(false);
         schoolJpaRepository.save(schoolJpaEntity);
     }
@@ -50,7 +51,7 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     @Override
     public School updateSchool(Long id, School school) {
         SchoolJpaEntity schoolJpaEntity = schoolJpaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Not found School"));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found with id: " + id));
 
         schoolMapper.updateJpaEntity(school, schoolJpaEntity);
 

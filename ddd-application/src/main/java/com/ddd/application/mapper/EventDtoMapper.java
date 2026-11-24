@@ -48,6 +48,8 @@ public interface EventDtoMapper {
     @Mapping(target = "criteriaName", source = "criteria.name")
     @Mapping(target = "fanpageName", source = "fanpage.name")
     @Mapping(target = "fanpageId", source = "fanpage.id")
+    @Mapping(target = "schoolId", source = "school.id")
+    @Mapping(target = "schoolName", source = "school.name")
     @Mapping(target = "semester", source = "semester")
     @Mapping(target = "isActive", source = "isActive")
     @Mapping(target = "eventPoints", source = "eventPoints")
