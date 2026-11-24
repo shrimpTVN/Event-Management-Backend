@@ -15,7 +15,9 @@ import com.ddd.domain.repository.FollowingRepository;
 import com.ddd.infrastructure.repository.FanpageStatisticRepositoryImpl;
 import com.ddd.infrastructure.dto.row.fanpage.EventTypeDistributionRow;
 import com.ddd.infrastructure.dto.row.fanpage.FanpageOverviewRow;
+import com.ddd.infrastructure.dto.row.fanpage.MonthlyAbsentRateRow;
 import com.ddd.infrastructure.dto.row.fanpage.MonthlyTrendRow;
+import com.ddd.infrastructure.dto.row.fanpage.StudentAbsenceRow;
 import com.ddd.infrastructure.dto.row.fanpage.TopEventRow;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -187,9 +189,9 @@ public class FanpageStatisticQueryServiceImplTest {
                     new MonthlyTrendRow("2026-08", 2, 50, 45),
                     new MonthlyTrendRow("2026-09", 3, 80, 70)
             );
-            when(fanpageStatisticRepositoryImpl.getMonthlyTrends(eq(fanpageId), anyInt())).thenReturn(mockRows);
+            when(fanpageStatisticRepositoryImpl.getMonthlyTrends(eq(fanpageId), anyInt(), any())).thenReturn(mockRows);
 
-            List<FanpageMonthlyTrendDto> result = service.getMonthlyTrends(fanpageId, 2026);
+            List<FanpageMonthlyTrendDto> result = service.getMonthlyTrends(fanpageId, 2026, 5L);
 
             assertEquals(2, result.size());
             assertEquals("2026-08", result.get(0).monthYear());
@@ -249,7 +251,7 @@ public class FanpageStatisticQueryServiceImplTest {
                     .thenReturn(new FanpageOverviewRow(2, 10, 2, 50, 40));
             when(followingRepository.countByFanpageIdAndFolStatus(fanpageId, FollowingStatusEnum.FOLLOWING))
                     .thenReturn(10L);
-            when(fanpageStatisticRepositoryImpl.getMonthlyTrends(eq(fanpageId), anyInt()))
+            when(fanpageStatisticRepositoryImpl.getMonthlyTrends(eq(fanpageId), anyInt(), any()))
                     .thenReturn(List.of());
             when(fanpageStatisticRepositoryImpl.getEventDistribution(fanpageId))
                     .thenReturn(List.of());
@@ -261,6 +263,53 @@ public class FanpageStatisticQueryServiceImplTest {
             assertNotNull(dashboard);
             assertEquals(2, dashboard.overview().totalEvents());
             assertEquals(80.0, dashboard.overview().attendanceRate());
+        }
+
+        @Test
+        @DisplayName("Should return monthly absent rates")
+        void shouldReturnMonthlyAbsentRates() {
+            when(fanpageRepository.findByIdAndIsActive(fanpageId, true)).thenReturn(Optional.of(new Fanpage()));
+            when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+            when(securityContextPort.hasRole("ADMIN")).thenReturn(true);
+
+            List<MonthlyAbsentRateRow> mockRows = List.of(
+                    new MonthlyAbsentRateRow(9, "Sep", 50, 10, 20.0),
+                    new MonthlyAbsentRateRow(10, "Oct", 40, 4, 10.0)
+            );
+            when(fanpageStatisticRepositoryImpl.getMonthlyAbsentRate(fanpageId, 2026, 5L))
+                    .thenReturn(mockRows);
+
+            List<FanpageMonthlyAbsentRateDto> result = service.getMonthlyAbsentRate(fanpageId, 2026, 5L);
+
+            assertNotNull(result);
+            assertEquals(2, result.size());
+            assertEquals(9, result.get(0).month());
+            assertEquals("Sep", result.get(0).monthName());
+            assertEquals(20.0, result.get(0).absentRate());
+            assertEquals(10, result.get(1).month());
+            assertEquals(10.0, result.get(1).absentRate());
+        }
+
+        @Test
+        @DisplayName("Should return student absence counts")
+        void shouldReturnStudentAbsenceCounts() {
+            when(fanpageRepository.findByIdAndIsActive(fanpageId, true)).thenReturn(Optional.of(new Fanpage()));
+            when(securityContextPort.getCurrentUserId()).thenReturn(userId);
+            when(securityContextPort.hasRole("ADMIN")).thenReturn(true);
+
+            List<StudentAbsenceRow> mockRows = List.of(
+                    new StudentAbsenceRow("SE170123", 42L, "Nguyen Van A", "a@fpt.edu.vn", "avatar.png", 4)
+            );
+            when(fanpageStatisticRepositoryImpl.getStudentAbsenceCounts(fanpageId, 5L, 3))
+                    .thenReturn(mockRows);
+
+            List<FanpageStudentAbsenceDto> result = service.getStudentAbsenceCounts(fanpageId, 5L, 3);
+
+            assertNotNull(result);
+            assertEquals(1, result.size());
+            assertEquals("SE170123", result.get(0).studentId());
+            assertEquals(42L, result.get(0).userId());
+            assertEquals(4, result.get(0).absenceCount());
         }
     }
 }

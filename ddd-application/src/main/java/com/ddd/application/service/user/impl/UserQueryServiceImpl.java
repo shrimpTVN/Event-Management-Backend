@@ -1,14 +1,20 @@
 package com.ddd.application.service.user.impl;
 
+import com.ddd.application.dto.user.StaffProfileSummaryDto;
 import com.ddd.application.dto.user.StudentProfileSummaryDto;
 import com.ddd.application.dto.user.UserSummaryDto;
+import com.ddd.application.mapper.StaffProfileDtoMapper;
 import com.ddd.application.mapper.StudentProfileDtoMapper;
 import com.ddd.application.mapper.UserDtoMapper;
 import com.ddd.application.service.user.UserQueryService;
 import com.ddd.application.utils.ServiceUtil;
 import com.ddd.domain.exception.ResourceNotFoundException;
+import com.ddd.domain.exception.UnauthorizedException;
+import com.ddd.domain.model.port.security.SecurityContextPort;
+import com.ddd.infrastructure.entity.FanpageAdminProfileJpaEntity;
 import com.ddd.infrastructure.entity.StudentProfileJpaEntity;
 import com.ddd.infrastructure.entity.UserJpaEntity;
+import com.ddd.infrastructure.repository.jpaRepository.FanpageAdminProfileJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.StudentProfileJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.UserJpaRepository;
 import com.ddd.infrastructure.repository.specification.UserSpecification;
@@ -31,8 +37,11 @@ public class UserQueryServiceImpl implements UserQueryService {
 
     private final StudentProfileJpaRepository studentProfileJpaRepository;
     private final UserJpaRepository userJpaRepository;
+    private final FanpageAdminProfileJpaRepository fanpageAdminProfileJpaRepository;
     private final StudentProfileDtoMapper studentProfileDtoMapper;
+    private final StaffProfileDtoMapper staffProfileDtoMapper;
     private final UserDtoMapper userDtoMapper;
+    private final SecurityContextPort securityContextPort;
 
     @Override
     public List<UserSummaryDto> searchUsers(String keyword) {
@@ -72,5 +81,21 @@ public class UserQueryServiceImpl implements UserQueryService {
         Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
         return userJpaRepository.findAllByIsActive(isActive, pageable)
                 .map(userDtoMapper::toUserSummaryDto);
+    }
+
+    @Override
+    public StaffProfileSummaryDto getStaffProfile() {
+        Long currentUserId = securityContextPort.getCurrentUserId();
+        if (currentUserId == null) {
+            throw new UnauthorizedException("User is not authenticated");
+        }
+
+        UserJpaEntity user = userJpaRepository.findById(currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + currentUserId));
+
+        FanpageAdminProfileJpaEntity staffProfile = fanpageAdminProfileJpaRepository.findByUserId(currentUserId)
+                .orElse(null);
+
+        return staffProfileDtoMapper.toStaffProfileSummaryDto(user, staffProfile);
     }
 }

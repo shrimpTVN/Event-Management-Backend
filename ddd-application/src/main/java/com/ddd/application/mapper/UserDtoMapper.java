@@ -19,6 +19,7 @@ public interface UserDtoMapper {
 
     UserDto toUserDto(User user);
 
+    @Mapping(target = "userId", source = "id")
     @Mapping(target = "roles", expression = "java(mapRoleNames(userJpaEntity.getRoles()))")
     @Mapping(target = "role", expression = "java(mapPrimaryRole(userJpaEntity.getRoles()))")
     UserSummaryDto toUserSummaryDto(UserJpaEntity userJpaEntity);

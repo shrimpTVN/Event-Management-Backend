@@ -173,6 +173,26 @@ public class GlobalExceptionHandler {
                 );
     }
 
+    @ExceptionHandler(StudentProfileRequiredException.class)
+    public ResponseEntity<Object> handleStudentProfileRequiredException(
+            StudentProfileRequiredException exception, WebRequest webRequest) {
+        log.warn("Student profile required [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.STUDENT_PROFILE_REQUIRED.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.STUDENT_PROFILE_REQUIRED.getDefaultMessage(),
+                ErrorCodeEnum.STUDENT_PROFILE_REQUIRED.getStatus());
+    }
+
+    @ExceptionHandler(FanpageAdminProfileRequiredException.class)
+    public ResponseEntity<Object> handleFanpageAdminProfileRequiredException(
+            FanpageAdminProfileRequiredException exception, WebRequest webRequest) {
+        log.warn("Fanpage admin profile required [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.FANPAGE_ADMIN_PROFILE_REQUIRED.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.FANPAGE_ADMIN_PROFILE_REQUIRED.getDefaultMessage(),
+                ErrorCodeEnum.FANPAGE_ADMIN_PROFILE_REQUIRED.getStatus());
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // 404 Not Found
     // ─────────────────────────────────────────────────────────────────────────
@@ -272,6 +292,83 @@ public class GlobalExceptionHandler {
                 ErrorCodeEnum.FILE_UPLOAD_FAILED.getCode(),
                 exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.FILE_UPLOAD_FAILED.getDefaultMessage(),
                 ErrorCodeEnum.FILE_UPLOAD_FAILED.getStatus()
+        );
+    }
+
+    @ExceptionHandler(PasswordAlreadySetException.class)
+    public ResponseEntity<Object> handlePasswordAlreadySetException(
+            PasswordAlreadySetException exception, WebRequest webRequest) {
+        log.warn("Password already set [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.PASSWORD_ALREADY_SET.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.PASSWORD_ALREADY_SET.getDefaultMessage(),
+                ErrorCodeEnum.PASSWORD_ALREADY_SET.getStatus()
+        );
+    }
+
+    @ExceptionHandler(PasswordNotSetException.class)
+    public ResponseEntity<Object> handlePasswordNotSetException(
+            PasswordNotSetException exception, WebRequest webRequest) {
+        log.warn("Password not set [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.PASSWORD_NOT_SET.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.PASSWORD_NOT_SET.getDefaultMessage(),
+                ErrorCodeEnum.PASSWORD_NOT_SET.getStatus()
+        );
+    }
+
+    @ExceptionHandler(StaffProfileAlreadyExistsException.class)
+    public ResponseEntity<Object> handleStaffProfileAlreadyExistsException(
+            StaffProfileAlreadyExistsException exception, WebRequest webRequest) {
+        log.warn("Staff profile already exists [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.STAFF_PROFILE_ALREADY_EXISTS.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.STAFF_PROFILE_ALREADY_EXISTS.getDefaultMessage(),
+                ErrorCodeEnum.STAFF_PROFILE_ALREADY_EXISTS.getStatus()
+        );
+    }
+
+    @ExceptionHandler(StaffIdAlreadyExistsException.class)
+    public ResponseEntity<Object> handleStaffIdAlreadyExistsException(
+            StaffIdAlreadyExistsException exception, WebRequest webRequest) {
+        log.warn("Staff id already exists [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.STAFF_ID_ALREADY_EXISTS.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.STAFF_ID_ALREADY_EXISTS.getDefaultMessage(),
+                ErrorCodeEnum.STAFF_ID_ALREADY_EXISTS.getStatus()
+        );
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<Object> handleDataIntegrityViolation(
+            org.springframework.dao.DataIntegrityViolationException exception, WebRequest webRequest) {
+        String msg = exception.getMessage() != null ? exception.getMessage() : "";
+        Throwable root = exception.getRootCause();
+        if (root != null && root.getMessage() != null) {
+            msg = msg + " " + root.getMessage();
+        }
+
+        if (msg.contains("uk_staff_profile_staff_id")) {
+            log.warn("Duplicate staff_id constraint violation [{}]: {}", webRequest.getDescription(false), msg);
+            return wrapWithResponse(
+                    ErrorCodeEnum.STAFF_ID_ALREADY_EXISTS.getCode(),
+                    ErrorCodeEnum.STAFF_ID_ALREADY_EXISTS.getDefaultMessage(),
+                    HttpStatus.CONFLICT
+            );
+        } else if (msg.contains("uk_staff_profile_user_id")) {
+            log.warn("Duplicate user_id staff profile constraint violation [{}]: {}", webRequest.getDescription(false), msg);
+            return wrapWithResponse(
+                    ErrorCodeEnum.STAFF_PROFILE_ALREADY_EXISTS.getCode(),
+                    ErrorCodeEnum.STAFF_PROFILE_ALREADY_EXISTS.getDefaultMessage(),
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        log.warn("Data integrity violation [{}]: {}", webRequest.getDescription(false), msg);
+        return wrapWithResponse(
+                ErrorCodeEnum.DUPLICATE_RESOURCE.getCode(),
+                ErrorCodeEnum.DUPLICATE_RESOURCE.getDefaultMessage(),
+                HttpStatus.CONFLICT
         );
     }
 

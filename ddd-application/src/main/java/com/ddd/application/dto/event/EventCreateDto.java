@@ -19,6 +19,7 @@ public record EventCreateDto(
         Long fanpageId,
         Long semesterId,
         Long schoolId,
+        Boolean allowSelfCheck,
         List<EventPointCreateDto> eventPoints
 ) {
 }

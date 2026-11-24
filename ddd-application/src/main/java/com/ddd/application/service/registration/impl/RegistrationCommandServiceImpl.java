@@ -3,6 +3,7 @@ package com.ddd.application.service.registration.impl;
 import com.ddd.application.mapper.RegistrationDtoMapper;
 import com.ddd.application.service.criteriaprogress.StudentCriteriaTransactionCommandService;
 import com.ddd.application.service.registration.RegistrationCommandService;
+import com.ddd.application.service.event.cache.RecommendationCacheService;
 import com.ddd.application.service.semesterpoint.StudentSemesterPointCommandService;
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.PointTransactionStatusEnum;
@@ -13,6 +14,7 @@ import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.DuplicateResourceException;
 import com.ddd.domain.exception.EventAttendanceException;
 import com.ddd.domain.exception.EventRegistrationException;
+import com.ddd.domain.exception.StudentProfileRequiredException;
 import com.ddd.domain.model.*;
 import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
@@ -44,6 +46,8 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final RegistrationDtoMapper registrationDtoMapper;
     private final SecurityContextPort securityContextPort;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final StudentProfileRepository studentProfileRepository;
+    private final RecommendationCacheService recommendationCacheService;
 
     private Registration isRegistered(User user,  Long eventId) {
         if (registrationRepository.isRegistered(user.getId(), eventId)) {
@@ -111,6 +115,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         reg.setReason(reason);
 
         registrationRepository.save(reg);
+        recommendationCacheService.evict(userId);
     }
 
     private void validateEventAttendanceReadiness(Event event) {
@@ -130,6 +135,10 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         Long userId = securityContextPort.getCurrentUserId();
         Event event = eventRepository.findById(eventId);
         validateEventAttendanceReadiness(event);
+
+        if (!event.isAllowSelfCheck()) {
+            throw new EventAttendanceException("Self check-in is not allowed for this event");
+        }
 
         Registration registration = registrationRepository.findByUserAndEvent(userId, eventId);
 
@@ -161,6 +170,10 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         Long userId = securityContextPort.getCurrentUserId();
         Event event = eventRepository.findById(eventId);
         validateEventAttendanceReadiness(event);
+
+        if (!event.isAllowSelfCheck()) {
+            throw new EventAttendanceException("Self check-out is not allowed for this event");
+        }
 
         Registration registration = registrationRepository.findByUserAndEvent(userId, eventId);
         if (registration.getStatus() == RegistrationStatusEnum.SPENDING_CONFIRM) {

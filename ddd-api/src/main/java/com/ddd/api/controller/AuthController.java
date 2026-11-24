@@ -56,8 +56,7 @@ public class AuthController {
     @PostMapping("/register")
     public BaseResponse<Void> register(@RequestBody @Valid RegisterRequestDto userRegisterRequestDto) {
         UserDto userDto = authApiMapper.toUserDto(userRegisterRequestDto);
-        StudentProfileDto studentProfileDto = authApiMapper.toUserProfileDto(userRegisterRequestDto);
-        authService.createUser(userDto, studentProfileDto);
+        authService.register(userDto, userRegisterRequestDto.otpCode());
         return BaseResponse.ok();
     }
 
@@ -100,6 +99,15 @@ public class AuthController {
         authService.changePassword(changePasswordRequestDto.oldPassword(), changePasswordRequestDto.newPassword(), email);
 
         return BaseResponse.ok();
+    }
+
+    @PostMapping("/create-password")
+    public ResponseEntity<BaseResponse<Void>> createPassword(@RequestBody @Valid CreatePasswordRequestDto requestDto) {
+        String newRawRefreshToken = authService.createPassword(requestDto.newPassword());
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .header(HttpHeaders.SET_COOKIE, authService.getRefreshCookie(newRawRefreshToken).toString())
+                .body(BaseResponse.ok());
     }
 
     @PostMapping("/login/google")

@@ -3,6 +3,7 @@ package com.ddd.application.service.notification.impl;
 import com.ddd.application.dto.notification.CreateNotificationDto;
 import com.ddd.application.dto.notification.NotificationInfoDto;
 import com.ddd.application.mapper.NotificationDtoMapper;
+import com.ddd.application.service.notification.NotificationDispatchAfterCommit;
 import com.ddd.domain.enums.NotificationStatusEnum;
 import com.ddd.domain.enums.NotificationTypeEnum;
 import com.ddd.domain.exception.AuthException;
@@ -21,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,7 +37,7 @@ class NotificationCommandServiceImplTest {
     private NotificationRepository notificationRepository;
 
     @Mock
-    private NotificationPushPort notificationPushPort;
+    private NotificationDispatchAfterCommit notificationDispatchAfterCommit;
 
     @Mock
     private NotificationDtoMapper notificationDtoMapper;
@@ -50,7 +52,7 @@ class NotificationCommandServiceImplTest {
     private NotificationCommandServiceImpl notificationCommandService;
 
     @Test
-    @DisplayName("Should create notification, push via SSE, and return DTO")
+    @DisplayName("Should create notification, schedule dispatch, and return DTO")
     void createNotification_success() {
         CreateNotificationDto dto = new CreateNotificationDto(
                 1L, NotificationTypeEnum.SYSTEM, "Your event was approved", "icon.png", "/events/1"
@@ -65,6 +67,7 @@ class NotificationCommandServiceImplTest {
                 NotificationStatusEnum.UNREAD, "icon.png", "/events/1", 1L, Instant.now()
         );
 
+        when(notificationDtoMapper.toModel(dto)).thenReturn(saved);
         when(notificationRepository.save(any(Notification.class))).thenReturn(saved);
         when(notificationDtoMapper.toInfoDto(saved)).thenReturn(expectedDto);
 
@@ -73,11 +76,11 @@ class NotificationCommandServiceImplTest {
         assertNotNull(result);
         assertEquals(10L, result.id());
         verify(notificationRepository).save(any(Notification.class));
-        verify(notificationPushPort).pushToUser(eq(1L), eq(saved));
+        verify(notificationDispatchAfterCommit).dispatchSingleAfterCommit(eq(saved));
     }
 
     @Test
-    @DisplayName("Should create fanpage notification, push via SSE to fanpage, and return DTO")
+    @DisplayName("Should create fanpage notification, schedule dispatch, and return DTO")
     void createNotification_forFanpage_success() {
         Long fanpageId = 100L;
         CreateNotificationDto dto = CreateNotificationDto.forFanpage(
@@ -94,6 +97,7 @@ class NotificationCommandServiceImplTest {
                 NotificationStatusEnum.UNREAD, "avatar.png", "/fanpages/100", null, fanpageId, Instant.now()
         );
 
+        when(notificationDtoMapper.toModel(dto)).thenReturn(saved);
         when(notificationRepository.save(any(Notification.class))).thenReturn(saved);
         when(notificationDtoMapper.toInfoDto(saved)).thenReturn(expectedDto);
 
@@ -103,8 +107,32 @@ class NotificationCommandServiceImplTest {
         assertEquals(20L, result.id());
         assertEquals(fanpageId, result.fanpageId());
         verify(notificationRepository).save(any(Notification.class));
-        verify(notificationPushPort).pushToFanpage(eq(fanpageId), eq(saved));
-        verify(notificationPushPort, never()).pushToUser(any(), any());
+        verify(notificationDispatchAfterCommit).dispatchSingleAfterCommit(eq(saved));
+    }
+
+    @Test
+    @DisplayName("Should batch create notifications and schedule batch dispatch")
+    void createNotifications_batch_success() {
+        CreateNotificationDto dto1 = new CreateNotificationDto(
+                1L, NotificationTypeEnum.SYSTEM, "Msg 1", null, null
+        );
+        CreateNotificationDto dto2 = CreateNotificationDto.forFanpage(
+                10L, NotificationTypeEnum.SYSTEM, "Msg 2", null, null
+        );
+
+        Notification notif1 = new Notification();
+        notif1.setId(101L);
+        Notification notif2 = new Notification();
+        notif2.setId(102L);
+
+        when(notificationDtoMapper.toModel(dto1)).thenReturn(notif1);
+        when(notificationDtoMapper.toModel(dto2)).thenReturn(notif2);
+        when(notificationRepository.saveAll(anyList())).thenReturn(List.of(notif1, notif2));
+
+        notificationCommandService.createNotifications(List.of(dto1, dto2));
+
+        verify(notificationRepository).saveAll(anyList());
+        verify(notificationDispatchAfterCommit).dispatchAfterCommit(List.of(notif1, notif2));
     }
 
     @Test

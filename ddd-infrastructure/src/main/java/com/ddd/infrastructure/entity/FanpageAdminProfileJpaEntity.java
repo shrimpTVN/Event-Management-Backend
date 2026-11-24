@@ -13,7 +13,13 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @Entity
-@Table(name = "fanpage_admin_profiles")
+@Table(
+        name = "fanpage_admin_profiles",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_staff_profile_user_id", columnNames = "user_id"),
+                @UniqueConstraint(name = "uk_staff_profile_staff_id", columnNames = "staff_id")
+        }
+)
 public class FanpageAdminProfileJpaEntity extends BaseEntityJpa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,11 +28,11 @@ public class FanpageAdminProfileJpaEntity extends BaseEntityJpa {
 
     @Size(max = 20)
     @NotNull
-    @Column(name = "staff_id", nullable = false, length = 20)
+    @Column(name = "staff_id", nullable = false, length = 20, unique = true)
     private String staffId;
 
-    @Size(max = 20)
-    @Column(name = "org_name", length = 20)
+    @Size(max = 255)
+    @Column(name = "org_name", length = 255)
     private String orgName;
 
     @Size(max = 100)
@@ -43,8 +49,6 @@ public class FanpageAdminProfileJpaEntity extends BaseEntityJpa {
     @NotNull
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private UserJpaEntity user;
-
-
 }

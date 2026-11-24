@@ -84,7 +84,8 @@ CREATE TABLE users
     updated_by  BIGINT,
     CONSTRAINT pk_users PRIMARY KEY (id)
 );
-
+ALTER TABLE users
+ALTER COLUMN gender DROP NOT NULL;
 -- ============================================================
 --  6. USER_ROLE (Many-to-Many giữa User và Role)
 -- ============================================================
@@ -125,17 +126,19 @@ CREATE TABLE fanpage_admin_profiles
 (
     id           BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
     staff_id     VARCHAR(20) NOT NULL,
-    org_name     VARCHAR(20),
+    org_name     VARCHAR(255),
     title        VARCHAR(100),
     dob          DATE,
     phone_number VARCHAR(20),
-    user_id      BIGINT      NOT NULL UNIQUE,
+    user_id      BIGINT      NOT NULL,
     is_active    BOOLEAN     NOT NULL DEFAULT TRUE,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by   BIGINT,
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by   BIGINT,
-    CONSTRAINT pk_fanpage_admin_profiles PRIMARY KEY (id)
+    CONSTRAINT pk_fanpage_admin_profiles PRIMARY KEY (id),
+    CONSTRAINT uk_staff_profile_user_id UNIQUE (user_id),
+    CONSTRAINT uk_staff_profile_staff_id UNIQUE (staff_id)
 );
 
 -- ============================================================
@@ -153,6 +156,7 @@ CREATE TABLE fanpages
     parent_org   VARCHAR(255) NOT NULL,
     help_contact VARCHAR(255),
     help_phone   VARCHAR(20),
+    evidence_url TEXT,
     is_active    BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_by   BIGINT,
@@ -512,18 +516,31 @@ CREATE TABLE messages
 CREATE TABLE notifications
 (
     id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
-    title      VARCHAR(255),
+    type       VARCHAR(50),
     message    TEXT,
-    status     VARCHAR(50) NOT NULL DEFAULT 'SENT',
+    status     VARCHAR(50) NOT NULL DEFAULT 'UNREAD',
     icon_url   TEXT,
     url        TEXT,
-    user_id    BIGINT      NOT NULL,
+    user_id    BIGINT,
+    fanpage_id BIGINT,
     is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by BIGINT,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by BIGINT,
-    CONSTRAINT pk_notifications PRIMARY KEY (id)
+    CONSTRAINT pk_notifications PRIMARY KEY (id),
+    CONSTRAINT notifications_type_check CHECK (type IN (
+        'FANPAGE_APPROVED',
+        'FANPAGE_REJECTED',
+        'FANPAGE_MEMBER_INVITED',
+        'FANPAGE_INVITATION_ACCEPTED',
+        'FANPAGE_INVITATION_REJECTED',
+        'FANPAGE_ADMIN_APPOINTED',
+        'EVENT_CREATED',
+        'EVENT_CHECKOUT_AWARDED',
+        'EVENT_ABSENCE_ALERT',
+        'SYSTEM'
+    ))
 );
 
 -- ============================================================

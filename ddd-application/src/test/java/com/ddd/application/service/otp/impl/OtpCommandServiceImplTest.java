@@ -91,7 +91,7 @@ class OtpCommandServiceImplTest {
         BusinessException ex = assertThrows(BusinessException.class, () ->
                 otpCommandService.verifyOtp(testEmail, "123456")
         );
-        assertTrue(ex.getMessage().contains("không tồn tại"));
+        assertTrue(ex.getMessage().contains("OTP not found") || ex.getMessage().contains("không tồn tại"));
         verify(otpRepository, never()).save(any());
     }
 
@@ -111,7 +111,7 @@ class OtpCommandServiceImplTest {
         BusinessException ex = assertThrows(BusinessException.class, () ->
                 otpCommandService.verifyOtp(testEmail, "123456")
         );
-        assertTrue(ex.getMessage().contains("hết hạn"));
+        assertTrue(ex.getMessage().contains("expired") || ex.getMessage().contains("hết hạn"));
         verify(otpRepository, never()).save(any());
     }
 
@@ -131,7 +131,7 @@ class OtpCommandServiceImplTest {
         BusinessException ex = assertThrows(BusinessException.class, () ->
                 otpCommandService.verifyOtp(testEmail, "654321")
         );
-        assertTrue(ex.getMessage().contains("không chính xác"));
+        assertTrue(ex.getMessage().contains("Invalid OTP") || ex.getMessage().contains("không chính xác"));
         verify(otpRepository, never()).save(any());
     }
 

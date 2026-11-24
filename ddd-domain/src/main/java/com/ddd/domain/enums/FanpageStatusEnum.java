@@ -1,5 +1,5 @@
 package com.ddd.domain.enums;
 
 public enum FanpageStatusEnum {
-    PENDING, ACTIVE, BANNED
+    PENDING, ACTIVE, BANNED, REJECTED
 }

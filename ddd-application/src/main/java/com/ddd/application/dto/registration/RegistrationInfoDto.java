@@ -14,8 +14,8 @@ public record RegistrationInfoDto(
         Instant checkOutAt,
         String checkInEvidenceUrl,
         String checkOutEvidenceUrl,
-        Long checkInBy,
-        Long checkOutBy,
+        String checkInByName,
+        String checkOutByName,
         Instant createdAt,
         EventInfoDto eventInfo
 ) {

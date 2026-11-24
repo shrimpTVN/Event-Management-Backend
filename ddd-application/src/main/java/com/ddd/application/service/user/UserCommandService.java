@@ -14,13 +14,21 @@ public interface UserCommandService {
 
     void changePassword(String oldpPassword, String newPassword, String email);
 
+    void createPassword(String newPassword);
+
     StudentProfileSummaryDto updateStudentProfile(String email, StudentProfileUpdateDto updateDto);
 
     StudentProfileSummaryDto updateStudentProfileById(Long id, StudentProfileUpdateDto updateDto);
 
-    StudentProfileSummaryDto updateAvatar(String email, String avatarUrl);
+    UserSummaryDto updateAvatar(String avatarUrl);
+
+    default UserSummaryDto updateAvatar(String email, String avatarUrl) {
+        return updateAvatar(avatarUrl);
+    }
 
     UserSummaryDto updateProfileStatusById(Long id);
 
     void outFanpageMember(Long fanpageId);
+
+    com.ddd.application.dto.user.StaffProfileSummaryDto updateStaffProfile(com.ddd.application.dto.user.StaffProfileUpdateDto updateDto);
 }

@@ -11,10 +11,10 @@ public record StudentRegistrationInfoDto(
         Instant regDate,
         Instant checkInAt,
         String checkInEvidenceUrl,
-        Long checkInBy,
+        String checkInByName,
         Instant checkOutAt,
         String checkOutEvidenceUrl,
-        Long checkOutBy,
+        String checkOutByName,
         String reason,
         Instant createdAt,
         StudentProfileBasicInfoDto studentProfile

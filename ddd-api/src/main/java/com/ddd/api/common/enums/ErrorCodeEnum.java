@@ -71,7 +71,19 @@ public enum ErrorCodeEnum {
     FILE_TOO_LARGE("MEDIA.002", HttpStatus.PAYLOAD_TOO_LARGE, "File size exceeds the permitted limit"),
     FILE_INVALID_FORMAT("MEDIA.003", HttpStatus.BAD_REQUEST, "Invalid file format. Allowed formats: JPEG, PNG, WEBP, GIF"),
     FILE_UPLOAD_FAILED("MEDIA.004", HttpStatus.INTERNAL_SERVER_ERROR, "Failed to upload file to Cloudinary"),
-    FILE_DELETE_FAILED("MEDIA.005", HttpStatus.INTERNAL_SERVER_ERROR, "Failed to delete file from Cloudinary");
+    FILE_DELETE_FAILED("MEDIA.005", HttpStatus.INTERNAL_SERVER_ERROR, "Failed to delete file from Cloudinary"),
+
+    // USER / PROFILE GATING
+    STUDENT_PROFILE_REQUIRED("USER.001", HttpStatus.FORBIDDEN, "Student profile is required to perform this action"),
+    FANPAGE_ADMIN_PROFILE_REQUIRED("USER.002", HttpStatus.FORBIDDEN, "Fanpage admin profile is required to perform this action"),
+
+    // PASSWORD SECURITY
+    PASSWORD_ALREADY_SET("PASSWORD_ALREADY_SET", HttpStatus.CONFLICT, "User already has a password set. Please use change-password instead."),
+    PASSWORD_NOT_SET("PASSWORD_NOT_SET", HttpStatus.CONFLICT, "User does not have a password set. Please use create-password instead."),
+
+    // STAFF PROFILE
+    STAFF_PROFILE_ALREADY_EXISTS("STAFF_PROFILE_ALREADY_EXISTS", HttpStatus.CONFLICT, "User already has a staff profile."),
+    STAFF_ID_ALREADY_EXISTS("STAFF_ID_ALREADY_EXISTS", HttpStatus.CONFLICT, "Staff ID already exists.");
 
     private final String code;
     private final HttpStatus status;

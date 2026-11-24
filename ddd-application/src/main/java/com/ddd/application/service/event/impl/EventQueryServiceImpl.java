@@ -4,6 +4,12 @@ import com.ddd.application.dto.event.EventInfoDto;
 import com.ddd.application.dto.event.EventSearchCriteriaDto;
 import com.ddd.application.mapper.EventDtoMapper;
 import com.ddd.application.service.event.EventQueryService;
+import com.ddd.application.service.event.DailyEventRecommendationService;
+import com.ddd.domain.exception.UnauthorizedException;
+import com.ddd.domain.model.port.security.SecurityContextPort;
+import org.springframework.transaction.annotation.Propagation;
+import com.ddd.application.dto.recommendation.EventRecommendationDto;
+import com.ddd.application.utils.ServiceUtil;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.infrastructure.entity.EventJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
@@ -12,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,40 +29,37 @@ public class EventQueryServiceImpl implements EventQueryService {
 
     private final EventJpaRepository eventJpaRepository;
     private final EventDtoMapper eventDtoMapper;
+    private final EventResponseEnricher responseEnricher;
+    private final DailyEventRecommendationService eventRecommendationService;
+    private final SecurityContextPort security;
 
     @Override
     public EventInfoDto getEventById(Long id) {
         EventJpaEntity eventJpaEntity = eventJpaRepository.findWithDetailsByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + id));
 
-        return eventDtoMapper.toInfoDto(eventJpaEntity);
+        return responseEnricher.enrich(eventDtoMapper.toInfoDto(eventJpaEntity), security.getCurrentUserId());
     }
 
     @Override
     public Page<EventInfoDto> getAllEventsByFanpageId(Long fanpageId, int page, int size, String sortBy, String sortDir) {
-        Pageable pageable = createPageable(page, size, sortBy, sortDir);
-        
-        return eventJpaRepository.findWithDetailsByFanpage_IdAndIsActiveTrue(fanpageId, pageable)
+        Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
+        Page<EventInfoDto> dtoPage = eventJpaRepository.findWithDetailsByFanpage_IdAndIsActiveTrue(fanpageId, pageable)
                 .map(eventDtoMapper::toInfoDto);
-    }
-
-    private Pageable createPageable(int page, int size, String sortBy, String sortDir) {
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ?
-                Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
-        return PageRequest.of(page, size, sort);
+        return responseEnricher.enrich(dtoPage, security.getCurrentUserId());
     }
 
     @Override
     public Page<EventInfoDto> getAllEvents(int page, int size, String sortBy, String sortDir) {
-        Pageable pageable = createPageable(page, size, sortBy, sortDir);
-
-        return eventJpaRepository.findAll(pageable)
+        Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
+        Page<EventInfoDto> dtoPage = eventJpaRepository.findAll(pageable)
                 .map(eventDtoMapper::toInfoDto);
+        return responseEnricher.enrich(dtoPage, security.getCurrentUserId());
     }
 
     @Override
     public Page<EventInfoDto> searchAndFilterEvents(EventSearchCriteriaDto criteria) {
-        Pageable pageable = createPageable(criteria.page(), criteria.size(),
+        Pageable pageable = ServiceUtil.createPageable(criteria.page(), criteria.size(),
                 criteria.sortBy(), criteria.sortDir());
         Specification<EventJpaEntity> spec = EventSpecification.withFilter(
                 criteria.keyword(),
@@ -71,15 +73,18 @@ public class EventQueryServiceImpl implements EventQueryService {
                 criteria.dateHappenTo(),
                 criteria.isActive()
         );
-        return eventJpaRepository.findAll(spec, pageable).map(eventDtoMapper::toInfoDto);
+        Page<EventInfoDto> dtoPage = eventJpaRepository.findAll(spec, pageable).map(eventDtoMapper::toInfoDto);
+        return responseEnricher.enrich(dtoPage, security.getCurrentUserId());
     }
 
     @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Page<EventInfoDto> getRecommendEvents(String email) {
-        // implement get Event for Student
-        //Fix recommend inactive event
-        return null;
+        if (email == null || !email.equals(security.getCurrentUserEmail())) {
+            throw new UnauthorizedException("User is not authenticated");
+        }
+        return eventRecommendationService.getRecommendations(PageRequest.of(0, 10))
+                .map(EventRecommendationDto::event);
     }
-
 
 }

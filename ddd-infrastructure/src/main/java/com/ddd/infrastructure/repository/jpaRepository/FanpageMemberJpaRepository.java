@@ -22,8 +22,17 @@ public interface FanpageMemberJpaRepository extends JpaRepository<FanpageMemberJ
 
     @EntityGraph(attributePaths = {"user",
             "user.studentProfile",
-            "user.studentProfile.major"})
+            "user.studentProfile.major",
+            "user.fanpageAdminProfile"})
     List<FanpageMemberJpaEntity> findAllByFanpageIdAndIsActive(Long fanpageId, boolean isActive);
+
+    @Query("SELECT fm.id.fanpageId FROM FanpageMemberJpaEntity fm WHERE fm.id.userId = :userId AND fm.isActive = true")
+    java.util.Set<Long> findJoinedFanpageIdsByUserId(@Param("userId") Long userId);
+    @EntityGraph(attributePaths = {"user",
+            "user.studentProfile",
+            "user.studentProfile.major",
+            "user.fanpageAdminProfile"})
+    List<FanpageMemberJpaEntity> findAllByFanpageId(Long fanpageId);
 
     @Query("SELECT fm.id.fanpageId FROM FanpageMemberJpaEntity fm WHERE fm.id.userId = :userId AND fm.role = :role AND fm.isActive = true")
     List<Long> findFanpageIdsByUserIdAndRole(@Param("userId") Long userId, @Param("role") String role);

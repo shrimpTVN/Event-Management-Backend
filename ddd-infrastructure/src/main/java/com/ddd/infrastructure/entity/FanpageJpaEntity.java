@@ -56,5 +56,9 @@ public class FanpageJpaEntity extends BaseEntityJpa {
     @Column(name = "help_phone", length = 20)
     private String helpPhone;
 
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
 
+    @Column(name = "evidence_url", columnDefinition = "TEXT")
+    private String evidenceUrl;
 }

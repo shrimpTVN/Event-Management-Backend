@@ -44,7 +44,7 @@ public class CloudinaryStorageAdapter implements FileStoragePort {
 
         try{
             String signature = cloudinary.apiSignRequest(paramsToSign, cloudinaryProperties.apiSecret(), cloudinary.config.signatureVersion);
-            String uploadUrl = String.format("https://api.cloudinary.com/v1_1/%s/image/upload", cloudinaryProperties.cloudName());
+            String uploadUrl = String.format("https://api.cloudinary.com/v1_1/%s/auto/upload", cloudinaryProperties.cloudName());
 
             return new PresignedUploadParam(
                     uploadUrl,

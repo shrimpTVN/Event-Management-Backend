@@ -5,6 +5,7 @@ import com.ddd.application.dto.fanpage.FanpageRegisterDto;
 import com.ddd.application.dto.fanpage.FanpageSystemAdminUpdateDto;
 import com.ddd.application.mapper.FanpageDtoMapper;
 import com.ddd.application.service.fanpage.FanpageCommandService;
+import com.ddd.application.service.fanpage.FanpageRegistrationEligibilityService;
 import com.ddd.domain.enums.FanpageRoleEnum;
 import com.ddd.domain.enums.FanpageStatusEnum;
 import com.ddd.domain.enums.RoleEnum;
@@ -15,6 +16,7 @@ import com.ddd.domain.event.FanpageRejectedEvent;
 import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.DuplicateResourceException;
+import com.ddd.domain.exception.FanpageAdminProfileRequiredException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.*;
 import com.ddd.domain.model.port.security.SecurityContextPort;
@@ -41,26 +43,26 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
     private final FollowingRepository followingRepository;
     private final SecurityContextPort securityContextPort;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final FanpageRegistrationEligibilityService fanpageRegistrationEligibilityService;
 
     @Override
-    public void createFanpage(FanpageRegisterDto registerDto, String email) {
+    public void createFanpage(FanpageRegisterDto registerDto) {
+        fanpageRegistrationEligibilityService.assertCurrentUserCanRegister();
+
         //check duplicate  fanpage name
         if (fanpageRepository.existsByName(registerDto.name())) {
             throw new DuplicateResourceException("Fanpage name already exists");
         }
 
+        String email = securityContextPort.getCurrentUserEmail();
         User user = userRepository.findByEmail(email);
-
-        //check whether fanpage admin already has a fanpage
-        if (fanpageMemberRepository.isAlreadyHasFanpage(user.getId())) {
-            throw new DuplicateResourceException("Fanpage admin already has a fanpage");
-        }
 
         Fanpage fanpage = fanpageDtoMapper.toFanpage(registerDto);
         fanpage.setStatus(FanpageStatusEnum.PENDING.name());
         Fanpage savedFanpage = fanpageRepository.save(fanpage);
 
-        FanpageMember fanpageMember = new FanpageMember(savedFanpage.getId(), user.getId(), FanpageRoleEnum.ADMIN.name());
+        FanpageMember fanpageMember = new FanpageMember(savedFanpage.getId(), user.getId(),
+                FanpageRoleEnum.ADMIN.name());
         fanpageMemberRepository.save(fanpageMember);
 
         log.info("Fanpage created successfully: {}", savedFanpage.getName());
@@ -86,6 +88,20 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
         fanpage.setStatus(FanpageStatusEnum.BANNED.name());
         fanpageRepository.save(fanpage);
         log.info("Fanpage banned successfully: {}", fanpage.getName());
+        applicationEventPublisher.publishEvent(new FanpageRejectedEvent(
+                fanpage.getId(),
+                fanpage.getName(),
+                fanpage.getAvatarUrl(),
+                fanpage.getCreatedBy()
+        ));
+    }
+
+    @Override
+    public void rejectFanpage(Long fanpageId, String reason) {
+        Fanpage fanpage = fanpageRepository.findById(fanpageId).orElseThrow(() -> new ResourceNotFoundException("Fanpage not found"));
+        fanpage.reject(reason);
+        fanpageRepository.save(fanpage);
+        log.info("Fanpage rejected successfully: {}, reason: {}", fanpage.getName(), reason);
         applicationEventPublisher.publishEvent(new FanpageRejectedEvent(
                 fanpage.getId(),
                 fanpage.getName(),

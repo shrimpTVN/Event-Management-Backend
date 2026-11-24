@@ -18,6 +18,7 @@ public record EventUpdateDto(
         Long criteriaId,
         Long semesterId,
         Long schoolId,
+        Boolean allowSelfCheck,
         List<EventPointCreateDto> eventPoints
 ) {
 }

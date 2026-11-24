@@ -166,11 +166,18 @@ public class StudentCriteriaProgressCommandServiceImpl implements StudentCriteri
     }
     @Override
     public void markUncompleted(Long userId, Long criteriaId, Long academicYearId) {
-        StudentCriteriaProgress leafProgress = progressRepository
-                .findByUserIdAndCriteriaIdAndAcademicYearId(userId, criteriaId, academicYearId)
-                .orElseThrow(() -> new IllegalArgumentException("No progress found for user: " + userId + ", criteria: " + criteriaId + ", academic year: " + academicYearId));
+        var progressOpt = progressRepository
+                .findByUserIdAndCriteriaIdAndAcademicYearId(userId, criteriaId, academicYearId);
 
-        if (!leafProgress.getIsCompleted()) {
+        if (progressOpt.isEmpty()) {
+            log.info("No progress found for user: {}, criteria: {}, academic year: {}, skipping uncomplete",
+                    userId, criteriaId, academicYearId);
+            return;
+        }
+
+        StudentCriteriaProgress leafProgress = progressOpt.get();
+
+        if (!Boolean.TRUE.equals(leafProgress.getIsCompleted())) {
             log.info("Progress for user: {}, criteria: {}, academic year: {} is already uncompleted, skipping", userId, criteriaId, academicYearId);
             return;
         }

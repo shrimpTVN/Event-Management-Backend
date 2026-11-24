@@ -6,10 +6,13 @@ public class SecurityConstant {
     public static final String[] ADMIN_ENDPOINTS = {
             "/api/semesters/admin/**",
             "/api/users/admin/**",
+            "/users/admin/**",
             "/api/fanpages/admin/**",
             "/api/point-categories/admin/**",
             "/api/events/admin/**",
-            "/api/criterias/admin/**"
+            "/api/criterias/admin/**",
+            "/admin/statistics/**",
+            "/api/admin/statistics/**"
     };
 
     public static final String[] FANPAGE_ADMIN_ENDPOINTS = {
@@ -39,10 +42,20 @@ public class SecurityConstant {
             "/api/criterias/**",
             "/academic-years/**",
             "/api/academic-years/**",
-            "/google-test.html"
+            "/google-test.html",
+            "/test-upload.html",
+            "/test-recommendation.html"
     };
 
     public static final String[] SECURE_ENDPOINTS = {
+            "/auth/create-password",
+            "/api/auth/create-password",
+            "/auth/change-password",
+            "/api/auth/change-password",
+            "/users/me/security",
+            "/api/users/me/security",
+            "/users/me/staff-profile",
+            "/api/users/me/staff-profile",
             "/api/events/fanpage-member/**",
             "/api/media/**",
             "/media/**",
@@ -55,6 +68,10 @@ public class SecurityConstant {
             "/api/events/*/is-stored",
             "/events/me/stored",
             "/api/events/me/stored",
+            "/events/views",
+            "/api/events/views",
+            "/events/recommendations",
+            "/api/events/recommendations",
     };
 
     public static final String CORS_PATH_PATTERN = "/**";

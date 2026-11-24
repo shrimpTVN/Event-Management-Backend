@@ -4,6 +4,8 @@ import com.ddd.api.common.BaseResponse;
 import com.ddd.api.dto.event.req.EventCreateRequestDto;
 import com.ddd.api.dto.event.req.EventFilterRequestDto;
 import com.ddd.api.dto.event.req.EventUpdateRequestDto;
+import com.ddd.api.dto.event.req.ViewedEventsRequestDto;
+import com.ddd.api.dto.event.res.EventRecommendationResponseDto;
 import com.ddd.api.dto.event.res.EventResponseDto;
 import com.ddd.api.dto.event.res.StoredEventStatusResponseDto;
 import com.ddd.api.mapper.EventApiMapper;
@@ -11,15 +13,20 @@ import com.ddd.application.dto.event.EventCreateDto;
 import com.ddd.application.dto.event.EventInfoDto;
 import com.ddd.application.dto.event.EventUpdateDto;
 import com.ddd.application.dto.event.StoredEventStatusDto;
+import com.ddd.application.dto.recommendation.EventRecommendationDto;
 import com.ddd.application.service.event.EventCommandService;
 import com.ddd.application.service.event.EventQueryService;
+import com.ddd.application.service.event.DailyEventRecommendationService;
+import com.ddd.application.service.event.EventViewCommandService;
 import com.ddd.application.service.event.StoredEventCommandService;
 import com.ddd.application.service.event.StoredEventQueryService;
 import com.ddd.application.utils.ServiceUtil;
 import com.ddd.domain.enums.EventStatusEnum;
+import com.ddd.domain.exception.UnauthorizedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -33,7 +40,9 @@ public class EventController {
     private final EventQueryService eventQueryService;
     private final StoredEventCommandService storedEventCommandService;
     private final StoredEventQueryService storedEventQueryService;
+    private final DailyEventRecommendationService eventRecommendationService;
     private final EventApiMapper eventApiMapper;
+    private final EventViewCommandService eventViewCommandService;
 
     @PostMapping("/fanpage-member")
     public BaseResponse<Long> createEvent(
@@ -66,7 +75,7 @@ public class EventController {
         return BaseResponse.of(eventInfoPage.map(eventApiMapper::toResponseDto));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[0-9]+}")
     public BaseResponse<EventResponseDto> getEventById(@PathVariable Long id) {
         EventInfoDto eventInfoDto = eventQueryService.getEventById(id);
         return BaseResponse.of(eventApiMapper.toResponseDto(eventInfoDto));
@@ -152,6 +161,21 @@ public class EventController {
         Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
         Page<EventInfoDto> storedEvents = storedEventQueryService.getStoredEvents(email, pageable);
         return BaseResponse.of(storedEvents.map(eventApiMapper::toResponseDto));
+    }
+
+    @PostMapping("/views")
+    public BaseResponse<Void> recordViews(@Valid @RequestBody ViewedEventsRequestDto request) {
+        eventViewCommandService.recordViews(eventApiMapper.toViewedEventsDto(request));
+        return BaseResponse.ok();
+    }
+
+    @GetMapping("/recommendations")
+    public BaseResponse<Page<EventRecommendationResponseDto>> getRecommendations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<EventRecommendationDto> recommendations = eventRecommendationService.getRecommendations(pageable);
+        return BaseResponse.of(recommendations.map(eventApiMapper::toRecommendationResponseDto));
     }
 }
 

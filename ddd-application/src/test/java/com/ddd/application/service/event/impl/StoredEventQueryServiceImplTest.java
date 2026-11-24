@@ -36,6 +36,9 @@ class StoredEventQueryServiceImplTest {
     @Mock
     private EventDtoMapper eventDtoMapper;
 
+    @Mock
+    private EventResponseEnricher responseEnricher;
+
     @InjectMocks
     private StoredEventQueryServiceImpl storedEventQueryService;
 
@@ -121,12 +124,15 @@ class StoredEventQueryServiceImplTest {
                 50,
                 "banner",
                 "ACTIVE",
+                1L,
                 "Type",
+                2L,
                 "Criteria",
                 "Fanpage",
                 1L,
                 1L,
                 "School Name",
+                true,
                 true,
                 null,
                 null,
@@ -138,6 +144,9 @@ class StoredEventQueryServiceImplTest {
         when(userRepository.findByEmail(email)).thenReturn(user);
         when(storedEventJpaRepository.findStoredEventsByUserId(userId, pageable)).thenReturn(entityPage);
         when(eventDtoMapper.toInfoDto(eventJpa)).thenReturn(eventInfoDto);
+        var expected = eventInfoDto.withRegistrationInfo(100, true, true, false);
+        when(responseEnricher.enrich(new PageImpl<>(List.of(eventInfoDto), pageable, 1), userId))
+                .thenReturn(new PageImpl<>(List.of(expected), pageable, 1));
 
         Page<EventInfoDto> result = storedEventQueryService.getStoredEvents(email, pageable);
 
@@ -145,6 +154,11 @@ class StoredEventQueryServiceImplTest {
         assertEquals(1, result.getTotalElements());
         assertEquals(100L, result.getContent().get(0).id());
         assertEquals("Coding Contest", result.getContent().get(0).name());
+        assertEquals(1L, result.getContent().get(0).eventTypeId());
+        assertEquals(2L, result.getContent().get(0).criteriaId());
+        assertEquals(100L, result.getContent().get(0).registeredCount());
+        assertTrue(result.getContent().get(0).isFollowFanpage());
+        assertTrue(result.getContent().get(0).isFull());
     }
 
     @Test

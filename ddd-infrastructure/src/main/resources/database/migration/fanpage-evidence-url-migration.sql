@@ -1,0 +1,1 @@
+ALTER TABLE fanpages ADD COLUMN IF NOT EXISTS evidence_url TEXT;

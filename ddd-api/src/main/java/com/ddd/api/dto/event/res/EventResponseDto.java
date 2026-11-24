@@ -1,6 +1,7 @@
 package com.ddd.api.dto.event.res;
 
 import com.ddd.api.dto.semester.SemesterResponseDto;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
 import java.util.List;

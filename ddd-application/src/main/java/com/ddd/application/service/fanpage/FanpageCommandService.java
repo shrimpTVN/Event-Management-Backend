@@ -5,7 +5,7 @@ import com.ddd.application.dto.fanpage.FanpageRegisterDto;
 import com.ddd.application.dto.fanpage.FanpageSystemAdminUpdateDto;
 
 public interface FanpageCommandService {
-    void createFanpage(FanpageRegisterDto registerDto, String email);
+    void createFanpage(FanpageRegisterDto registerDto);
 
     void acceptFanpage(Long fanpageId);
 
@@ -16,6 +16,8 @@ public interface FanpageCommandService {
     void removeMemberFromFanpage(Long fanpageId, String memberEmail);
 
     void unbanFanpage(Long fanpageId);
+
+    void rejectFanpage(Long fanpageId, String reason);
 
     void updateFanpageByFanpageAdmin(Long fanpageId, FanpageAdminUpdateDto updateDto, String email);
 

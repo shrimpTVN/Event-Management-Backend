@@ -13,10 +13,18 @@ import org.springframework.stereotype.Repository;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpaEntity, RegistrationId> {
+
+    @Query("SELECT r.id.eventId, COUNT(r) FROM RegistrationJpaEntity r " +
+            "WHERE r.id.eventId IN :eventIds AND r.status <> com.ddd.domain.enums.RegistrationStatusEnum.CANCELLED " +
+            "GROUP BY r.id.eventId")
+    List<Object[]> countActiveRegistrationsByEventIds(@Param("eventIds") Collection<Long> eventIds);
+
+    @Query("SELECT COUNT(r) FROM RegistrationJpaEntity r " +
+            "WHERE r.id.eventId = :eventId AND r.status <> com.ddd.domain.enums.RegistrationStatusEnum.CANCELLED")
+    Long countActiveRegistrationsByEventId(@Param("eventId") Long eventId);
 
     @Query("SELECT r FROM RegistrationJpaEntity r " +
             "WHERE r.id.eventId = :eventId " +
@@ -26,7 +34,6 @@ public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpa
     @EntityGraph(attributePaths = {"event", "event.eventType", "event.criteria",
             "event.fanpage", "event.semester", "event.eventPoints"})
     Page<RegistrationJpaEntity> findAllByUserId(Long userId, Pageable pageable);
-
 
     @EntityGraph(attributePaths = {"event", "event.eventType", "event.criteria",
             "event.fanpage", "event.semester", "event.eventPoints"})
@@ -39,7 +46,40 @@ public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpa
     @EntityGraph(attributePaths = {"user", "user.studentProfile", "user.studentProfile.major"})
     Page<RegistrationJpaEntity> findAllByEventId(Long eventId, Pageable pageable);
 
-     @EntityGraph(attributePaths = {"user", "user.studentProfile", "user.studentProfile.major"})
+    @Query("SELECT COUNT(r) FROM RegistrationJpaEntity r WHERE r.event.id = :eventId AND r.status <> :cancelledStatus")
+    long countActiveRegistrationsByEventId(@Param("eventId") Long eventId, @Param("cancelledStatus") com.ddd.domain.enums.RegistrationStatusEnum cancelledStatus);
+
+    @Query("SELECT r.event.id, COUNT(r) FROM RegistrationJpaEntity r " +
+            "WHERE r.event.id IN :eventIds AND r.status <> :cancelledStatus " +
+            "GROUP BY r.event.id")
+    List<Object[]> countActiveRegistrationsByEventIds(
+            @Param("eventIds") Collection<Long> eventIds,
+            @Param("cancelledStatus") com.ddd.domain.enums.RegistrationStatusEnum cancelledStatus
+    );
+
+    @Query("SELECT r.event.eventType.id, COUNT(r) FROM RegistrationJpaEntity r " +
+            "WHERE r.user.id = :userId " +
+            "AND r.status IN :attendedStatuses " +
+            "AND r.event.eventType IS NOT NULL " +
+            "GROUP BY r.event.eventType.id")
+    List<Object[]> countAttendedEventTypesByUserId(
+            @Param("userId") Long userId,
+            @Param("attendedStatuses") Collection<com.ddd.domain.enums.RegistrationStatusEnum> attendedStatuses
+    );
+
+    @Query("SELECT DISTINCT ep.pointCategory.id FROM RegistrationJpaEntity r " +
+            "JOIN r.event.eventPoints ep " +
+            "WHERE r.user.id = :userId " +
+            "AND r.status IN :attendedStatuses " +
+            "AND ep.pointCategory IS NOT NULL")
+    List<Long> findAttendedPointCategoryIdsByUserId(
+            @Param("userId") Long userId,
+            @Param("attendedStatuses") Collection<com.ddd.domain.enums.RegistrationStatusEnum> attendedStatuses
+    );
+
+    @Query("SELECT r.event.id FROM RegistrationJpaEntity r WHERE r.user.id = :userId AND r.status <> :cancelledStatus")
+    List<Long> findActiveRegisteredEventIdsByUserId(@Param("userId") Long userId, @Param("cancelledStatus") com.ddd.domain.enums.RegistrationStatusEnum cancelledStatus);
+    @EntityGraph(attributePaths = {"user", "user.studentProfile", "user.studentProfile.major"})
     @Query("SELECT r FROM RegistrationJpaEntity r " +
             "LEFT JOIN r.user u " +
             "LEFT JOIN u.studentProfile sp " +
@@ -47,10 +87,10 @@ public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpa
             "ORDER BY sp.studentId ASC NULLS LAST")
     List<RegistrationJpaEntity> findAllByEventId(@Param("eventId") Long eventId);
 
-     @EntityGraph(attributePaths = {"event"})
-     @Query("SELECT r FROM RegistrationJpaEntity r " +
-             "WHERE r.user.id = :userId " +
-             "AND r.event.dateHappen BETWEEN :startTime AND :endTime")
+    @EntityGraph(attributePaths = {"event"})
+    @Query("SELECT r FROM RegistrationJpaEntity r " +
+            "WHERE r.user.id = :userId " +
+            "AND r.event.dateHappen BETWEEN :startTime AND :endTime")
     List<RegistrationJpaEntity> findArrangedEvents(@Param("userId") Long userId,
                                                    @Param("startTime") Instant startTime, @Param("endTime") Instant endTime);
 }

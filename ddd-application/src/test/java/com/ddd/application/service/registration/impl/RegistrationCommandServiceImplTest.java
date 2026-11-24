@@ -1,9 +1,12 @@
 package com.ddd.application.service.registration.impl;
 
+import com.ddd.application.service.event.cache.RecommendationCacheService;
+
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.RegistrationStatusEnum;
 import com.ddd.domain.exception.EventAttendanceException;
 import com.ddd.domain.exception.EventRegistrationException;
+import com.ddd.domain.exception.StudentProfileRequiredException;
 import com.ddd.domain.model.Event;
 import com.ddd.domain.model.Registration;
 import com.ddd.domain.model.StudentProfile;
@@ -14,6 +17,7 @@ import com.ddd.application.service.criteriaprogress.StudentCriteriaTransactionCo
 import com.ddd.application.service.semesterpoint.StudentSemesterPointCommandService;
 import com.ddd.application.mapper.RegistrationDtoMapper;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -69,6 +73,12 @@ class RegistrationCommandServiceImplTest {
 
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
+
+    @Mock
+    private StudentProfileRepository studentProfileRepository;
+
+    @Mock
+    private RecommendationCacheService recommendationCacheService;
 
     @InjectMocks
     private RegistrationCommandServiceImpl registrationCommandService;

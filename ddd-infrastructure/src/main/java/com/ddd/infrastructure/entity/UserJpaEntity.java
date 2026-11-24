@@ -38,7 +38,7 @@ public class UserJpaEntity extends BaseEntityJpa {
 
     @Size(max = 10)
     @Column(name = "gender", length = 10)
-    private String gender;
+    private String gender="OTHER";
 
     @Column(name = "avatar_url", length = Integer.MAX_VALUE)
     private String avatarUrl;

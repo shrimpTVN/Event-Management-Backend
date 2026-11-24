@@ -7,6 +7,7 @@ import com.ddd.application.dto.auth.TokenRefreshResultDto;
 import com.ddd.application.dto.user.FanpageAdminProfileDto;
 import com.ddd.application.dto.user.StudentProfileDto;
 import com.ddd.application.dto.user.UserDto;
+import com.ddd.application.service.otp.OtpCommandService;
 import com.ddd.application.service.userprofile.FanpageAdminProfileCommandService;
 import com.ddd.application.service.userprofile.StudentProfileCommandService;
 import com.ddd.application.service.user.UserCommandService;
@@ -14,8 +15,10 @@ import com.ddd.application.service.AuthService;
 import com.ddd.domain.enums.RoleEnum;
 import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.ResourceNotFoundException;
+import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.RefreshToken;
 import com.ddd.domain.model.User;
+import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.RefreshTokenRepository;
 import com.ddd.domain.repository.UserRepository;
 import com.ddd.infrastructure.config.security.custom.UserDetailsCustom;
@@ -37,6 +40,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class AuthServiceImpl implements AuthService {
 
     private final AuthenticationManager authenticationManager;
@@ -48,6 +52,8 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenHashUtil tokenHashUtil;
     private final UserRepository userRepository;
+    private final OtpCommandService otpCommandService;
+    private final SecurityContextPort securityContextPort;
 
     private String createAndSaveRefreshToken(Long userId) {
         String rawToken = UUID.randomUUID().toString();
@@ -66,7 +72,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
     public LoginResult login(String email, String password) {
         var resultAuthentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email, password));
@@ -93,7 +98,6 @@ public class AuthServiceImpl implements AuthService {
         return new LoginResult(loginDto, jwtToken, rawRefreshToken);
     }
 
-    @Transactional
     @Override
     public LoginResult loginWithGoogle(String idToken) {
         // 1. Verify Google ID Token and extract user info
@@ -102,12 +106,25 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email);
 
         if (user == null) {
-            throw new ResourceNotFoundException("User not found with email: " + email);
-        }
-
-        if (user.getProviderId() == null || user.getProviderId().isBlank()) {
-            user.setProviderId(googleUserInfo.googleId());
-            userRepository.update(user);
+            UserDto newUserDto = new UserDto(
+                    googleUserInfo.email(),
+                    null,
+                    googleUserInfo.googleId(),
+                    googleUserInfo.firstName(),
+                    googleUserInfo.lastName(),
+                    null,
+                    googleUserInfo.pictureUrl()
+            );
+            RoleEnum role = resolveRoleByEmail(googleUserInfo.email());
+            Long userId = userCommandService.createUser(newUserDto, role.name());
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found after creation: " + userId));
+            log.info("Google user:{} auto-provisioned successfully with role:{} and ID:{}", googleUserInfo.email(), role.name(), userId);
+        } else {
+            if (user.getProviderId() == null || user.getProviderId().isBlank()) {
+                user.setProviderId(googleUserInfo.googleId());
+                userRepository.update(user);
+            }
         }
 
         log.info("Google user:{} logged in successfully", email);
@@ -121,7 +138,23 @@ public class AuthServiceImpl implements AuthService {
         return new LoginResult(loginDto, jwtToken, rawRefreshToken);
     }
 
-    @Transactional
+
+    @Override
+    public void register(UserDto userDto, String otpCode) {
+        otpCommandService.verifyOtp(userDto.email(), otpCode);
+        RoleEnum role = resolveRoleByEmail(userDto.email());
+        userCommandService.createUser(userDto, role.name());
+        log.info("User:{} registered successfully with role {}", userDto.email(), role.name());
+    }
+
+    private RoleEnum resolveRoleByEmail(String email) {
+        if (email != null && email.trim().toLowerCase().endsWith("@student.ctu.edu.vn")) {
+            return RoleEnum.STUDENT;
+        }
+        return RoleEnum.FANPAGE_ADMIN;
+    }
+
+
     @Override
     public void createUser(UserDto userDto, StudentProfileDto studentProfileDto) {
         Long userId = userCommandService.createUser(userDto, RoleEnum.STUDENT.name());
@@ -129,7 +162,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("Student:{} created successfully", userDto.email());
     }
 
-    @Transactional
+
     @Override
     public void createFanpageAdmin(UserDto userDto, FanpageAdminProfileDto fanpageAdminProfileDto) {
         Long userId = userCommandService.createUser(userDto, RoleEnum.FANPAGE_ADMIN.name());
@@ -138,7 +171,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
     public void changePassword(String oldPassword, String newPassword, String email) {
         userCommandService.changePassword(oldPassword, newPassword, email);
         User user = userRepository.findByEmail(email);
@@ -149,7 +181,18 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    public String createPassword(String newPassword) {
+        Long userId = securityContextPort.getCurrentUserId();
+        if (userId == null) {
+            throw new UnauthorizedException("Authentication required to create a password");
+        }
+        userCommandService.createPassword(newPassword);
+        refreshTokenRepository.revokeAllByUserId(userId);
+        log.info("User id:{} created password successfully", userId);
+        return createAndSaveRefreshToken(userId);
+    }
+
+    @Override
     public TokenRefreshResultDto refreshToken(String rawRefreshToken) {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             throw new AuthException("Refresh token is missing or empty");
@@ -179,7 +222,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
     public void logout(String rawRefreshToken) {
         if (rawRefreshToken != null && !rawRefreshToken.isBlank()) {
             String hashed = tokenHashUtil.hash(rawRefreshToken);
@@ -188,6 +230,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseCookie getUserCookie(String jwtToken) {
         return ResponseCookie.from(jwtUtil.getCookieName(), jwtToken)
                 .httpOnly(true)
@@ -199,6 +242,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseCookie getLogoutCookie() {
         return ResponseCookie.from(jwtUtil.getCookieName(), "")
                 .httpOnly(true)
@@ -210,16 +254,19 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseCookie getRefreshCookie(String rawRefreshToken) {
         return jwtUtil.buildRefreshCookie(rawRefreshToken, jwtUtil.getRefreshExpirationMs() / 1000);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseCookie getClearRefreshCookie() {
         return jwtUtil.buildClearRefreshCookie();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public String extractRefreshToken(jakarta.servlet.http.HttpServletRequest request) {
         return jwtUtil.extractRefreshToken(request);
     }

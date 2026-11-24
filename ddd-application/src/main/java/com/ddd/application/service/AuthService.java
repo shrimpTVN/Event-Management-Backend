@@ -19,11 +19,15 @@ public interface AuthService {
     ResponseCookie getClearRefreshCookie();
     String extractRefreshToken(HttpServletRequest request);
 
+    void register(UserDto userDto, String otpCode);
+
     void createUser(UserDto userDto, StudentProfileDto studentProfileDto);
 
     void createFanpageAdmin(UserDto userDto, FanpageAdminProfileDto fanpageAdminProfileDto);
 
     void changePassword(@NotNull @Size(min=6) String oldPassword, @NotNull @Size(min=6) String newPassword, String email);
+
+    String createPassword(@NotNull @Size(min=6) String newPassword);
 
     TokenRefreshResultDto refreshToken(String rawRefreshToken);
     void logout(String rawRefreshToken);

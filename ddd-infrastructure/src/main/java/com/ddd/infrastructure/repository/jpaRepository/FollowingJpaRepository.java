@@ -23,6 +23,15 @@ public interface FollowingJpaRepository extends JpaRepository<FollowingJpaEntity
 
     boolean existsByFanpage_IdAndUser_IdAndFolStatusAndIsActive(Long fanpageId, Long userId, FollowingStatusEnum folStatus, Boolean isActive);
 
+    @Query("SELECT f.fanpage.id FROM FollowingJpaEntity f " +
+            "WHERE f.user.id = :userId " +
+            "AND f.folStatus = :folStatus " +
+            "AND f.isActive = true")
+    java.util.Set<Long> findFollowedFanpageIdsByUserId(
+            @Param("userId") Long userId,
+            @Param("folStatus") FollowingStatusEnum folStatus
+    );
+
     @Query(
             value = "SELECT f.fanpage FROM FollowingJpaEntity f " +
                     "WHERE f.user.id = :userId " +

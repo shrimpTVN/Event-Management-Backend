@@ -1,6 +1,7 @@
 package com.ddd.domain.repository;
 
 import com.ddd.domain.model.User;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -21,5 +22,7 @@ public interface UserRepository {
         return save(user);
     }
     Optional<User> findById(Long userId);
+    List<User> findAllByIds(Collection<Long> ids);
+    boolean setPasswordIfAbsent(Long userId, String encodedPassword);
 }
 

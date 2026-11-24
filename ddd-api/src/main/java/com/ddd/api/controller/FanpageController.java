@@ -5,6 +5,7 @@ import com.ddd.api.dto.fanpage.req.FanpageAdminUpdateRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageFilterRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageRegisterRequestDto;
 import com.ddd.api.dto.fanpage.req.FanpageSystemAdminUpdateRequestDto;
+import com.ddd.api.dto.fanpage.req.RejectFanpageRequestDto;
 import com.ddd.api.dto.fanpage.res.FanpageFollowCountResponseDto;
 import com.ddd.api.dto.fanpage.res.FanpageMemberResponseDto;
 import com.ddd.api.dto.fanpage.res.FanpageResponseDto;
@@ -79,10 +80,8 @@ public class FanpageController {
     }
 
     @PostMapping("/fanpage-admin/register")
-    public BaseResponse<?> registerFanpage(@RequestBody @Valid FanpageRegisterRequestDto request,
-                                           Authentication authentication) {
-        String email = authentication.getName();
-        fanpageCommandService.createFanpage(fanpageApiMapper.toRegisterDto(request), email);
+    public BaseResponse<?> registerFanpage(@RequestBody @Valid FanpageRegisterRequestDto request) {
+        fanpageCommandService.createFanpage(fanpageApiMapper.toRegisterDto(request));
         return BaseResponse.ok();
     }
 
@@ -125,6 +124,14 @@ public class FanpageController {
     @PostMapping("/admin/unban-fanpage/{fanpageId}")
     public BaseResponse<?> unbanFanpage(@PathVariable Long fanpageId) {
         fanpageCommandService.unbanFanpage(fanpageId);
+        return BaseResponse.ok();
+    }
+
+    @PostMapping("/admin/reject-fanpage/{fanpageId}")
+    public BaseResponse<?> rejectFanpage(@PathVariable Long fanpageId,
+                                         @RequestBody(required = false) RejectFanpageRequestDto request) {
+        String reason = request != null ? request.reason() : null;
+        fanpageCommandService.rejectFanpage(fanpageId, reason);
         return BaseResponse.ok();
     }
 
