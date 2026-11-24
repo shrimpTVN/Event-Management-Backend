@@ -13,7 +13,6 @@ import com.ddd.application.utils.ServiceUtil;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.infrastructure.entity.EventJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
-import com.ddd.infrastructure.repository.jpaRepository.RegistrationJpaRepository;
 import com.ddd.infrastructure.repository.specification.EventSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,10 +22,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -34,7 +29,7 @@ public class EventQueryServiceImpl implements EventQueryService {
 
     private final EventJpaRepository eventJpaRepository;
     private final EventDtoMapper eventDtoMapper;
-    private final RegistrationJpaRepository registrationJpaRepository;
+    private final EventResponseEnricher responseEnricher;
     private final DailyEventRecommendationService eventRecommendationService;
     private final SecurityContextPort security;
 
@@ -43,9 +38,7 @@ public class EventQueryServiceImpl implements EventQueryService {
         EventJpaEntity eventJpaEntity = eventJpaRepository.findWithDetailsByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found with id: " + id));
 
-        EventInfoDto dto = eventDtoMapper.toInfoDto(eventJpaEntity);
-        Long count = registrationJpaRepository.countActiveRegistrationsByEventId(id);
-        return dto.withRegisteredCount(count != null ? count : 0L);
+        return responseEnricher.enrich(eventDtoMapper.toInfoDto(eventJpaEntity), security.getCurrentUserId());
     }
 
     @Override
@@ -53,7 +46,7 @@ public class EventQueryServiceImpl implements EventQueryService {
         Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
         Page<EventInfoDto> dtoPage = eventJpaRepository.findWithDetailsByFanpage_IdAndIsActiveTrue(fanpageId, pageable)
                 .map(eventDtoMapper::toInfoDto);
-        return populateRegisteredCounts(dtoPage);
+        return responseEnricher.enrich(dtoPage, security.getCurrentUserId());
     }
 
     @Override
@@ -61,7 +54,7 @@ public class EventQueryServiceImpl implements EventQueryService {
         Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
         Page<EventInfoDto> dtoPage = eventJpaRepository.findAll(pageable)
                 .map(eventDtoMapper::toInfoDto);
-        return populateRegisteredCounts(dtoPage);
+        return responseEnricher.enrich(dtoPage, security.getCurrentUserId());
     }
 
     @Override
@@ -80,7 +73,7 @@ public class EventQueryServiceImpl implements EventQueryService {
                 criteria.isActive()
         );
         Page<EventInfoDto> dtoPage = eventJpaRepository.findAll(spec, pageable).map(eventDtoMapper::toInfoDto);
-        return populateRegisteredCounts(dtoPage);
+        return responseEnricher.enrich(dtoPage, security.getCurrentUserId());
     }
 
     @Override
@@ -93,19 +86,4 @@ public class EventQueryServiceImpl implements EventQueryService {
                 .map(EventRecommendationDto::event);
     }
 
-    private Page<EventInfoDto> populateRegisteredCounts(Page<EventInfoDto> page) {
-        if (page.isEmpty()) {
-            return page;
-        }
-        List<Long> eventIds = page.map(EventInfoDto::id).toList();
-        List<Object[]> countResults = registrationJpaRepository.countActiveRegistrationsByEventIds(eventIds);
-        Map<Long, Long> countMap = countResults.stream()
-                .collect(Collectors.toMap(
-                        row -> (Long) row[0],
-                        row -> ((Number) row[1]).longValue(),
-                        (existing, replacement) -> existing
-                ));
-
-        return page.map(dto -> dto.withRegisteredCount(countMap.getOrDefault(dto.id(), 0L)));
-    }
 }

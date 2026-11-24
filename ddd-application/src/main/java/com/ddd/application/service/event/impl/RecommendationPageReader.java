@@ -3,11 +3,13 @@ package com.ddd.application.service.event.impl;
 import com.ddd.application.dto.recommendation.EventRecommendationDto;
 import com.ddd.application.mapper.EventDtoMapper;
 import com.ddd.application.mapper.RecommendationDtoMapper;
+import com.ddd.domain.enums.FollowingStatusEnum;
 import com.ddd.domain.model.recommendation.RecommendationFeatures.Ranked;
 import com.ddd.domain.model.recommendation.RecommendationScoringPolicy;
 import com.ddd.domain.repository.RecommendationRepository;
 import com.ddd.infrastructure.entity.EventJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
+import com.ddd.infrastructure.repository.jpaRepository.FollowingJpaRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ import static com.ddd.application.service.event.impl.RecommendationRefreshServic
 public class RecommendationPageReader {
     private final RecommendationRepository repository;
     private final EventJpaRepository events;
+    private final FollowingJpaRepository following;
     private final EventDtoMapper eventMapper;
     private final RecommendationDtoMapper recommendationMapper;
     private final RecommendationScoringPolicy policy = new RecommendationScoringPolicy();
@@ -46,12 +49,15 @@ public class RecommendationPageReader {
         var ids = selected.stream().map(Ranked::id).toList();
         var byId = events.findByIdInAndIsActiveTrue(ids).stream()
                 .collect(Collectors.toMap(EventJpaEntity::getId, Function.identity()));
+        var followedFanpages = following.findFollowedFanpageIdsByUserId(studentId, FollowingStatusEnum.FOLLOWING);
         var results = new ArrayList<EventRecommendationDto>(selected.size());
         for (Ranked event : selected) {
             var entity = byId.get(event.id());
             if (entity != null) {
                 long days = ChronoUnit.DAYS.between(today, event.candidate().happensAt().atZone(VIETNAM).toLocalDate());
-                results.add(recommendationMapper.toDto(event, eventMapper.toInfoDto(entity), days));
+                var eventInfo = eventMapper.toInfoDto(entity);
+                boolean followsFanpage = eventInfo.fanpageId() != null && followedFanpages.contains(eventInfo.fanpageId());
+                results.add(recommendationMapper.toDto(event, eventInfo, days, followsFanpage));
             }
         }
         return new PageImpl<>(results, page, ranked.size());

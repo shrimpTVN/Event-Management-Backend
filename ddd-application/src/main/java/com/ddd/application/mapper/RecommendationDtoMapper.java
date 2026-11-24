@@ -11,14 +11,16 @@ import org.mapstruct.Mapper;
 public interface RecommendationDtoMapper {
     PointCategoryGainDto toPointGain(Gain gain);
 
-    default EventRecommendationDto toDto(Ranked rank, EventInfoDto event, long daysUntilHappen) {
+    default EventRecommendationDto toDto(Ranked rank, EventInfoDto event, long daysUntilHappen,
+                                         boolean followsFanpage) {
         var candidate = rank.candidate();
         var score = candidate.score();
         var benefits = score.benefits();
-        return new EventRecommendationDto(event.withRegisteredCount(candidate.registeredCount()),
+        return new EventRecommendationDto(
+                event.withRegistrationInfo(candidate.registeredCount(), followsFanpage, rank.full(), rank.registrationClosed()),
                 rank.effectiveScore(), score.explanation(), candidate.remainingSlots(), daysUntilHappen,
                 benefits.fulfillsCriteria(), benefits.pointGains().stream().map(this::toPointGain).toList(),
-                benefits.fanpageMatch(), benefits.fanpageMatch() ? 3 : 0, Math.min(3, benefits.typeMatches()),
+                followsFanpage, benefits.fanpageMatch() ? 3 : 0, Math.min(3, benefits.typeMatches()),
                 rank.registrationClosed(), rank.full(), candidate.viewed(), score.personalized(),
                 rank.urgencyScore(), candidate.readPenalty(), rank.effectiveScore());
     }

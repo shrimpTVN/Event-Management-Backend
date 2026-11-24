@@ -15,6 +15,7 @@ import com.ddd.application.dto.recommendation.PointCategoryGainDto;
 import com.ddd.api.dto.event.req.ViewedEventsRequestDto;
 import com.ddd.application.dto.recommendation.ViewedEventsDto;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 
 @Mapper(componentModel = "spring", uses = {SemesterApiMapper.class})
@@ -30,12 +31,13 @@ public interface EventApiMapper {
 
     EventPointResponseDto toEventPointResponseDto(EventPointInfoDto eventPointInfoDto);
 
-    EventResponseDto toResponseDto(EventInfoDto eventInfoDto);
+    EventResponseDto toResponseDto(EventInfoDto event);
 
     StoredEventStatusResponseDto toStoredStatusResponseDto(StoredEventStatusDto dto);
 
     EventSearchCriteriaDto toEventSearchCriteriaDto(EventFilterRequestDto request);
 
+    @Mapping(target = "explain", source = "aiExplanation")
     EventRecommendationResponseDto toRecommendationResponseDto(EventRecommendationDto dto);
 
     PointCategoryGainResponseDto toPointCategoryGainResponseDto(PointCategoryGainDto dto);

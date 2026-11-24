@@ -31,7 +31,7 @@ public class GeminiEventRecommendationAdapter implements EventRecommendationAiPo
     @Autowired
     public GeminiEventRecommendationAdapter(
             @Value("${gemini.api.key:${GEMINI_API_KEY:}}") String apiKey,
-            @Value("${gemini.model:gemini-1.5-flash}") String modelName,
+            @Value("${gemini.model:${GEMINI_MODEL:gemini-1.5-flash}}") String modelName,
             @Autowired(required = false) ObjectMapper objectMapper
     ) {
         this.apiKey = apiKey != null ? apiKey.trim() : "";

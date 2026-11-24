@@ -56,14 +56,22 @@ BEGIN
         PERFORM sync_event_recommendation_summary(id) FROM events WHERE semester_id = NEW.id;
     ELSIF TG_TABLE_NAME = 'criterias' THEN
         PERFORM sync_event_recommendation_summary(id) FROM events WHERE criteria_id = NEW.id;
-    ELSE
-        IF TG_OP = 'DELETE' OR (TG_OP = 'UPDATE' AND OLD.event_id <> NEW.event_id) THEN
-            PERFORM sync_event_recommendation_summary(OLD.event_id);
-        END IF;
-        IF TG_OP <> 'DELETE' THEN
-            PERFORM sync_event_recommendation_summary(NEW.event_id);
-        END IF;
     END IF;
+    RETURN NULL;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION refresh_event_point_recommendation_summary() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        PERFORM sync_event_recommendation_summary(OLD.event_id);
+        RETURN NULL;
+    END IF;
+    IF TG_OP = 'UPDATE' AND OLD.event_id IS DISTINCT FROM NEW.event_id THEN
+        PERFORM sync_event_recommendation_summary(OLD.event_id);
+    END IF;
+    PERFORM sync_event_recommendation_summary(NEW.event_id);
     RETURN NULL;
 END;
 $$;
@@ -73,7 +81,7 @@ CREATE OR REPLACE TRIGGER recommendation_event_features
     FOR EACH ROW EXECUTE FUNCTION refresh_event_recommendation_summary();
 CREATE OR REPLACE TRIGGER recommendation_event_point_features
     AFTER INSERT OR UPDATE OR DELETE ON event_points
-    FOR EACH ROW EXECUTE FUNCTION refresh_event_recommendation_summary();
+    FOR EACH ROW EXECUTE FUNCTION refresh_event_point_recommendation_summary();
 CREATE OR REPLACE TRIGGER recommendation_semester_features
     AFTER UPDATE OF academic_year_id ON semesters
     FOR EACH ROW EXECUTE FUNCTION refresh_event_recommendation_summary();
@@ -81,5 +89,36 @@ CREATE OR REPLACE TRIGGER recommendation_criterion_features
     AFTER UPDATE OF name ON criterias
     FOR EACH ROW EXECUTE FUNCTION refresh_event_recommendation_summary();
 
-SELECT sync_event_recommendation_summary(id) FROM events;
+-- Aggregate existing points once for the backfill. The trigger still syncs a single event.
+WITH category_totals AS (
+    SELECT event_id, point_category_id, SUM(point) AS offered
+    FROM event_points
+    WHERE is_active
+    GROUP BY event_id, point_category_id
+), event_point_features AS (
+    SELECT event_id, jsonb_object_agg(point_category_id, offered) AS points
+    FROM category_totals
+    GROUP BY event_id
+)
+INSERT INTO event_recommendation_summary AS summary (event_id, features)
+SELECT e.id, jsonb_build_object(
+    'title', e.name, 'description', e.description,
+    'semesterId', e.semester_id, 'yearId', s.academic_year_id,
+    'criterionId', e.criteria_id, 'criterionName', c.name,
+    'fanpageId', e.fanpage_id, 'typeId', e.event_type_id,
+    'points', COALESCE(p.points, '{}'::jsonb)
+)
+FROM events e
+LEFT JOIN semesters s ON s.id = e.semester_id
+LEFT JOIN criterias c ON c.id = e.criteria_id
+LEFT JOIN event_point_features p ON p.event_id = e.id
+ON CONFLICT (event_id) DO UPDATE SET
+    features = EXCLUDED.features,
+    scoring_version = summary.scoring_version + 1
+WHERE summary.features IS DISTINCT FROM EXCLUDED.features;
+
 COMMIT;
+
+SELECT
+    (SELECT count(*) FROM events) AS events,
+    (SELECT count(*) FROM event_recommendation_summary) AS summaries;

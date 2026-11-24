@@ -14,7 +14,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -102,9 +103,9 @@ class DailyRecommendationTest {
     private Snapshot snapshot(LocalDate day) {
         return new Snapshot(day, Map.of(10L, Map.of(101L, 10, 102L, 0, 103L, 10)),
                 Map.of(20L, Set.of(31L)), Map.of(
-                    101L, new Category(101, null, "Parent", true, 20, true, DAY),
-                    102L, new Category(102, 101L, "Leaf", false, 20, true, DAY),
-                    103L, new Category(103, 101L, "Sibling", false, 20, true, DAY)),
+                101L, new Category(101, null, "Parent", true, 20, true, DAY),
+                102L, new Category(102, 101L, "Leaf", false, 20, true, DAY),
+                103L, new Category(103, 101L, "Sibling", false, 20, true, DAY)),
                 Map.of(30L, new Criterion(null, 2, true), 31L, new Criterion(30L, 1, true),
                         3L, new Criterion(30L, 1, true)),
                 Set.of(1L), Map.of(2L, 2), Set.of(10L), Set.of(20L));
