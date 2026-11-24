@@ -29,15 +29,31 @@ public record EventInfoDto(
         SemesterDto semester,
         Instant updatedAt,
         List<EventPointInfoDto> eventPoints,
-        Long registeredCount
+        Long registeredCount,
+        boolean isFollowFanpage,
+        boolean isFull,
+        boolean registrationClosed
 ) {
-    public EventInfoDto withRegisteredCount(Long count) {
+    public EventInfoDto withRegistrationInfo(long count, boolean followsFanpage, boolean full, boolean closed) {
         return new EventInfoDto(
                 id, name, description, location, dateOpen, dateClose, dateHappen,
                 capacity, maleQuantity, femaleQuantity, bannerUrl, status,
                 eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName,
-                fanpageId, isActive, allowSelfCheck, semester, updatedAt, eventPoints, count
+                fanpageId, isActive, allowSelfCheck, semester, updatedAt, eventPoints, count, followsFanpage, full, closed
         );
+    }
+
+    public EventInfoDto(
+            Long id, String name, String description, String location, Instant dateOpen, Instant dateClose,
+            Instant dateHappen, Integer capacity, Integer maleQuantity, Integer femaleQuantity,
+            String bannerUrl, String status, Long eventTypeId, String eventTypeName, Long criteriaId,
+            String criteriaName, String fanpageName, Long fanpageId, boolean isActive, boolean allowSelfCheck,
+            SemesterDto semester, Instant updatedAt, List<EventPointInfoDto> eventPoints, Long registeredCount
+    ) {
+        this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity,
+                femaleQuantity, bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName,
+                fanpageName, fanpageId, isActive, allowSelfCheck, semester, updatedAt, eventPoints,
+                registeredCount, false, false, false);
     }
 
     public EventInfoDto(

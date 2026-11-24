@@ -1,5 +1,7 @@
 package com.ddd.application.service.registration.impl;
 
+import com.ddd.application.service.event.cache.RecommendationCacheService;
+
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.RegistrationStatusEnum;
 import com.ddd.domain.exception.EventAttendanceException;
@@ -66,6 +68,9 @@ class RegistrationCommandServiceImplTest {
 
     @Mock
     private StudentProfileRepository studentProfileRepository;
+
+    @Mock
+    private RecommendationCacheService recommendationCacheService;
 
     @InjectMocks
     private RegistrationCommandServiceImpl registrationCommandService;

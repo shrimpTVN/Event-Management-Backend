@@ -1,6 +1,7 @@
 package com.ddd.api.dto.event.res;
 
 import com.ddd.api.dto.semester.SemesterResponseDto;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
 import java.util.List;
@@ -29,7 +30,10 @@ public record EventResponseDto(
         SemesterResponseDto semester,
         List<EventPointResponseDto> eventPoints,
         Instant updatedAt,
-        Long registeredCount
+        Long registeredCount,
+        @JsonProperty("isFollowFanpage") boolean isFollowFanpage,
+        @JsonProperty("isFull") boolean isFull,
+        boolean registrationClosed
 ) {
     public EventResponseDto(
             Long id,
@@ -57,7 +61,7 @@ public record EventResponseDto(
             Instant updatedAt
     ) {
         this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity, femaleQuantity,
-                bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName, fanpageId, isActive, allowSelfCheck, semester, eventPoints, updatedAt, 0L);
+                bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName, fanpageId, isActive, allowSelfCheck, semester, eventPoints, updatedAt, 0L, false, false, false);
     }
 
     public EventResponseDto(
@@ -83,7 +87,7 @@ public record EventResponseDto(
             List<EventPointResponseDto> eventPoints,
             Instant updatedAt) {
         this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity, femaleQuantity,
-                bannerUrl, status, null, eventTypeName, null, criteriaName, fanpageName, fanpageId, isActive, allowSelfCheck, semester, eventPoints, updatedAt, 0L);
+                bannerUrl, status, null, eventTypeName, null, criteriaName, fanpageName, fanpageId, isActive, allowSelfCheck, semester, eventPoints, updatedAt, 0L, false, false, false);
     }
 
     public EventResponseDto(
@@ -108,7 +112,7 @@ public record EventResponseDto(
             List<EventPointResponseDto> eventPoints,
             Instant updatedAt) {
         this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity, femaleQuantity,
-                bannerUrl, status, null, eventTypeName, null, criteriaName, fanpageName, fanpageId, isActive, true, semester, eventPoints, updatedAt, 0L);
+                bannerUrl, status, null, eventTypeName, null, criteriaName, fanpageName, fanpageId, isActive, true, semester, eventPoints, updatedAt, 0L, false, false, false);
     }
 
     public EventResponseDto(
@@ -135,6 +139,6 @@ public record EventResponseDto(
             List<EventPointResponseDto> eventPoints,
             Instant updatedAt) {
         this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity, femaleQuantity,
-                bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName, fanpageId, isActive, true, semester, eventPoints, updatedAt, 0L);
+                bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName, fanpageId, isActive, true, semester, eventPoints, updatedAt, 0L, false, false, false);
     }
 }

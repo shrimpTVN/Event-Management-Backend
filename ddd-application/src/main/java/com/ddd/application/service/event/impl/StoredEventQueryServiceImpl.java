@@ -25,6 +25,7 @@ public class StoredEventQueryServiceImpl implements StoredEventQueryService {
     private final UserRepository userRepository;
     private final StoredEventJpaRepository storedEventJpaRepository;
     private final EventDtoMapper eventDtoMapper;
+    private final EventResponseEnricher responseEnricher;
 
     @Override
     public StoredEventStatusDto isEventStored(Long eventId, String email) {
@@ -45,6 +46,6 @@ public class StoredEventQueryServiceImpl implements StoredEventQueryService {
         }
 
         Page<EventJpaEntity> events = storedEventJpaRepository.findStoredEventsByUserId(user.getId(), pageable);
-        return events.map(eventDtoMapper::toInfoDto);
+        return responseEnricher.enrich(events.map(eventDtoMapper::toInfoDto), user.getId());
     }
 }

@@ -1,0 +1,45 @@
+package com.ddd.application.dto.recommendation;
+
+import com.ddd.application.dto.event.EventInfoDto;
+
+import java.util.List;
+
+public record EventRecommendationDto(
+        EventInfoDto event,
+        double matchScore,
+        String aiExplanation,
+        int remainingSlots,
+        long daysUntilHappen,
+        boolean fulfillsCriteria,
+        List<PointCategoryGainDto> pointGains,
+        boolean isFollowedFanpage,
+        double fanpageScore,
+        double historyScore,
+        boolean registrationClosed,
+        boolean full,
+        boolean viewed,
+        double personalizedScore,
+        double urgencyScore,
+        int readPenalty,
+        double effectiveScore
+) {
+    public EventRecommendationDto(EventInfoDto event, double matchScore, String aiExplanation, int remainingSlots,
+                                  long daysUntilHappen, boolean fulfillsCriteria, List<PointCategoryGainDto> pointGains,
+                                  boolean isFollowedFanpage, double fanpageScore, double historyScore) {
+        this(event, matchScore, aiExplanation, remainingSlots, daysUntilHappen, fulfillsCriteria, pointGains,
+                isFollowedFanpage, fanpageScore, historyScore, false, false, false, matchScore, 0, 0, matchScore);
+    }
+
+    public EventRecommendationDto(
+            EventInfoDto event,
+            double matchScore,
+            String aiExplanation,
+            int remainingSlots,
+            long daysUntilHappen,
+            boolean fulfillsCriteria,
+            List<PointCategoryGainDto> pointGains
+    ) {
+        this(event, matchScore, aiExplanation, remainingSlots, daysUntilHappen, fulfillsCriteria, pointGains, false, 0.0, 0.0);
+    }
+}
+
