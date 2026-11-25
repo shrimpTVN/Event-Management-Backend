@@ -36,7 +36,9 @@ public record EventInfoDto(
         boolean isFull,
         boolean registrationClosed,
         boolean genderConstraint,
-        String violationReason
+        String violationReason,
+        String fanpageAvatarUrl,
+        String orgName
 ) {
     public EventInfoDto(
             Long id, String name, String description, String location, Instant dateOpen, Instant dateClose,
@@ -50,7 +52,8 @@ public record EventInfoDto(
         this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity,
                 femaleQuantity, bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName,
                 fanpageName, fanpageId, schoolId, schoolName, isActive, allowSelfCheck, semester, updatedAt,
-                eventPoints, registeredCount, isFollowFanpage, isFull, registrationClosed, genderConstraint, null);
+                eventPoints, registeredCount, isFollowFanpage, isFull, registrationClosed, genderConstraint,
+                null, null, null);
     }
 
     public EventInfoDto withRegistrationInfo(long count, boolean followsFanpage, boolean full, boolean closed) {
@@ -59,7 +62,7 @@ public record EventInfoDto(
                 capacity, maleQuantity, femaleQuantity, bannerUrl, status,
                 eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName,
                 fanpageId, schoolId, schoolName, isActive, allowSelfCheck, semester, updatedAt, eventPoints,
-                count, followsFanpage, full, closed, genderConstraint, violationReason
+                count, followsFanpage, full, closed, genderConstraint, violationReason, fanpageAvatarUrl, orgName
         );
     }
 

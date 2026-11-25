@@ -65,6 +65,20 @@ class EventResponseEnricherTest {
         verifyNoInteractions(following);
     }
 
+    @Test
+    void enrichesSignedInDetailWithFollowFanpageFlag() {
+        when(registrations.countActiveRegistrationsByEventId(42L)).thenReturn(3L);
+        when(following.findFollowedFanpageIdsByUserId(9L, FollowingStatusEnum.FOLLOWING))
+                .thenReturn(Set.of(14L));
+
+        var result = enricher.enrich(event(42L, 14L, NOW.plusSeconds(600)), 9L);
+
+        assertEquals(3L, result.registeredCount());
+        assertTrue(result.isFollowFanpage());
+        assertFalse(result.isFull());
+        assertFalse(result.registrationClosed());
+    }
+
     private EventInfoDto event(long id, Long fanpageId, Instant close) {
         return new EventInfoDto(id, "Volunteering", "Help out", "Campus hall",
                 NOW.minusSeconds(3600), close, NOW.plusSeconds(3600), 12, 6, 6,
