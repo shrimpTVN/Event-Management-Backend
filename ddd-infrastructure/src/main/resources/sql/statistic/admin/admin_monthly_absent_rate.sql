@@ -12,8 +12,11 @@ SELECT
     )::double precision                                 AS absent_rate
 FROM registrations r
 JOIN events e ON r.event_id = e.id
+LEFT JOIN semesters sem ON e.semester_id = sem.id
+LEFT JOIN academic_years ay ON sem.academic_year_id = ay.id
 WHERE e.is_active = true
   AND (:year::int IS NULL OR EXTRACT(YEAR FROM e.date_happen) = :year::int)
   AND (:semesterId::bigint IS NULL OR e.semester_id = :semesterId::bigint)
+  AND (:academicYear::varchar IS NULL OR ay.code = :academicYear::varchar)
 GROUP BY EXTRACT(MONTH FROM e.date_happen), TO_CHAR(e.date_happen, 'Mon')
 ORDER BY month ASC;

@@ -62,75 +62,84 @@ public class AdminStatisticRepositoryImpl implements AdminStatisticRepository {
                 .single();
     }
 
-    public AdminEventOverviewRow getEventOverview(Integer year, Long semesterId) {
+    public AdminEventOverviewRow getEventOverview(Integer year, Long semesterId, String academicYear) {
         return jdbcClient.sql(OVERVIEW_EVENTS_SQL)
                 .param("year", year)
                 .param("semesterId", semesterId)
+                .param("academicYear", academicYear)
                 .query(AdminEventOverviewRow.class)
                 .single();
     }
 
-    public AdminAttendanceOverviewRow getAttendanceOverview(Integer year, Long semesterId) {
+    public AdminAttendanceOverviewRow getAttendanceOverview(Integer year, Long semesterId, String academicYear) {
         return jdbcClient.sql(OVERVIEW_ATTENDANCE_SQL)
                 .param("year", year)
                 .param("semesterId", semesterId)
+                .param("academicYear", academicYear)
                 .query(AdminAttendanceOverviewRow.class)
                 .single();
     }
 
-    public List<AdminMonthlyTrendRow> getMonthlyTrends(Integer year, Long semesterId) {
+    public List<AdminMonthlyTrendRow> getMonthlyTrends(Integer year, Long semesterId, String academicYear) {
         return jdbcClient.sql(MONTHLY_TRENDS_SQL)
                 .param("year", year)
                 .param("semesterId", semesterId)
+                .param("academicYear", academicYear)
                 .query(AdminMonthlyTrendRow.class)
                 .list();
     }
 
-    public List<AdminEventTypeDistributionRow> getEventDistribution(Integer year, Long semesterId) {
+    public List<AdminEventTypeDistributionRow> getEventDistribution(Integer year, Long semesterId, String academicYear) {
         return jdbcClient.sql(EVENT_DIST_SQL)
                 .param("year", year)
                 .param("semesterId", semesterId)
+                .param("academicYear", academicYear)
                 .query(AdminEventTypeDistributionRow.class)
                 .list();
     }
 
-    public List<AdminTopFanpageRow> getTopFanpages(Integer year, Long semesterId, int limit) {
+    public List<AdminTopFanpageRow> getTopFanpages(Integer year, Long semesterId, Integer limit, String academicYear) {
         return jdbcClient.sql(TOP_FANPAGES_SQL)
                 .param("year", year)
                 .param("semesterId", semesterId)
                 .param("limit", limit)
+                .param("academicYear", academicYear)
                 .query(AdminTopFanpageRow.class)
                 .list();
     }
 
-    public List<DemographicItemRow> getCohortDemographics(Integer year, Long semesterId) {
+    public List<DemographicItemRow> getCohortDemographics(Integer year, Long semesterId, String academicYear) {
         return jdbcClient.sql(DEMO_COHORT_SQL)
                 .param("year", year)
                 .param("semesterId", semesterId)
+                .param("academicYear", academicYear)
                 .query(DemographicItemRow.class)
                 .list();
     }
 
-    public List<DemographicItemRow> getSchoolDemographics(Integer year, Long semesterId) {
+    public List<DemographicItemRow> getSchoolDemographics(Integer year, Long semesterId, String academicYear) {
         return jdbcClient.sql(DEMO_SCHOOL_SQL)
                 .param("year", year)
                 .param("semesterId", semesterId)
+                .param("academicYear", academicYear)
                 .query(DemographicItemRow.class)
                 .list();
     }
 
-    public List<DemographicItemRow> getMajorDemographics(Integer year, Long semesterId) {
+    public List<DemographicItemRow> getMajorDemographics(Integer year, Long semesterId, String academicYear) {
         return jdbcClient.sql(DEMO_MAJOR_SQL)
                 .param("year", year)
                 .param("semesterId", semesterId)
+                .param("academicYear", academicYear)
                 .query(DemographicItemRow.class)
                 .list();
     }
 
-    public List<MonthlyAbsentRateRow> getMonthlyAbsentRate(Integer year, Long semesterId) {
+    public List<MonthlyAbsentRateRow> getMonthlyAbsentRate(Integer year, Long semesterId, String academicYear) {
         return jdbcClient.sql(MONTHLY_ABSENT_RATE_SQL)
                 .param("year", year)
                 .param("semesterId", semesterId)
+                .param("academicYear", academicYear)
                 .query(MonthlyAbsentRateRow.class)
                 .list();
     }

@@ -45,15 +45,15 @@ public class AdminStatisticControllerTest {
                 new AdminAttendanceOverviewResponseDto(500L, 450L, 50L, 90.0, 10.0)
         );
 
-        when(adminStatisticQueryService.getOverview(2026, 1L)).thenReturn(appDto);
+        when(adminStatisticQueryService.getOverview(2026, 1L, null)).thenReturn(appDto);
         when(adminStatisticApiMapper.toResponseDto(appDto)).thenReturn(resDto);
 
-        BaseResponse<AdminOverviewStatisticResponseDto> response = controller.getOverview(2026, 1L);
+        BaseResponse<AdminOverviewStatisticResponseDto> response = controller.getOverview(2026, 1L, null);
 
         assertNotNull(response);
         assertEquals(BaseResponse.SUCCESS_REQUEST_MESSAGE, response.message());
         assertEquals(resDto, response.data());
-        verify(adminStatisticQueryService).getOverview(2026, 1L);
+        verify(adminStatisticQueryService).getOverview(2026, 1L, null);
     }
 
     @Test
@@ -62,10 +62,10 @@ public class AdminStatisticControllerTest {
         List<AdminMonthlyTrendDto> appList = List.of(new AdminMonthlyTrendDto("2026-03", 10L, 100L, 90L, 10L, 10.0));
         List<AdminMonthlyTrendResponseDto> resList = List.of(new AdminMonthlyTrendResponseDto("2026-03", 10L, 100L, 90L, 10L, 10.0));
 
-        when(adminStatisticQueryService.getMonthlyTrends(2026, 1L)).thenReturn(appList);
+        when(adminStatisticQueryService.getMonthlyTrends(2026, 1L, null)).thenReturn(appList);
         when(adminStatisticApiMapper.toMonthlyTrendResponseDtoList(appList)).thenReturn(resList);
 
-        BaseResponse<List<AdminMonthlyTrendResponseDto>> response = controller.getMonthlyTrends(2026, 1L);
+        BaseResponse<List<AdminMonthlyTrendResponseDto>> response = controller.getMonthlyTrends(2026, 1L, null);
 
         assertNotNull(response);
         assertEquals(1, response.data().size());
@@ -78,10 +78,10 @@ public class AdminStatisticControllerTest {
         List<AdminEventTypeDistributionDto> appList = List.of(new AdminEventTypeDistributionDto(1L, "Academic", 30L, 75.0));
         List<AdminEventTypeDistributionResponseDto> resList = List.of(new AdminEventTypeDistributionResponseDto(1L, "Academic", 30L, 75.0));
 
-        when(adminStatisticQueryService.getEventDistribution(2026, 1L)).thenReturn(appList);
+        when(adminStatisticQueryService.getEventDistribution(2026, 1L, null)).thenReturn(appList);
         when(adminStatisticApiMapper.toEventTypeDistributionResponseDtoList(appList)).thenReturn(resList);
 
-        BaseResponse<List<AdminEventTypeDistributionResponseDto>> response = controller.getEventDistribution(2026, 1L);
+        BaseResponse<List<AdminEventTypeDistributionResponseDto>> response = controller.getEventDistribution(2026, 1L, null);
 
         assertNotNull(response);
         assertEquals(1, response.data().size());
@@ -94,10 +94,10 @@ public class AdminStatisticControllerTest {
         List<AdminTopFanpageDto> appList = List.of(new AdminTopFanpageDto(1L, "Tech Club", "avatar.png", 15L, 200L, 500L));
         List<AdminTopFanpageResponseDto> resList = List.of(new AdminTopFanpageResponseDto(1L, "Tech Club", "avatar.png", 15L, 200L, 500L));
 
-        when(adminStatisticQueryService.getTopFanpages(2026, 1L, 10)).thenReturn(appList);
+        when(adminStatisticQueryService.getTopFanpages(2026, 1L, 10, null)).thenReturn(appList);
         when(adminStatisticApiMapper.toTopFanpageResponseDtoList(appList)).thenReturn(resList);
 
-        BaseResponse<List<AdminTopFanpageResponseDto>> response = controller.getTopFanpages(2026, 1L, 10);
+        BaseResponse<List<AdminTopFanpageResponseDto>> response = controller.getTopFanpages(2026, 1L, 10, null);
 
         assertNotNull(response);
         assertEquals(1, response.data().size());
@@ -120,10 +120,10 @@ public class AdminStatisticControllerTest {
                 List.of(new AdminDemographicItemResponseDto("SE", 100L, 100.0))
         );
 
-        when(adminStatisticQueryService.getDemographics(2026, 1L)).thenReturn(appDto);
+        when(adminStatisticQueryService.getDemographics(2026, 1L, null)).thenReturn(appDto);
         when(adminStatisticApiMapper.toResponseDto(appDto)).thenReturn(resDto);
 
-        BaseResponse<AdminDemographicsResponseDto> response = controller.getDemographics(2026, 1L);
+        BaseResponse<AdminDemographicsResponseDto> response = controller.getDemographics(2026, 1L, null);
 
         assertNotNull(response);
         assertEquals(100L, response.data().totalRegistrations());
@@ -136,10 +136,10 @@ public class AdminStatisticControllerTest {
         List<AdminMonthlyAbsentRateDto> appList = List.of(new AdminMonthlyAbsentRateDto(3, "Mar", 100L, 15L, 15.0));
         List<AdminMonthlyAbsentRateResponseDto> resList = List.of(new AdminMonthlyAbsentRateResponseDto(3, "Mar", 100L, 15L, 15.0));
 
-        when(adminStatisticQueryService.getMonthlyAbsentRate(2026, 1L)).thenReturn(appList);
+        when(adminStatisticQueryService.getMonthlyAbsentRate(2026, 1L, null)).thenReturn(appList);
         when(adminStatisticApiMapper.toMonthlyAbsentRateResponseDtoList(appList)).thenReturn(resList);
 
-        BaseResponse<List<AdminMonthlyAbsentRateResponseDto>> response = controller.getMonthlyAbsentRate(2026, 1L);
+        BaseResponse<List<AdminMonthlyAbsentRateResponseDto>> response = controller.getMonthlyAbsentRate(2026, 1L, null);
 
         assertNotNull(response);
         assertEquals(1, response.data().size());
@@ -172,10 +172,10 @@ public class AdminStatisticControllerTest {
                 List.of()
         );
 
-        when(adminStatisticQueryService.getDashboard(2026, 1L)).thenReturn(appDto);
+        when(adminStatisticQueryService.getDashboard(null, null, "2025-2026")).thenReturn(appDto);
         when(adminStatisticApiMapper.toResponseDto(appDto)).thenReturn(resDto);
 
-        BaseResponse<AdminDashboardResponseDto> response = controller.getDashboard(2026, 1L);
+        BaseResponse<AdminDashboardResponseDto> response = controller.getDashboard(null, null, "2025-2026");
 
         assertNotNull(response);
         assertEquals(BaseResponse.SUCCESS_REQUEST_MESSAGE, response.message());
