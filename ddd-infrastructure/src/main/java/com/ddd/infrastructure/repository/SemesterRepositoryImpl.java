@@ -70,5 +70,18 @@ public class SemesterRepositoryImpl implements SemesterRepository {
         return semesterJpaRepository.existsByStartDateBeforeAndEndDateAfter(startDate, endDate);
     }
 
+    @Override
+    public boolean existsActiveByAcademicYearIdAndNumber(Long academicYearId, Integer number, Long excludeId) {
+        if (excludeId == null) {
+            return semesterJpaRepository.existsByAcademicYearIdAndNumberAndIsActiveTrue(academicYearId, number);
+        }
+        return semesterJpaRepository.existsByAcademicYearIdAndNumberAndIsActiveTrueAndIdNot(academicYearId, number, excludeId);
+    }
+
+    @Override
+    public boolean existsActiveOverlappingDateRange(LocalDate startDate, LocalDate endDate, Long excludeId) {
+        return semesterJpaRepository.existsActiveOverlappingDateRange(startDate, endDate, excludeId);
+    }
+
 
 }
