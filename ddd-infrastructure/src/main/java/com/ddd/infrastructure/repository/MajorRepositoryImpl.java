@@ -39,6 +39,12 @@ public class MajorRepositoryImpl implements MajorRepository {
     }
     @Override
     public List<Major> findBySchoolId(Long schoolId) {
+        return majorJpaRepository.findBySchoolId(schoolId)
+                .stream().map(majorMapper::toDomainModel).toList();
+    }
+
+    @Override
+    public List<Major> findActiveBySchoolId(Long schoolId) {
         return majorJpaRepository.findBySchoolIdAndIsActiveTrue(schoolId)
                 .stream().map(majorMapper::toDomainModel).toList();
     }
