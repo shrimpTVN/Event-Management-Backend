@@ -9,7 +9,11 @@ public interface PointCategoryService {
 
     List<PointCategoryInfoDto> getAllPointCategories();
 
+    List<PointCategoryInfoDto> getAllPointCategories(Long semesterId);
+
     List<PointCategoryTreeNodeDto> getPointCategoryTree();
+
+    List<PointCategoryTreeNodeDto> getPointCategoryTree(Long semesterId);
 
     PointCategoryInfoDto getPointCategoryById(Long id);
 
@@ -22,5 +26,7 @@ public interface PointCategoryService {
     void deletePointCategory(Long id);
 
     List<PointCategoryGroupedTreeDto> getGroupedPointCategoryTree();
+
+    List<PointCategoryGroupedTreeDto> getGroupedPointCategoryTree(Long semesterId);
 }
 

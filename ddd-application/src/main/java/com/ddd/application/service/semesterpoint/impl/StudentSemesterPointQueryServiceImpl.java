@@ -6,10 +6,13 @@ import com.ddd.application.dto.semesterpoint.StudentSemesterPointInfoDto;
 import com.ddd.application.mapper.StudentSemesterPointDtoMapper;
 import com.ddd.application.service.semesterpoint.StudentSemesterPointQueryService;
 import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.PointCategory;
+import com.ddd.domain.model.Semester;
 import com.ddd.domain.model.StudentSemesterPoint;
 import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.PointCategoryRepository;
+import com.ddd.domain.repository.SemesterRepository;
 import com.ddd.domain.repository.StudentSemesterPointRepository;
 import com.ddd.infrastructure.entity.UserJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.StudentSemesterPointJpaRepository;
@@ -18,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -39,6 +43,7 @@ public class StudentSemesterPointQueryServiceImpl implements StudentSemesterPoin
     private final UserJpaRepository userJpaRepository;
     private final StudentSemesterPointRepository studentSemesterPointRepository;
     private final PointCategoryRepository pointCategoryRepository;
+    private final SemesterRepository semesterRepository;
     private final SecurityContextPort securityContextPort;
 
     @Override
@@ -66,7 +71,11 @@ public class StudentSemesterPointQueryServiceImpl implements StudentSemesterPoin
             throw new IllegalArgumentException("User ID and Semester ID cannot be null");
         }
 
-        List<PointCategory> allCategories = pointCategoryRepository.findAllActive();
+        Semester semester = semesterRepository.findById(semesterId)
+                .orElseThrow(() -> new ResourceNotFoundException("Semester not found with id: " + semesterId));
+        LocalDate effectiveDate = resolveEffectiveDate(semester);
+
+        List<PointCategory> allCategories = pointCategoryRepository.findActiveEffectiveAsOf(effectiveDate);
         List<StudentSemesterPoint> studentPoints = studentSemesterPointRepository
                 .findAllByUserIdAndSemesterId(userId, semesterId);
 
@@ -100,9 +109,9 @@ public class StudentSemesterPointQueryServiceImpl implements StudentSemesterPoin
                     root.getChildrenOrder(),
                     root.isMaxChild(),
                     rootPoint != null ? rootPoint.getId() : null,
-                    rootPoint != null && rootPoint.getTotalPoint() != null ? rootPoint.getTotalPoint() : 0,
-                    rootPoint != null && rootPoint.getSystemPointRecord() != null ? rootPoint.getSystemPointRecord() : 0,
-                    rootPoint != null && rootPoint.getManualPointRecord() != null ? rootPoint.getManualPointRecord() : 0,
+                    clampToMaximum(rootPoint != null ? rootPoint.getTotalPoint() : null, root.getMaximum()),
+                    clampToMaximum(rootPoint != null ? rootPoint.getSystemPointRecord() : null, root.getMaximum()),
+                    clampToMaximum(rootPoint != null ? rootPoint.getManualPointRecord() : null, root.getMaximum()),
                     rootPoint != null ? rootPoint.getFinalizedAt() : null,
                     flatItems
             );
@@ -135,12 +144,24 @@ public class StudentSemesterPointQueryServiceImpl implements StudentSemesterPoin
                     isLeaf,
                     child.isMaxChild(),
                     childPoint != null ? childPoint.getId() : null,
-                    childPoint != null && childPoint.getTotalPoint() != null ? childPoint.getTotalPoint() : 0,
-                    childPoint != null && childPoint.getSystemPointRecord() != null ? childPoint.getSystemPointRecord() : 0,
-                    childPoint != null && childPoint.getManualPointRecord() != null ? childPoint.getManualPointRecord() : 0,
+                    clampToMaximum(childPoint != null ? childPoint.getTotalPoint() : null, child.getMaximum()),
+                    clampToMaximum(childPoint != null ? childPoint.getSystemPointRecord() : null, child.getMaximum()),
+                    clampToMaximum(childPoint != null ? childPoint.getManualPointRecord() : null, child.getMaximum()),
                     childPoint != null ? childPoint.getFinalizedAt() : null
             ));
             flattenDescendantsDfs(child.getId(), childrenByParent, pointMap, resultList);
         });
+    }
+
+    private LocalDate resolveEffectiveDate(Semester semester) {
+        if (semester.getEndDate() != null) {
+            return semester.getEndDate();
+        }
+        return semester.getStartDate() != null ? semester.getStartDate() : LocalDate.now();
+    }
+
+    private int clampToMaximum(Integer value, Integer maximum) {
+        int nonNegative = value != null ? Math.max(0, value) : 0;
+        return maximum != null ? Math.min(maximum, nonNegative) : nonNegative;
     }
 }

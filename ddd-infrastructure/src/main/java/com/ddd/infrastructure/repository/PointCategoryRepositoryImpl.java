@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,6 +47,22 @@ public class PointCategoryRepositoryImpl implements PointCategoryRepository {
     @Override
     public List<PointCategory> findAllActive() {
         return pointCategoryJpaRepository.findAllByIsActive(true, getDefaultSort())
+                .stream()
+                .map(pointCategoryMapper::toDomainModel)
+                .toList();
+    }
+
+    @Override
+    public List<PointCategory> findActiveEffectiveAsOf(LocalDate targetDate) {
+        LocalDate effectiveTarget = targetDate != null ? targetDate : LocalDate.now();
+        Optional<LocalDate> effectiveDate = pointCategoryJpaRepository.findLatestEffectiveDateApplyAsOf(effectiveTarget)
+                .or(pointCategoryJpaRepository::findEarliestActiveDateApply);
+
+        if (effectiveDate.isEmpty()) {
+            return List.of();
+        }
+
+        return pointCategoryJpaRepository.findAllByIsActiveAndDateApply(true, effectiveDate.get(), getDefaultSort())
                 .stream()
                 .map(pointCategoryMapper::toDomainModel)
                 .toList();

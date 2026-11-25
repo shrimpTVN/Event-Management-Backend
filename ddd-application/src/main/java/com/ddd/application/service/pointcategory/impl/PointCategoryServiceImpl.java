@@ -5,11 +5,14 @@ import com.ddd.application.mapper.PointCategoryDtoMapper;
 import com.ddd.application.service.pointcategory.PointCategoryService;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.PointCategory;
+import com.ddd.domain.model.Semester;
 import com.ddd.domain.repository.PointCategoryRepository;
+import com.ddd.domain.repository.SemesterRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -26,6 +29,7 @@ public class PointCategoryServiceImpl implements PointCategoryService {
             .thenComparing(PointCategory::getId, Comparator.nullsLast(Comparator.naturalOrder()));
 
     private final PointCategoryRepository pointCategoryRepository;
+    private final SemesterRepository semesterRepository;
     private final PointCategoryDtoMapper pointCategoryDtoMapper;
 
     @Override
@@ -48,13 +52,25 @@ public class PointCategoryServiceImpl implements PointCategoryService {
     @Transactional(readOnly = true)
     @Override
     public List<PointCategoryInfoDto> getAllPointCategories() {
-        return pointCategoryDtoMapper.toInfoDtoList(pointCategoryRepository.findAllActive());
+        return getAllPointCategories(null);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<PointCategoryInfoDto> getAllPointCategories(Long semesterId) {
+        return pointCategoryDtoMapper.toInfoDtoList(findEffectiveCategories(semesterId));
     }
 
     @Transactional(readOnly = true)
     @Override
     public List<PointCategoryTreeNodeDto> getPointCategoryTree() {
-        CategoryGroup categoryGroup = groupCategoryAndRetrieveRoots();
+        return getPointCategoryTree(null);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<PointCategoryTreeNodeDto> getPointCategoryTree(Long semesterId) {
+        CategoryGroup categoryGroup = groupCategoryAndRetrieveRoots(semesterId);
         Map<Long, List<PointCategory>> childrenByParent = categoryGroup.childrenByParent();
         List<PointCategory> roots = categoryGroup.roots();
 
@@ -136,7 +152,13 @@ public class PointCategoryServiceImpl implements PointCategoryService {
     @Override
     @Transactional(readOnly = true)
     public List<PointCategoryGroupedTreeDto> getGroupedPointCategoryTree() {
-        CategoryGroup categoryGroup = groupCategoryAndRetrieveRoots();
+        return getGroupedPointCategoryTree(null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PointCategoryGroupedTreeDto> getGroupedPointCategoryTree(Long semesterId) {
+        CategoryGroup categoryGroup = groupCategoryAndRetrieveRoots(semesterId);
         Map<Long, List<PointCategory>> childrenByParent = categoryGroup.childrenByParent();
         List<PointCategory> roots = categoryGroup.roots();
 
@@ -188,8 +210,8 @@ public class PointCategoryServiceImpl implements PointCategoryService {
 
     }
 
-    private CategoryGroup groupCategoryAndRetrieveRoots() {
-        List<PointCategory> allCategories = pointCategoryRepository.findAllActive();
+    private CategoryGroup groupCategoryAndRetrieveRoots(Long semesterId) {
+        List<PointCategory> allCategories = findEffectiveCategories(semesterId);
         Map<Long, List<PointCategory>> childrenByParent = allCategories.stream()
                 .filter(c -> c.getParentCategoryId() != null && c.getParentCategoryId() != 0L)
                 .collect(Collectors.groupingBy(PointCategory::getParentCategoryId));
@@ -200,6 +222,18 @@ public class PointCategoryServiceImpl implements PointCategoryService {
                 .toList();
 
         return new CategoryGroup(childrenByParent, roots);
+    }
+
+    private List<PointCategory> findEffectiveCategories(Long semesterId) {
+        LocalDate targetDate = LocalDate.now();
+        if (semesterId != null) {
+            Semester semester = semesterRepository.findById(semesterId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Semester not found with id: " + semesterId));
+            targetDate = semester.getEndDate() != null
+                    ? semester.getEndDate()
+                    : (semester.getStartDate() != null ? semester.getStartDate() : LocalDate.now());
+        }
+        return pointCategoryRepository.findActiveEffectiveAsOf(targetDate);
     }
 }
 

@@ -5,7 +5,9 @@ import com.ddd.application.dto.pointcategory.PointCategoryInfoDto;
 import com.ddd.application.mapper.PointCategoryDtoMapper;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.PointCategory;
+import com.ddd.domain.model.Semester;
 import com.ddd.domain.repository.PointCategoryRepository;
+import com.ddd.domain.repository.SemesterRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +32,9 @@ class PointCategoryServiceImplTest {
 
         @Mock
         private PointCategoryRepository pointCategoryRepository;
+
+        @Mock
+        private SemesterRepository semesterRepository;
 
         @Mock
         private PointCategoryDtoMapper pointCategoryDtoMapper;
@@ -191,7 +196,7 @@ class PointCategoryServiceImplTest {
                 List<PointCategory> entities = List.of(entity);
                 List<PointCategoryInfoDto> expectedDtos = List.of(infoDto);
 
-                when(pointCategoryRepository.findAllActive()).thenReturn(entities);
+                when(pointCategoryRepository.findActiveEffectiveAsOf(any(LocalDate.class))).thenReturn(entities);
                 when(pointCategoryDtoMapper.toInfoDtoList(entities)).thenReturn(expectedDtos);
 
                 List<PointCategoryInfoDto> result = pointCategoryService.getAllPointCategories();
@@ -199,7 +204,36 @@ class PointCategoryServiceImplTest {
                 assertNotNull(result);
                 assertEquals(1, result.size());
                 assertEquals(expectedDtos, result);
-                verify(pointCategoryRepository).findAllActive();
+                verify(pointCategoryRepository).findActiveEffectiveAsOf(any(LocalDate.class));
                 verify(pointCategoryDtoMapper).toInfoDtoList(entities);
+        }
+
+        @Test
+        @DisplayName("Should filter point categories by semester endDate when semesterId is provided")
+        void getAllPointCategories_whenSemesterIdProvided_shouldQueryBySemesterEndDate() {
+                Long semesterId = 101L;
+                LocalDate endDate = LocalDate.of(2026, 5, 31);
+                Semester semester = new Semester();
+                semester.setId(semesterId);
+                semester.setEndDate(endDate);
+
+                PointCategory entity = new PointCategory();
+                entity.setId(1L);
+                entity.setName("Academics 2008");
+                List<PointCategory> entities = List.of(entity);
+
+                PointCategoryInfoDto infoDto = new PointCategoryInfoDto(
+                                1L, "Academics 2008", null, 30, LocalDate.of(2008, 12, 5), 0, null, true, 1, false);
+                List<PointCategoryInfoDto> expectedDtos = List.of(infoDto);
+
+                when(semesterRepository.findById(semesterId)).thenReturn(Optional.of(semester));
+                when(pointCategoryRepository.findActiveEffectiveAsOf(endDate)).thenReturn(entities);
+                when(pointCategoryDtoMapper.toInfoDtoList(entities)).thenReturn(expectedDtos);
+
+                List<PointCategoryInfoDto> result = pointCategoryService.getAllPointCategories(semesterId);
+
+                assertEquals(expectedDtos, result);
+                verify(semesterRepository).findById(semesterId);
+                verify(pointCategoryRepository).findActiveEffectiveAsOf(endDate);
         }
 }
