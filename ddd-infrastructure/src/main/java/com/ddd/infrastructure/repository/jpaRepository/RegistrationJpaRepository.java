@@ -26,6 +26,13 @@ public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpa
             "WHERE r.id.eventId = :eventId AND r.status <> com.ddd.domain.enums.RegistrationStatusEnum.CANCELLED")
     Long countActiveRegistrationsByEventId(@Param("eventId") Long eventId);
 
+    @Query("SELECT COUNT(r) FROM RegistrationJpaEntity r " +
+            "JOIN r.user u " +
+            "WHERE r.id.eventId = :eventId " +
+            "AND r.status <> com.ddd.domain.enums.RegistrationStatusEnum.CANCELLED " +
+            "AND UPPER(u.gender) = UPPER(:gender)")
+    long countActiveRegistrationsByEventIdAndGender(@Param("eventId") Long eventId, @Param("gender") String gender);
+
     @Query("SELECT r FROM RegistrationJpaEntity r " +
             "WHERE r.id.eventId = :eventId " +
             "AND r.id.userId IN :userIds")

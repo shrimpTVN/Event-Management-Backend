@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface RegistrationRepository {
     boolean isRegistered(Long userId, Long eventId);
+    long countActiveRegistrationsByEventId(Long eventId);
+    long countActiveRegistrationsByEventIdAndGender(Long eventId, String gender);
     void save(Registration registration);
     void saveAll(List<Registration> registrations);
 

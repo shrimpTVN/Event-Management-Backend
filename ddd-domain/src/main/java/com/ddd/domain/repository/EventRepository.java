@@ -9,5 +9,6 @@ import java.util.Optional;
 public interface EventRepository {
     Event save(Event event);
     Event findById(Long id);
+    Event findByIdForUpdate(Long id);
     Page<Event> findByFanpageId(Long fanpageId, Pageable pageable);
 }

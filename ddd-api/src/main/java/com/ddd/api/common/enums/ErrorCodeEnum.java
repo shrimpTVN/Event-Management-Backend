@@ -37,6 +37,8 @@ public enum ErrorCodeEnum {
 
     EVENT_NOT_FOUND("EVENT.001", HttpStatus.NOT_FOUND, "Event not found"),
     EVENT_REGISTRATION_ERROR("EVENT.002", HttpStatus.BAD_REQUEST, "The event registration is not open yet or has already closed!"),
+    EVENT_FULL("EVENT.004", HttpStatus.CONFLICT, "Event is full."),
+    EVENT_GENDER_FULL("EVENT.005", HttpStatus.CONFLICT, "Event slots for your gender are full."),
     EVENT_ATTENDANCE_ERROR("EVENT.003", HttpStatus.BAD_REQUEST, "The event attendance is not open yet or has already closed!"),
 
     // AUTH

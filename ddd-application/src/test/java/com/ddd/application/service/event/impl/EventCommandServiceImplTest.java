@@ -271,7 +271,7 @@ class EventCommandServiceImplTest {
         inactiveSchool.setName("Old School");
         inactiveSchool.setActive(false);
 
-        when(eventRepository.findById(50L)).thenReturn(existingEvent);
+        when(eventRepository.findByIdForUpdate(50L)).thenReturn(existingEvent);
         when(userRepository.findByEmail(email)).thenReturn(user);
         when(fanpageMemberRepository.findById(10L, 99L)).thenReturn(Optional.of(testMember));
         when(eventTypeRepository.findById(5L)).thenReturn(testEventType);

@@ -20,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
+import com.ddd.application.service.registration.RegistrationCommandService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -30,6 +32,8 @@ import java.util.List;
 public class EventCommandServiceImpl implements EventCommandService {
 
     private final EventRepository eventRepository;
+    private final RegistrationRepository registrationRepository;
+    private final RegistrationCommandService registrationCommandService;
     private final UserRepository userRepository;
     private final FanpageMemberRepository fanpageMemberRepository;
     private final FanpageRepository fanpageRepository;
@@ -86,11 +90,11 @@ public class EventCommandServiceImpl implements EventCommandService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void updateEvent(Long id, EventUpdateDto dto, String email) {
         log.info("Updating event id: {} by user email: {}", id, email);
 
-        Event event = eventRepository.findById(id);
+        Event event = eventRepository.findByIdForUpdate(id);
 
         verifyUserFanpageMembership(event.getFanpageId(), email);
         validateUpdateReferences(dto);
@@ -99,30 +103,49 @@ public class EventCommandServiceImpl implements EventCommandService {
         event.validateEventDates();
         event.validateCapacityAndQuantities();
 
+        if (event.getCapacity() < registrationRepository.countActiveRegistrationsByEventId(id)) {
+            throw new BusinessException("Event capacity cannot be lower than current registrations.");
+        }
+        if (event.isGenderConstraint()) {
+            if (event.getMaleQuantity() < registrationRepository.countActiveRegistrationsByEventIdAndGender(id, "MALE")) {
+                throw new BusinessException("Male quantity cannot be lower than current male registrations.");
+            }
+            if (event.getFemaleQuantity() < registrationRepository.countActiveRegistrationsByEventIdAndGender(id, "FEMALE")) {
+                throw new BusinessException("Female quantity cannot be lower than current female registrations.");
+            }
+        }
+
         Event updatedEvent = eventRepository.save(event);
         log.info("Event updated successfully with id: {}", updatedEvent.getId());
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void changeEventStatus(Long id, EventStatusEnum status, String email) {
         log.info("Changing status of event id: {} to {} by user email: {}", id, status, email);
 
-        Event event = eventRepository.findById(id);
+        Event event = eventRepository.findByIdForUpdate(id);
 
         verifyUserFanpageMembership(event.getFanpageId(), email);
 
+        if (status == EventStatusEnum.COMPLETED) {
+            registrationCommandService.fanpageMemberMarkEventAsCompleted(id);
+            return;
+        }
+        if (EventStatusEnum.COMPLETED.name().equals(event.getStatus())) {
+            throw new BusinessException("A completed event cannot be reopened.");
+        }
         event.setStatus(status.name());
         eventRepository.save(event);
         log.info("Event status changed successfully to {} for event id: {}", status, id);
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void deleteEvent(Long id, String email) {
         log.info("Soft deleting event id: {} by user email: {}", id, email);
 
-        Event event = eventRepository.findById(id);
+        Event event = eventRepository.findByIdForUpdate(id);
         verifyUserFanpageMembership(event.getFanpageId(), email);
 
         event.setActive(false);
