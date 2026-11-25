@@ -9,4 +9,5 @@ public interface EventCommandService {
     void updateEvent(Long id, EventUpdateDto dto, String email);
     void changeEventStatus(Long id, EventStatusEnum status, String email);
     void deleteEvent(Long id, String email);
+    void updateEventVisibilityByAdmin(Long id, boolean hidden, String reason);
 }

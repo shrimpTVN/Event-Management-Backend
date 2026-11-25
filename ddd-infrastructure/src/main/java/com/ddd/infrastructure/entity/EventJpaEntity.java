@@ -62,6 +62,9 @@ public class EventJpaEntity extends BaseEntityJpa {
     @Column(name = "allow_self_check", nullable = false)
     private boolean allowSelfCheck = true;
 
+    @Column(name = "violation_reason", columnDefinition = "TEXT")
+    private String violationReason;
+
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 10) // Instructs Hibernate to fetch eventPoints in batches of 10
     private List<EventPointJpaEntity> eventPoints = new ArrayList<>();
