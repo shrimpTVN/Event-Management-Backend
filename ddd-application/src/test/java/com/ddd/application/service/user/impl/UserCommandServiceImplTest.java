@@ -350,4 +350,103 @@ class UserCommandServiceImplTest {
         assertEquals("hashedNewPass", user.getPassword());
         verify(userRepository).save(user);
     }
+
+    @Test
+    void updateStudentProfile_shouldUpdateMajorAndReturnIds_whenSchoolMatchesAndActive() {
+        String email = "student@ctu.edu.vn";
+        UserJpaEntity user = new UserJpaEntity();
+        user.setId(20L);
+        user.setEmail(email);
+
+        com.ddd.infrastructure.entity.SchoolJpaEntity school = new com.ddd.infrastructure.entity.SchoolJpaEntity();
+        school.setId(1L);
+        school.setName("CNTT");
+        school.setIsActive(true);
+
+        com.ddd.infrastructure.entity.MajorJpaEntity major = new com.ddd.infrastructure.entity.MajorJpaEntity();
+        major.setId(10L);
+        major.setName("KTPM");
+        major.setCode("7480103");
+        major.setIsActive(true);
+        major.setSchool(school);
+
+        com.ddd.infrastructure.entity.StudentProfileJpaEntity profile = new com.ddd.infrastructure.entity.StudentProfileJpaEntity();
+        profile.setUser(user);
+        profile.setMajor(major);
+
+        when(userJpaRepository.findByEmail(email)).thenReturn(user);
+        when(studentProfileJpaRepository.findByEmail(email)).thenReturn(Optional.of(profile));
+        when(majorJpaRepository.findById(10L)).thenReturn(Optional.of(major));
+        when(studentProfileDtoMapper.toStudentProfileSummaryDto(profile)).thenReturn(
+                new com.ddd.application.dto.user.StudentProfileSummaryDto(
+                        email, java.util.Set.of("STUDENT"), "STUDENT", true,
+                        "An", "Nguyen", "B2000001", "MALE", 46, "avatar.png",
+                        "", "KTPM", "7480103", "CNTT", 1L, 10L
+                )
+        );
+
+        com.ddd.application.dto.user.StudentProfileUpdateDto dto = new com.ddd.application.dto.user.StudentProfileUpdateDto(
+                "An", "Nguyen", "MALE", 46, "avatar.png", null, 1, 10
+        );
+
+        var result = userCommandService.updateStudentProfile(email, dto);
+
+        assertEquals(1L, result.schoolId());
+        assertEquals(10L, result.majorId());
+        verify(studentProfileJpaRepository).save(profile);
+    }
+
+    @Test
+    void updateStudentProfile_shouldThrowBusinessException_whenMajorInactive() {
+        String email = "student@ctu.edu.vn";
+        UserJpaEntity user = new UserJpaEntity();
+        user.setId(21L);
+        user.setEmail(email);
+
+        com.ddd.infrastructure.entity.SchoolJpaEntity school = new com.ddd.infrastructure.entity.SchoolJpaEntity();
+        school.setId(1L);
+        school.setIsActive(true);
+
+        com.ddd.infrastructure.entity.MajorJpaEntity major = new com.ddd.infrastructure.entity.MajorJpaEntity();
+        major.setId(11L);
+        major.setIsActive(false);
+        major.setSchool(school);
+
+        when(userJpaRepository.findByEmail(email)).thenReturn(user);
+        when(studentProfileJpaRepository.findByEmail(email)).thenReturn(Optional.of(new com.ddd.infrastructure.entity.StudentProfileJpaEntity()));
+        when(majorJpaRepository.findById(11L)).thenReturn(Optional.of(major));
+
+        var dto = new com.ddd.application.dto.user.StudentProfileUpdateDto(
+                "An", "Nguyen", "MALE", 46, "avatar.png", null, 1, 11
+        );
+
+        assertThrows(BusinessException.class, () -> userCommandService.updateStudentProfile(email, dto));
+    }
+
+    @Test
+    void updateStudentProfile_shouldThrowBusinessException_whenMajorDoesNotBelongToSchool() {
+        String email = "student@ctu.edu.vn";
+        UserJpaEntity user = new UserJpaEntity();
+        user.setId(22L);
+        user.setEmail(email);
+
+        com.ddd.infrastructure.entity.SchoolJpaEntity school = new com.ddd.infrastructure.entity.SchoolJpaEntity();
+        school.setId(2L);
+        school.setIsActive(true);
+
+        com.ddd.infrastructure.entity.MajorJpaEntity major = new com.ddd.infrastructure.entity.MajorJpaEntity();
+        major.setId(12L);
+        major.setIsActive(true);
+        major.setSchool(school);
+
+        when(userJpaRepository.findByEmail(email)).thenReturn(user);
+        when(studentProfileJpaRepository.findByEmail(email)).thenReturn(Optional.of(new com.ddd.infrastructure.entity.StudentProfileJpaEntity()));
+        when(majorJpaRepository.findById(12L)).thenReturn(Optional.of(major));
+
+        var dto = new com.ddd.application.dto.user.StudentProfileUpdateDto(
+                "An", "Nguyen", "MALE", 46, "avatar.png", null, 1, 12
+        );
+
+        assertThrows(BusinessException.class, () -> userCommandService.updateStudentProfile(email, dto));
+    }
 }
