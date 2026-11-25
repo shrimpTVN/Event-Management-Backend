@@ -8,6 +8,7 @@ import java.util.List;
 public record EventFilterRequestDto(
         String keyword,
         String status,
+        List<EventStatusEnum> statuses,
         List<Long> eventTypeIds,
         Long semesterId,
         Long schoolId,
@@ -35,18 +36,16 @@ public record EventFilterRequestDto(
         if (sortDir == null || sortDir.isBlank()) {
             sortDir = "desc";
         }
-        if (isActive == null) {
-            isActive = true;
-        }
-        if (status == null || status.isBlank()) {
-            status = EventStatusEnum.PUBLISHED.name();
-        }
     }
 
     public EventFilterRequestDto(EventFilterRequestDto other) {
         this(
                 other.keyword,
-                other.status,
+                (other.status == null || other.status.isBlank())
+                        && (other.statuses == null || other.statuses.isEmpty())
+                        ? EventStatusEnum.PUBLISHED.name()
+                        : other.status,
+                other.statuses,
                 other.eventTypeIds,
                 other.semesterId,
                 other.schoolId,

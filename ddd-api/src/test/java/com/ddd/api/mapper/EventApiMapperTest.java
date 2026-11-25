@@ -71,4 +71,23 @@ class EventApiMapperTest {
                 "banner.png", "PUBLISHED", 10L, "Volunteer", 11L, "Service",
                 "Campus volunteers", 14L, true, true, null, closed, List.of(), 12L);
     }
+
+    @Test
+    void adminFilterKeepsNullStatusAndIsActive_whilePublicFilterDefaultsThem() {
+        var adminFilter = new com.ddd.api.dto.event.req.EventFilterRequestDto(
+                null, null, List.of(com.ddd.domain.enums.EventStatusEnum.DRAFT, com.ddd.domain.enums.EventStatusEnum.PUBLISHED),
+                null, null, null, null, null, null, null, null, null, null, null, null);
+        assertNull(adminFilter.status());
+        assertNull(adminFilter.isActive());
+        assertEquals(2, adminFilter.statuses().size());
+
+        var emptyAdminFilter = new com.ddd.api.dto.event.req.EventFilterRequestDto(
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        assertNull(emptyAdminFilter.status());
+        assertNull(emptyAdminFilter.isActive());
+
+        var publicFilter = new com.ddd.api.dto.event.req.EventFilterRequestDto(emptyAdminFilter);
+        assertEquals("PUBLISHED", publicFilter.status());
+        assertTrue(publicFilter.isActive());
+    }
 }

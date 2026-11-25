@@ -1,5 +1,6 @@
 package com.ddd.infrastructure.repository.specification;
 
+import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.infrastructure.entity.EventJpaEntity;
 import com.ddd.infrastructure.entity.EventPointJpaEntity;
 import jakarta.persistence.criteria.Predicate;
@@ -16,6 +17,22 @@ public final class EventSpecification {
     public static Specification<EventJpaEntity> withFilter(
             String keyword,
             String status,
+            List<Long> eventTypeIds,
+            Long semesterId,
+            Long schoolId,
+            List<Long> criteriaIds,
+            List<Long> pointCategoryIds,
+            Instant dateHappenFrom,
+            Instant dateHappenTo,
+            Boolean isActive) {
+        return withFilter(keyword, status, null, eventTypeIds, semesterId, schoolId,
+                criteriaIds, pointCategoryIds, dateHappenFrom, dateHappenTo, isActive);
+    }
+
+    public static Specification<EventJpaEntity> withFilter(
+            String keyword,
+            String status,
+            List<EventStatusEnum> statuses,
             List<Long> eventTypeIds,
             Long semesterId,
             Long schoolId,
@@ -68,7 +85,9 @@ public final class EventSpecification {
                 predicates.add(root.get("criteria").get("id").in(criteriaIds));
             }
 
-            if (status != null && !status.isBlank()) {
+            if (statuses != null && !statuses.isEmpty()) {
+                predicates.add(root.get("status").in(statuses));
+            } else if (status != null && !status.isBlank()) {
                 // Note: If 'status' on EventJpaEntity is an Enum, convert to Enum instead of using cb.upper()
                 predicates.add(cb.equal(cb.upper(root.get("status")), status.trim().toUpperCase()));
             }
