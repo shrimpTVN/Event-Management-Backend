@@ -4,6 +4,8 @@ package com.ddd.api.exception;
 import com.ddd.api.common.BaseResponse;
 import com.ddd.api.common.enums.ErrorCodeEnum;
 import com.ddd.domain.exception.*;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.PessimisticLockingFailureException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpStatus;
@@ -218,6 +220,30 @@ public class GlobalExceptionHandler {
     // ─────────────────────────────────────────────────────────────────────────
     // 409 Conflict
     // ─────────────────────────────────────────────────────────────────────────
+
+    @ExceptionHandler(EventFullException.class)
+    public ResponseEntity<Object> handleEventFull(HttpServletRequest request) {
+        log.info("Event registration full [{}]", request.getRequestURI());
+        ErrorCodeEnum error = ErrorCodeEnum.EVENT_FULL;
+        return wrapWithResponse(error.getCode(), error.getDefaultMessage(), error.getStatus());
+    }
+
+    @ExceptionHandler(EventGenderFullException.class)
+    public ResponseEntity<Object> handleEventGenderFull(EventGenderFullException exception, HttpServletRequest request) {
+        log.info("Event gender quota full [{}]: {}", request.getRequestURI(), exception.getMessage());
+        ErrorCodeEnum error = ErrorCodeEnum.EVENT_GENDER_FULL;
+        String message = exception.getMessage() != null ? exception.getMessage() : error.getDefaultMessage();
+        return wrapWithResponse(error.getCode(), message, error.getStatus());
+    }
+
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    public ResponseEntity<Object> handleLockFailure(HttpServletRequest request) {
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        log.warn("Database lock contention [{}]", path);
+        String message = path.startsWith("/registrations/")
+                ? "Registration is busy. Please try again." : "Resource is busy. Please try again.";
+        return wrapWithResponse(ErrorCodeEnum.CONCURRENT_MODIFICATION.getCode(), message, HttpStatus.CONFLICT);
+    }
 
     @ExceptionHandler(EventRegistrationException.class)
     public  ResponseEntity<Object> handleEventRegistrationException(EventRegistrationException exception,

@@ -34,7 +34,8 @@ public record EventInfoDto(
         Long registeredCount,
         boolean isFollowFanpage,
         boolean isFull,
-        boolean registrationClosed
+        boolean registrationClosed,
+        boolean genderConstraint
 ) {
     public EventInfoDto withRegistrationInfo(long count, boolean followsFanpage, boolean full, boolean closed) {
         return new EventInfoDto(
@@ -42,7 +43,7 @@ public record EventInfoDto(
                 capacity, maleQuantity, femaleQuantity, bannerUrl, status,
                 eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName,
                 fanpageId, schoolId, schoolName, isActive, allowSelfCheck, semester, updatedAt, eventPoints,
-                count, followsFanpage, full, closed
+                count, followsFanpage, full, closed, genderConstraint
         );
     }
 
@@ -57,7 +58,7 @@ public record EventInfoDto(
         this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity,
                 femaleQuantity, bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName,
                 fanpageName, fanpageId, schoolId, schoolName, isActive, allowSelfCheck, semester, updatedAt,
-                eventPoints, registeredCount, false, false, false);
+                eventPoints, registeredCount, false, false, false, false);
     }
 
     public EventInfoDto(
@@ -71,7 +72,7 @@ public record EventInfoDto(
         this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity,
                 femaleQuantity, bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName,
                 fanpageName, fanpageId, schoolId, schoolName, isActive, allowSelfCheck, semester, updatedAt,
-                eventPoints, 0L, false, false, false);
+                eventPoints, 0L, false, false, false, false);
     }
 
     public EventInfoDto(
@@ -84,7 +85,7 @@ public record EventInfoDto(
         this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity,
                 femaleQuantity, bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName,
                 fanpageName, fanpageId, null, null, isActive, allowSelfCheck, semester, updatedAt,
-                eventPoints, registeredCount, false, false, false);
+                eventPoints, registeredCount, false, false, false, false);
     }
 
     public EventInfoDto(

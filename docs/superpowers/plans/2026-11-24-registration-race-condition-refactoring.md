@@ -48,7 +48,7 @@ Ordinary event reads remain available. Conflicting row locks and writes wait unt
 
 1. Acquire the event row lock; obtain the current event state without first loading the event through an ordinary read in this transaction.
 2. Check active state, published status, and registration dates using the time after lock acquisition.
-3. Preserve the existing user/profile validation and duplicate behavior. Check duplicates before capacity so a repeated request retains its duplicate response even when full.
+3. Preserve the existing user/profile validation, designated-school eligibility check, and duplicate behavior. Check duplicates before capacity so a repeated request retains its duplicate response even when full.
 4. Count occupied places. If count is greater than or equal to capacity, throw `EventFullException` without saving.
 5. Create a new registration or reuse the `CANCELLED` row, preserving existing field behavior; set `REGISTERED` and `regDate`, then save.
 6. Commit. A save or commit failure rolls back the registration and releases the lock.
@@ -130,6 +130,14 @@ Success means simultaneous valid attempts at the last place produce exactly one 
 - [ ] Use CodeGraph to inspect all callers of registration `save`/`saveAll` and all event update paths. Any additional writer that can create/reactivate a place or change registration status must join this event-first protocol; record its exact path in the implementation review. Avoid an unrelated service restructure.
 - [ ] Run `./mvnw -pl ddd-application -am -Dtest=RegistrationCommandServiceImplTest,EventCapacityConcurrencyPolicyTest -Dsurefire.failIfNoSpecifiedTests=false test`. Expected: all cases pass. The known completion bug that promotes cancelled rows must be covered.
 - [ ] Review and commit these coordinated writer changes separately during implementation.
+
+### Completion and cancellation corrections from the November 25 review
+
+- [ ] In `RegistrationCommandServiceImpl.fanpageMemberMarkEventAsCompleted`, lock the event first, verify fanpage membership, and return immediately on an already completed event. On first completion, persist the domain event via `eventRepository.save(event)` in the same transaction as the attendance and points writes. The adapter maps the JPA entity into a separate domain object, so changing its status in memory alone leaves the database event published.
+- [ ] Define the completion transitions explicitly. Preserve `CANCELLED` and `RECORDED`. Move `COMPLETED` and `CONFIRMED` to `RECORDED` and award points only for those transitions. Apply the existing absence rule to the remaining eligible statuses. In batch absence, reject cancelled students before saving the batch.
+- [ ] For legacy published events with recorded attendees, preserve their recorded status and exclude them from new awards. Report ambiguous historical attendance for manual review.
+- [ ] Add a PostgreSQL regression test that completes an event with confirmed, cancelled, and already recorded students. Reload through an independent transaction and assert the persisted event is completed, the cancelled row is preserved, and only the newly recorded student receives rewards. Repeat completion concurrently and assert the same final statuses, one award per eligible student/category, and one completion notification event. Inject a failure before commit and verify both event and registration changes roll back together.
+- [ ] Extend the registration regression tests to cover a matching school, a mismatched school, and an unrestricted event. Keep the mapper's cancellation-reason reset when re-registering. Schedule recommendation cache eviction after successful commit for registration and cancellation so readers cannot refill the cache during the pre-commit eviction window.
 
 ## Task 4: Return explicit full and contention responses
 

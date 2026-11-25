@@ -13,7 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -44,6 +45,15 @@ public class EventRepositoryImpl implements EventRepository {
                 .orElseThrow(() -> new ResourceNotFoundException("Not found event"));
 
         return eventMapper.toDomainModel(eventJpaEntity);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Event findByIdForUpdate(Long id) {
+        entityManager.createNativeQuery("select set_config('lock_timeout', '3s', true)").getSingleResult();
+        EventJpaEntity event = eventJpaRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Not found event"));
+        return eventMapper.toDomainModel(event);
     }
 
     @Override

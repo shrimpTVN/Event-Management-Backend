@@ -3,6 +3,8 @@ package com.ddd.application.service.event.cache;
 import com.ddd.application.dto.recommendation.EventRecommendationDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -67,6 +69,15 @@ public class RecommendationCacheService {
     }
 
    
+    public void evictAfterCommit(Long userId) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                evict(userId);
+            }
+        });
+    }
+
     public void evict(Long userId) {
         if (userId != null) {
             cache.remove(userId);

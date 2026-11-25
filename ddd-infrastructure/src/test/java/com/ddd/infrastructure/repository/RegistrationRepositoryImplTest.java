@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,6 +24,26 @@ class RegistrationRepositoryImplTest {
     @Mock private EntityManager entityManager;
 
     @InjectMocks private RegistrationRepositoryImpl repository;
+
+    @Test
+    void countsOnlyActiveRegistrationsForTheRequestedEvent() {
+        when(registrationJpaRepository.countActiveRegistrationsByEventId(3L)).thenReturn(2L);
+        when(registrationJpaRepository.countActiveRegistrationsByEventId(4L)).thenReturn(0L);
+
+        assertEquals(2L, repository.countActiveRegistrationsByEventId(3L));
+        assertEquals(0L, repository.countActiveRegistrationsByEventId(4L));
+        verify(registrationJpaRepository).countActiveRegistrationsByEventId(4L);
+    }
+
+    @Test
+    void countsOnlyActiveRegistrationsForTheRequestedEventAndGender() {
+        when(registrationJpaRepository.countActiveRegistrationsByEventIdAndGender(3L, "MALE")).thenReturn(5L);
+        when(registrationJpaRepository.countActiveRegistrationsByEventIdAndGender(3L, "FEMALE")).thenReturn(0L);
+
+        assertEquals(5L, repository.countActiveRegistrationsByEventIdAndGender(3L, "MALE"));
+        assertEquals(0L, repository.countActiveRegistrationsByEventIdAndGender(3L, "FEMALE"));
+        verify(registrationJpaRepository).countActiveRegistrationsByEventIdAndGender(3L, "FEMALE");
+    }
 
     @Test
     void save_whenAlreadyExists_shouldUpdateWithoutFetchingNewReferences() {

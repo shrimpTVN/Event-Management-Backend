@@ -20,6 +20,7 @@ public class Event extends BaseModel {
     private Integer capacity;
     private Integer maleQuantity;
     private Integer femaleQuantity;
+    private boolean genderConstraint = false;
     private String bannerUrl;
     private String status;
     private Long eventTypeId;

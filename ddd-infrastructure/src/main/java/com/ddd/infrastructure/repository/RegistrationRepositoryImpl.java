@@ -33,6 +33,16 @@ public class RegistrationRepositoryImpl implements RegistrationRepository {
     }
 
     @Override
+    public long countActiveRegistrationsByEventId(Long eventId) {
+        return registrationJpaRepository.countActiveRegistrationsByEventId(eventId);
+    }
+
+    @Override
+    public long countActiveRegistrationsByEventIdAndGender(Long eventId, String gender) {
+        return registrationJpaRepository.countActiveRegistrationsByEventIdAndGender(eventId, gender);
+    }
+
+    @Override
     public void save(Registration registration) {
         RegistrationId regId = new RegistrationId(registration.getUserId(), registration.getEventId());
 

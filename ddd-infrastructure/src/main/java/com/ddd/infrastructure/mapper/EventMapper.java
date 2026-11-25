@@ -34,6 +34,7 @@ public interface EventMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "eventPoints", ignore = true)
+    @Mapping(target = "isActive", source = "active")
     void updateJpaEntity(Event domain, @MappingTarget EventJpaEntity entity);
 
     @Named("eventStatusEnumToString")

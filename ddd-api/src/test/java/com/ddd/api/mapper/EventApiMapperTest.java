@@ -52,6 +52,16 @@ class EventApiMapperTest {
         assertTrue(response.isFull());
         assertTrue(response.registrationClosed());
         assertFalse(response.isFollowFanpage());
+        assertFalse(response.genderConstraint());
+
+        var constrained = new EventInfoDto(42L, "Volunteering", "Help out", "Campus hall",
+                Instant.parse("2020-01-01T00:00:00Z").minusSeconds(3600),
+                Instant.parse("2020-01-01T00:00:00Z"),
+                Instant.parse("2020-01-01T00:00:00Z").plusSeconds(3600),
+                12, 6, 6, "banner.png", "PUBLISHED", 1L, "Activity", null, null,
+                "Club", 2L, null, null, true, true, null, Instant.now(), List.of(),
+                0L, false, false, false, true);
+        assertTrue(mapper.toResponseDto(constrained).genderConstraint());
     }
 
     private EventInfoDto event() {

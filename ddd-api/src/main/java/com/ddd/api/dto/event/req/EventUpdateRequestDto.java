@@ -18,6 +18,7 @@ public record EventUpdateRequestDto(
         @NotNull @Positive Integer capacity,
         @NotNull @Min(0) Integer maleQuantity,
         @NotNull @Min(0) Integer femaleQuantity,
+        Boolean genderConstraint,
         @NotNull @NotBlank String bannerUrl,
         @NotNull @Positive Long eventTypeId,
         @Positive Long criteriaId,
@@ -29,6 +30,9 @@ public record EventUpdateRequestDto(
     public EventUpdateRequestDto {
         if (allowSelfCheck == null) {
             allowSelfCheck = true;
+        }
+        if (genderConstraint == null) {
+            genderConstraint = false;
         }
     }
 }

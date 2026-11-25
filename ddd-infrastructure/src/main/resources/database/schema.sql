@@ -315,6 +315,7 @@ CREATE TABLE events
     capacity        INTEGER      NOT NULL DEFAULT 0,
     male_quantity   INTEGER               DEFAULT 0,
     female_quantity INTEGER               DEFAULT 0,
+    gender_constraint BOOLEAN    NOT NULL DEFAULT FALSE,
     banner_url      TEXT         NOT NULL,
     status          VARCHAR(50)  NOT NULL DEFAULT 'DRAFT',
     allow_self_check BOOLEAN      NOT NULL DEFAULT TRUE,

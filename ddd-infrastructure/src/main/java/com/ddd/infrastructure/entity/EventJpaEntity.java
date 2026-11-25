@@ -49,6 +49,9 @@ public class EventJpaEntity extends BaseEntityJpa {
     @Column(name = "female_quantity")
     private Integer femaleQuantity = 0;
 
+    @Column(name = "gender_constraint", nullable = false)
+    private boolean genderConstraint = false;
+
     @Column(name = "banner_url", nullable = false, columnDefinition = "TEXT")
     private String bannerUrl;
 
