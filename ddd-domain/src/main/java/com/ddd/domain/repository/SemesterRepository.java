@@ -22,5 +22,9 @@ public interface SemesterRepository {
 
     boolean existsOverlappingDateRange(LocalDate startDate, LocalDate endDate);
 
+    boolean existsActiveByAcademicYearIdAndNumber(Long academicYearId, Integer number, Long excludeId);
+
+    boolean existsActiveOverlappingDateRange(LocalDate startDate, LocalDate endDate, Long excludeId);
+
     List<Semester> findAllActive();
 }

@@ -11,7 +11,8 @@ public record StudentProfileRequestDto(
         @NotNull @NotBlank String gender,
         @NotNull @Positive @Max(100) Integer kNumber,
         @NotNull @NotBlank String avatarUrl,
-        @NotNull @Positive Integer associationId,
+        @Positive Integer associationId,
+        @Positive Integer schoolId,
         @NotNull @Positive Integer majorId
 ) {
 }

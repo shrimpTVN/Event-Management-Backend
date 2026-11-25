@@ -64,6 +64,7 @@ public class EventQueryServiceImpl implements EventQueryService {
         Specification<EventJpaEntity> spec = EventSpecification.withFilter(
                 criteria.keyword(),
                 criteria.status(),
+                criteria.statuses(),
                 criteria.eventTypeIds(),
                 criteria.semesterId(),
                 criteria.schoolId(),

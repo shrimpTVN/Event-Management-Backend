@@ -23,6 +23,7 @@ public class Event extends BaseModel {
     private boolean genderConstraint = false;
     private String bannerUrl;
     private String status;
+    private String violationReason;
     private Long eventTypeId;
     private Long criteriaId;
     private Long fanpageId;

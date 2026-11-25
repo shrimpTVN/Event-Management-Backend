@@ -282,4 +282,47 @@ class EventCommandServiceImplTest {
         assertTrue(ex.getMessage().contains("School has been deactivated"));
         verify(eventRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("Should hide event with violationReason when admin hides it")
+    void updateEventVisibilityByAdmin_shouldHideAndSetReason_whenAdmin() {
+        Event event = new Event();
+        event.setId(55L);
+        event.setActive(true);
+        when(securityContextPort.hasRole("ADMIN")).thenReturn(true);
+        when(eventRepository.findByIdForUpdate(55L)).thenReturn(event);
+
+        eventCommandService.updateEventVisibilityByAdmin(55L, true, "Spam content");
+
+        assertFalse(event.isActive());
+        assertEquals("Spam content", event.getViolationReason());
+        verify(eventRepository).save(event);
+    }
+
+    @Test
+    @DisplayName("Should restore event and clear violationReason when admin unhides it")
+    void updateEventVisibilityByAdmin_shouldRestoreAndClearReason_whenAdmin() {
+        Event event = new Event();
+        event.setId(55L);
+        event.setActive(false);
+        event.setViolationReason("Spam content");
+        when(securityContextPort.hasRole("ADMIN")).thenReturn(true);
+        when(eventRepository.findByIdForUpdate(55L)).thenReturn(event);
+
+        eventCommandService.updateEventVisibilityByAdmin(55L, false, null);
+
+        assertTrue(event.isActive());
+        assertNull(event.getViolationReason());
+        verify(eventRepository).save(event);
+    }
+
+    @Test
+    @DisplayName("Should throw UnauthorizedException when non-admin calls updateEventVisibilityByAdmin")
+    void updateEventVisibilityByAdmin_shouldThrowUnauthorized_whenNotAdmin() {
+        when(securityContextPort.hasRole("ADMIN")).thenReturn(false);
+
+        assertThrows(com.ddd.domain.exception.UnauthorizedException.class,
+                () -> eventCommandService.updateEventVisibilityByAdmin(55L, true, "Spam"));
+        verify(eventRepository, never()).save(any());
+    }
 }

@@ -12,6 +12,8 @@ public interface MajorRepository {
 
     List<Major> findBySchoolId(Long schoolId);
 
+    List<Major> findActiveBySchoolId(Long schoolId);
+
     Major saveMajor(Major major);
 
     Major updateMajor(Long id, Major major);

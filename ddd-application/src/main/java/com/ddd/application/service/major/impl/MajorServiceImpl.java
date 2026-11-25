@@ -27,6 +27,14 @@ public class MajorServiceImpl implements MajorService {
     }
 
     @Override
+    public List<MajorDto> findActiveBySchoolId(Long schoolId) {
+        return majorRepository.findActiveBySchoolId(schoolId)
+                .stream()
+                .map(majorDtoMapper::toMajorDto)
+                .toList();
+    }
+
+    @Override
     public MajorDto findById(Long id){
         Major major = majorRepository.findById(id);
         return majorDtoMapper.toMajorDto(major);

@@ -32,7 +32,9 @@ public interface StudentProfileDtoMapper {
     @Mapping(source = "KNumber", target = "kNumber")
     @Mapping(source = "major.name", target = "majorName")
     @Mapping(source = "major.code", target = "majorCode")
+    @Mapping(source = "major.id", target = "majorId")
     @Mapping(source = "major.school.name", target = "schoolName")
+    @Mapping(source = "major.school.id", target = "schoolId")
     StudentProfileSummaryDto toStudentProfileSummaryDto(StudentProfileJpaEntity studentProfileJpaEntity);
 
     default Set<String> mapRoleNames(Set<RoleJpaEntity> roles) {

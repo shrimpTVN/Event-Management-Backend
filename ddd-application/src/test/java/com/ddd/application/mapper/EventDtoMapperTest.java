@@ -24,11 +24,18 @@ class EventDtoMapperTest {
         criteria.setId(55L);
         criteria.setName("Volunteer");
 
+        com.ddd.infrastructure.entity.FanpageJpaEntity fanpage = new com.ddd.infrastructure.entity.FanpageJpaEntity();
+        fanpage.setId(30L);
+        fanpage.setName("Tech Club");
+        fanpage.setAvatarUrl("https://cdn.example.com/avatar.png");
+        fanpage.setOrgName("CTU Tech Organization");
+
         EventJpaEntity event = new EventJpaEntity();
         event.setId(10L);
         event.setName("Tech Conference");
         event.setEventType(type);
         event.setCriteria(criteria);
+        event.setFanpage(fanpage);
 
         EventInfoDto dto = mapper.toInfoDto(event);
 
@@ -37,6 +44,8 @@ class EventDtoMapperTest {
         assertEquals("Workshop", dto.eventTypeName());
         assertEquals(55L, dto.criteriaId());
         assertEquals("Volunteer", dto.criteriaName());
+        assertEquals("https://cdn.example.com/avatar.png", dto.fanpageAvatarUrl());
+        assertEquals("CTU Tech Organization", dto.orgName());
     }
 
     @Test

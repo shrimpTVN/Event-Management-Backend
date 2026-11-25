@@ -24,68 +24,79 @@ public class AdminStatisticQueryServiceImpl implements AdminStatisticQueryServic
     private final SecurityContextPort securityContextPort;
 
     @Override
-    public AdminOverviewStatisticDto getOverview(Integer year, Long semesterId) {
+    public AdminOverviewStatisticDto getOverview(Integer year, Long semesterId, String academicYear) {
         assertSuperAdmin();
+        String normalizedYear = normalizeAcademicYear(academicYear);
         var userRow = adminStatisticRepositoryImpl.getUserOverview();
         var fanpageRow = adminStatisticRepositoryImpl.getFanpageOverview();
-        var eventRow = adminStatisticRepositoryImpl.getEventOverview(year, semesterId);
-        var attendanceRow = adminStatisticRepositoryImpl.getAttendanceOverview(year, semesterId);
+        var eventRow = adminStatisticRepositoryImpl.getEventOverview(year, semesterId, normalizedYear);
+        var attendanceRow = adminStatisticRepositoryImpl.getAttendanceOverview(year, semesterId, normalizedYear);
         return adminStatisticDtoMapper.toOverviewDto(userRow, fanpageRow, eventRow, attendanceRow);
     }
 
     @Override
-    public List<AdminMonthlyTrendDto> getMonthlyTrends(Integer year, Long semesterId) {
+    public List<AdminMonthlyTrendDto> getMonthlyTrends(Integer year, Long semesterId, String academicYear) {
         assertSuperAdmin();
-        int resolvedYear = (year != null) ? year : LocalDate.now().getYear();
-        var rows = adminStatisticRepositoryImpl.getMonthlyTrends(resolvedYear, semesterId);
+        String normalizedYear = normalizeAcademicYear(academicYear);
+        Integer resolvedYear = (year != null) ? year : (normalizedYear == null && semesterId == null ? LocalDate.now().getYear() : null);
+        var rows = adminStatisticRepositoryImpl.getMonthlyTrends(resolvedYear, semesterId, normalizedYear);
         return adminStatisticDtoMapper.toMonthlyTrendDtoList(rows);
     }
 
     @Override
-    public List<AdminEventTypeDistributionDto> getEventDistribution(Integer year, Long semesterId) {
+    public List<AdminEventTypeDistributionDto> getEventDistribution(Integer year, Long semesterId, String academicYear) {
         assertSuperAdmin();
-        var rows = adminStatisticRepositoryImpl.getEventDistribution(year, semesterId);
+        String normalizedYear = normalizeAcademicYear(academicYear);
+        var rows = adminStatisticRepositoryImpl.getEventDistribution(year, semesterId, normalizedYear);
         long totalEvents = rows.stream().mapToLong(AdminEventTypeDistributionRow::eventCount).sum();
         return adminStatisticDtoMapper.toDistributionDtoList(rows, totalEvents);
     }
 
     @Override
-    public List<AdminTopFanpageDto> getTopFanpages(Integer year, Long semesterId, Integer limit) {
+    public List<AdminTopFanpageDto> getTopFanpages(Integer year, Long semesterId, Integer limit, String academicYear) {
         assertSuperAdmin();
-        int resolvedLimit = (limit != null && limit > 0) ? Math.min(limit, 50) : 10;
-        var rows = adminStatisticRepositoryImpl.getTopFanpages(year, semesterId, resolvedLimit);
+        String normalizedYear = normalizeAcademicYear(academicYear);
+        Integer resolvedLimit = (limit != null && limit > 0) ? Math.min(limit, 50) : null;
+        var rows = adminStatisticRepositoryImpl.getTopFanpages(year, semesterId, resolvedLimit, normalizedYear);
         return adminStatisticDtoMapper.toTopFanpageDtoList(rows);
     }
 
     @Override
-    public AdminDemographicsDto getDemographics(Integer year, Long semesterId) {
+    public AdminDemographicsDto getDemographics(Integer year, Long semesterId, String academicYear) {
         assertSuperAdmin();
-        var cohortRows = adminStatisticRepositoryImpl.getCohortDemographics(year, semesterId);
-        var schoolRows = adminStatisticRepositoryImpl.getSchoolDemographics(year, semesterId);
-        var majorRows = adminStatisticRepositoryImpl.getMajorDemographics(year, semesterId);
+        String normalizedYear = normalizeAcademicYear(academicYear);
+        var cohortRows = adminStatisticRepositoryImpl.getCohortDemographics(year, semesterId, normalizedYear);
+        var schoolRows = adminStatisticRepositoryImpl.getSchoolDemographics(year, semesterId, normalizedYear);
+        var majorRows = adminStatisticRepositoryImpl.getMajorDemographics(year, semesterId, normalizedYear);
         return adminStatisticDtoMapper.toDemographicsDto(cohortRows, schoolRows, majorRows);
     }
 
     @Override
-    public List<AdminMonthlyAbsentRateDto> getMonthlyAbsentRate(Integer year, Long semesterId) {
+    public List<AdminMonthlyAbsentRateDto> getMonthlyAbsentRate(Integer year, Long semesterId, String academicYear) {
         assertSuperAdmin();
-        var rows = adminStatisticRepositoryImpl.getMonthlyAbsentRate(year, semesterId);
+        String normalizedYear = normalizeAcademicYear(academicYear);
+        var rows = adminStatisticRepositoryImpl.getMonthlyAbsentRate(year, semesterId, normalizedYear);
         return adminStatisticDtoMapper.toMonthlyAbsentRateDtoList(rows);
     }
 
     @Override
-    public AdminDashboardDto getDashboard(Integer year, Long semesterId) {
+    public AdminDashboardDto getDashboard(Integer year, Long semesterId, String academicYear) {
         assertSuperAdmin();
-        int resolvedYear = (year != null) ? year : LocalDate.now().getYear();
+        String normalizedYear = normalizeAcademicYear(academicYear);
+        Integer resolvedYear = (year != null) ? year : (normalizedYear == null && semesterId == null ? LocalDate.now().getYear() : null);
 
-        var overview = getOverview(resolvedYear, semesterId);
-        var trends = getMonthlyTrends(resolvedYear, semesterId);
-        var distribution = getEventDistribution(resolvedYear, semesterId);
-        var topFanpages = getTopFanpages(resolvedYear, semesterId, 10);
-        var demographics = getDemographics(resolvedYear, semesterId);
-        var absentRates = getMonthlyAbsentRate(resolvedYear, semesterId);
+        var overview = getOverview(resolvedYear, semesterId, normalizedYear);
+        var trends = getMonthlyTrends(resolvedYear, semesterId, normalizedYear);
+        var distribution = getEventDistribution(resolvedYear, semesterId, normalizedYear);
+        var topFanpages = getTopFanpages(resolvedYear, semesterId, null, normalizedYear);
+        var demographics = getDemographics(resolvedYear, semesterId, normalizedYear);
+        var absentRates = getMonthlyAbsentRate(resolvedYear, semesterId, normalizedYear);
 
         return adminStatisticDtoMapper.toDashboardDto(overview, trends, distribution, topFanpages, demographics, absentRates);
+    }
+
+    private String normalizeAcademicYear(String academicYear) {
+        return (academicYear != null && !academicYear.isBlank()) ? academicYear.trim() : null;
     }
 
     private void assertSuperAdmin() {

@@ -7,6 +7,7 @@ public record StudentProfileUpdateDto(
         Integer kNumber,
         String avatarUrl,
         Integer associationId,
+        Integer schoolId,
         Integer majorId
 ) {
 }

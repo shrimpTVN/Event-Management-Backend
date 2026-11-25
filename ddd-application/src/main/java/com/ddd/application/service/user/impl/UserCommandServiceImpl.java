@@ -269,6 +269,15 @@ public class UserCommandServiceImpl implements UserCommandService {
         if (updateDto.majorId() != null) {
             MajorJpaEntity major = majorJpaRepository.findById(Long.valueOf(updateDto.majorId()))
                     .orElseThrow(() -> new ResourceNotFoundException("Major not found with id: " + updateDto.majorId()));
+            if (!Boolean.TRUE.equals(major.getIsActive())) {
+                throw new BusinessException("Selected major is not active");
+            }
+            if (major.getSchool() == null || !Boolean.TRUE.equals(major.getSchool().getIsActive())) {
+                throw new BusinessException("Selected major's school is not active");
+            }
+            if (updateDto.schoolId() != null && !major.getSchool().getId().equals(Long.valueOf(updateDto.schoolId()))) {
+                throw new BusinessException("Selected major does not belong to the selected school");
+            }
             profile.setMajor(major);
         }
     }

@@ -4,6 +4,7 @@ import com.ddd.api.common.BaseResponse;
 import com.ddd.api.dto.event.req.EventCreateRequestDto;
 import com.ddd.api.dto.event.req.EventFilterRequestDto;
 import com.ddd.api.dto.event.req.EventUpdateRequestDto;
+import com.ddd.api.dto.event.req.EventVisibilityRequestDto;
 import com.ddd.api.dto.event.req.ViewedEventsRequestDto;
 import com.ddd.api.dto.event.res.EventRecommendationResponseDto;
 import com.ddd.api.dto.event.res.EventResponseDto;
@@ -120,6 +121,15 @@ public class EventController {
             Authentication authentication) {
         String email = authentication.getName();
         eventCommandService.deleteEvent(id, email);
+        return BaseResponse.ok();
+    }
+
+    @PatchMapping("/admin/{id}/visibility")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public BaseResponse<Void> updateEventVisibilityByAdmin(
+            @PathVariable Long id,
+            @Valid @RequestBody EventVisibilityRequestDto request) {
+        eventCommandService.updateEventVisibilityByAdmin(id, request.hidden(), request.reason());
         return BaseResponse.ok();
     }
 

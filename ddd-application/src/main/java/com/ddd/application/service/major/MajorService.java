@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface MajorService {
     List<MajorDto> findAll();
+    List<MajorDto> findActiveBySchoolId(Long schoolId);
     MajorDto findById(Long id);
     MajorDto updateMajor(Long id, MajorDto majorDto);
     MajorDto createMajor(MajorDto majorDto);

@@ -35,15 +35,34 @@ public record EventInfoDto(
         boolean isFollowFanpage,
         boolean isFull,
         boolean registrationClosed,
-        boolean genderConstraint
+        boolean genderConstraint,
+        String violationReason,
+        String fanpageAvatarUrl,
+        String orgName
 ) {
+    public EventInfoDto(
+            Long id, String name, String description, String location, Instant dateOpen, Instant dateClose,
+            Instant dateHappen, Integer capacity, Integer maleQuantity, Integer femaleQuantity,
+            String bannerUrl, String status, Long eventTypeId, String eventTypeName, Long criteriaId,
+            String criteriaName, String fanpageName, Long fanpageId, Long schoolId, String schoolName,
+            boolean isActive, boolean allowSelfCheck, SemesterDto semester, Instant updatedAt,
+            List<EventPointInfoDto> eventPoints, Long registeredCount, boolean isFollowFanpage,
+            boolean isFull, boolean registrationClosed, boolean genderConstraint
+    ) {
+        this(id, name, description, location, dateOpen, dateClose, dateHappen, capacity, maleQuantity,
+                femaleQuantity, bannerUrl, status, eventTypeId, eventTypeName, criteriaId, criteriaName,
+                fanpageName, fanpageId, schoolId, schoolName, isActive, allowSelfCheck, semester, updatedAt,
+                eventPoints, registeredCount, isFollowFanpage, isFull, registrationClosed, genderConstraint,
+                null, null, null);
+    }
+
     public EventInfoDto withRegistrationInfo(long count, boolean followsFanpage, boolean full, boolean closed) {
         return new EventInfoDto(
                 id, name, description, location, dateOpen, dateClose, dateHappen,
                 capacity, maleQuantity, femaleQuantity, bannerUrl, status,
                 eventTypeId, eventTypeName, criteriaId, criteriaName, fanpageName,
                 fanpageId, schoolId, schoolName, isActive, allowSelfCheck, semester, updatedAt, eventPoints,
-                count, followsFanpage, full, closed, genderConstraint
+                count, followsFanpage, full, closed, genderConstraint, violationReason, fanpageAvatarUrl, orgName
         );
     }
 

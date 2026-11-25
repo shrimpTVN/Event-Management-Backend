@@ -12,6 +12,7 @@ import com.ddd.domain.event.EventCreatedEvent;
 import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.ResourceNotFoundException;
+import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.*;
 import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
@@ -151,6 +152,19 @@ public class EventCommandServiceImpl implements EventCommandService {
         event.setActive(false);
         eventRepository.save(event);
         log.info("Event soft deleted successfully for event id: {}", id);
+    }
+
+    @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void updateEventVisibilityByAdmin(Long id, boolean hidden, String reason) {
+        if (!securityContextPort.hasRole("ADMIN")) {
+            throw new UnauthorizedException("Only Super Admin can change event visibility");
+        }
+        Event event = eventRepository.findByIdForUpdate(id);
+        event.setActive(!hidden);
+        event.setViolationReason(hidden ? reason : null);
+        eventRepository.save(event);
+        log.info("Admin updated visibility for event id: {} (hidden={})", id, hidden);
     }
 
     private void verifyUserFanpageMembership(Long fanpageId, Long userId) {

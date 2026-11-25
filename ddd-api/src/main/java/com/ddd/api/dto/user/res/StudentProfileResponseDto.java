@@ -17,7 +17,9 @@ public record StudentProfileResponseDto(
         @NotNull String associationName,
         @NotNull String majorName,
         @NotNull String majorCode,
-        @NotNull String schoolName
+        @NotNull String schoolName,
+        Long schoolId,
+        Long majorId
 ) {
     public StudentProfileResponseDto(
             String email,
@@ -34,6 +36,6 @@ public record StudentProfileResponseDto(
             String majorCode,
             String schoolName
     ) {
-        this(email, role != null ? Set.of(role) : Set.of(), role, isActive, firstName, lastName, studentId, gender, kNumber, avatarUrl, associationName, majorName, majorCode, schoolName);
+        this(email, role != null ? Set.of(role) : Set.of(), role, isActive, firstName, lastName, studentId, gender, kNumber, avatarUrl, associationName, majorName, majorCode, schoolName, null, null);
     }
 }

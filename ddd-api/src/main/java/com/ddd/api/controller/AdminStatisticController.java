@@ -25,30 +25,33 @@ public class AdminStatisticController {
     @GetMapping("/overview")
     public BaseResponse<AdminOverviewStatisticResponseDto> getOverview(
             @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Long semesterId
+            @RequestParam(required = false) Long semesterId,
+            @RequestParam(required = false) String academicYear
     ) {
         return BaseResponse.of(adminStatisticApiMapper.toResponseDto(
-                adminStatisticQueryService.getOverview(year, semesterId)
+                adminStatisticQueryService.getOverview(year, semesterId, academicYear)
         ));
     }
 
     @GetMapping("/trends")
     public BaseResponse<List<AdminMonthlyTrendResponseDto>> getMonthlyTrends(
             @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Long semesterId
+            @RequestParam(required = false) Long semesterId,
+            @RequestParam(required = false) String academicYear
     ) {
         return BaseResponse.of(adminStatisticApiMapper.toMonthlyTrendResponseDtoList(
-                adminStatisticQueryService.getMonthlyTrends(year, semesterId)
+                adminStatisticQueryService.getMonthlyTrends(year, semesterId, academicYear)
         ));
     }
 
     @GetMapping("/event-distribution")
     public BaseResponse<List<AdminEventTypeDistributionResponseDto>> getEventDistribution(
             @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Long semesterId
+            @RequestParam(required = false) Long semesterId,
+            @RequestParam(required = false) String academicYear
     ) {
         return BaseResponse.of(adminStatisticApiMapper.toEventTypeDistributionResponseDtoList(
-                adminStatisticQueryService.getEventDistribution(year, semesterId)
+                adminStatisticQueryService.getEventDistribution(year, semesterId, academicYear)
         ));
     }
 
@@ -56,40 +59,44 @@ public class AdminStatisticController {
     public BaseResponse<List<AdminTopFanpageResponseDto>> getTopFanpages(
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Long semesterId,
-            @RequestParam(required = false, defaultValue = "10") Integer limit
+            @RequestParam(required = false, defaultValue = "10") Integer limit,
+            @RequestParam(required = false) String academicYear
     ) {
         return BaseResponse.of(adminStatisticApiMapper.toTopFanpageResponseDtoList(
-                adminStatisticQueryService.getTopFanpages(year, semesterId, limit)
+                adminStatisticQueryService.getTopFanpages(year, semesterId, limit, academicYear)
         ));
     }
 
     @GetMapping("/demographics")
     public BaseResponse<AdminDemographicsResponseDto> getDemographics(
             @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Long semesterId
+            @RequestParam(required = false) Long semesterId,
+            @RequestParam(required = false) String academicYear
     ) {
         return BaseResponse.of(adminStatisticApiMapper.toResponseDto(
-                adminStatisticQueryService.getDemographics(year, semesterId)
+                adminStatisticQueryService.getDemographics(year, semesterId, academicYear)
         ));
     }
 
     @GetMapping("/absent-rate")
     public BaseResponse<List<AdminMonthlyAbsentRateResponseDto>> getMonthlyAbsentRate(
             @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Long semesterId
+            @RequestParam(required = false) Long semesterId,
+            @RequestParam(required = false) String academicYear
     ) {
         return BaseResponse.of(adminStatisticApiMapper.toMonthlyAbsentRateResponseDtoList(
-                adminStatisticQueryService.getMonthlyAbsentRate(year, semesterId)
+                adminStatisticQueryService.getMonthlyAbsentRate(year, semesterId, academicYear)
         ));
     }
 
     @GetMapping("/dashboard")
     public BaseResponse<AdminDashboardResponseDto> getDashboard(
             @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Long semesterId
+            @RequestParam(required = false) Long semesterId,
+            @RequestParam(required = false) String academicYear
     ) {
         return BaseResponse.of(adminStatisticApiMapper.toResponseDto(
-                adminStatisticQueryService.getDashboard(year, semesterId)
+                adminStatisticQueryService.getDashboard(year, semesterId, academicYear)
         ));
     }
 }

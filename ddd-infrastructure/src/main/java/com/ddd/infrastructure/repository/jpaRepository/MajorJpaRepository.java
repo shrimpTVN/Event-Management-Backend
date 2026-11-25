@@ -11,5 +11,7 @@ import java.util.List;
 
 @Repository
 public interface MajorJpaRepository extends JpaRepository<MajorJpaEntity, Long> {
+    List<MajorJpaEntity> findBySchoolId(Long schoolId);
+
     List<MajorJpaEntity> findBySchoolIdAndIsActiveTrue(Long schoolId);
 }
