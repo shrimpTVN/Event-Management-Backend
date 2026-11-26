@@ -36,62 +36,68 @@ public class StudentCriteriaProgressCommandServiceImpl implements StudentCriteri
         if (userIds == null || userIds.isEmpty() || criteriaId == null || academicYearId == null) {
             return;
         }
-        //Identify and skip students who already completed this criteria
-        List<Long> eligibleUserIds = getEligibleUserIds(userIds, criteriaId, academicYearId);
-        if (eligibleUserIds.isEmpty()) {
-            return;
-        }
-
-        Instant now = Instant.now();
-        List<StudentCriteriaProgress> newLeafProgresses = eligibleUserIds.stream()
-                .map(userId -> {
-                    StudentCriteriaProgress progress = new StudentCriteriaProgress(userId, criteriaId, academicYearId);
-                    progress.setIsCompleted(true);
-                    progress.setCompletedAt(now);
-                    return progress;
-                })
-                .toList();
-
-        progressRepository.saveAll(newLeafProgresses);
-        log.info("Batch created leaf criteria progress for {} users, criteria: {}, academic year: {}",
-                eligibleUserIds.size(), criteriaId, academicYearId);
-
-        //Propagate completion up the criteria tree for each student
-        List<StudentCriteriaProgress> updatedProgressList = calculateUpdateProgressList(eligibleUserIds, criteriaId, academicYearId, now);
-
-        if (!updatedProgressList.isEmpty()) {
-            progressRepository.saveAll(updatedProgressList);
-            log.info("Batch updated {} parent criteria progress records for {} users",
-                    updatedProgressList.size(), eligibleUserIds.size());
-        }
-    }
-    private List<Long> getEligibleUserIds(List<Long> userIds, Long criteriaId, Long academicYearId) {
         List<Long> distinctUserIds = userIds.stream()
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
-
         if (distinctUserIds.isEmpty()) {
             log.info("Received empty or null userIds list, skipping processing for criteria: {}, academic year: {}", criteriaId, academicYearId);
-            return Collections.emptyList();
+            return;
         }
 
-        Set<Long> alreadyCompletedUserIds = progressRepository
+        int requiredOccurrences = resolveRequiredOccurrences(criteriaId);
+        Map<Long, StudentCriteriaProgress> existingByUserId = progressRepository
                 .findByUserIdsAndCriteriaIdAndAcademicYearId(distinctUserIds, criteriaId, academicYearId)
                 .stream()
-                .map(StudentCriteriaProgress::getUserId)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toMap(
+                        StudentCriteriaProgress::getUserId,
+                        p -> p,
+                        (existing, replacement) -> existing
+                ));
 
-        List<Long> eligibleUserIds = distinctUserIds.stream()
-                .filter(id -> !alreadyCompletedUserIds.contains(id))
-                .toList();
+        Instant now = Instant.now();
+        List<StudentCriteriaProgress> leafProgressesToSave = new ArrayList<>(distinctUserIds.size());
+        List<Long> newlyCompletedUserIds = new ArrayList<>();
 
-        if (eligibleUserIds.isEmpty()) {
-            log.info("All {} users already marked completed for criteria: {}, academic year: {}",
-                    distinctUserIds.size(), criteriaId, academicYearId);
-            return Collections.emptyList();
+        for (Long userId : distinctUserIds) {
+            StudentCriteriaProgress progress = existingByUserId.getOrDefault(
+                    userId,
+                    new StudentCriteriaProgress(userId, criteriaId, academicYearId)
+            );
+            boolean wasCompleted = Boolean.TRUE.equals(progress.getIsCompleted());
+            int currentOccurrences = progress.getCompletedOccurrences() != null ? progress.getCompletedOccurrences() : 0;
+            int newOccurrences = currentOccurrences + 1;
+            boolean isNowCompleted = newOccurrences >= requiredOccurrences;
+
+            progress.setCompletedOccurrences(newOccurrences);
+            progress.setIsCompleted(isNowCompleted);
+            if (!wasCompleted && isNowCompleted) {
+                progress.setCompletedAt(now);
+                newlyCompletedUserIds.add(userId);
+            }
+            leafProgressesToSave.add(progress);
         }
-        return eligibleUserIds;
+
+        progressRepository.saveAll(leafProgressesToSave);
+        log.info("Batch updated leaf criteria progress for {} users ({} newly completed), criteria: {}, academic year: {}",
+                leafProgressesToSave.size(), newlyCompletedUserIds.size(), criteriaId, academicYearId);
+
+        if (!newlyCompletedUserIds.isEmpty()) {
+            List<StudentCriteriaProgress> updatedProgressList = calculateUpdateProgressList(
+                    newlyCompletedUserIds, criteriaId, academicYearId, now);
+            if (!updatedProgressList.isEmpty()) {
+                progressRepository.saveAll(updatedProgressList);
+                log.info("Batch updated {} parent criteria progress records for {} users",
+                        updatedProgressList.size(), newlyCompletedUserIds.size());
+            }
+        }
+    }
+
+    private int resolveRequiredOccurrences(Long criteriaId) {
+        return criteriaRepository.findById(criteriaId)
+                .map(Criteria::getRequiredOccurrences)
+                .filter(req -> req > 0)
+                .orElse(1);
     }
 
     private List<StudentCriteriaProgress> calculateUpdateProgressList(List<Long> eligibleUserIds,
@@ -176,12 +182,35 @@ public class StudentCriteriaProgressCommandServiceImpl implements StudentCriteri
         }
 
         StudentCriteriaProgress leafProgress = progressOpt.get();
+        boolean wasCompleted = Boolean.TRUE.equals(leafProgress.getIsCompleted());
+        int currentOccurrences = leafProgress.getCompletedOccurrences() != null ? leafProgress.getCompletedOccurrences() : 0;
 
-        if (!Boolean.TRUE.equals(leafProgress.getIsCompleted())) {
+        if (!wasCompleted && currentOccurrences <= 0) {
             log.info("Progress for user: {}, criteria: {}, academic year: {} is already uncompleted, skipping", userId, criteriaId, academicYearId);
             return;
         }
 
+        int newOccurrences = Math.max(0, currentOccurrences - 1);
+        int requiredOccurrences = resolveRequiredOccurrences(criteriaId);
+        boolean isNowCompleted = newOccurrences >= requiredOccurrences;
+
+        if (wasCompleted && !isNowCompleted) {
+            propagateUncompletedToParents(userId, criteriaId, academicYearId);
+        }
+
+        if (newOccurrences == 0) {
+            progressRepository.delete(leafProgress);
+        } else {
+            leafProgress.setCompletedOccurrences(newOccurrences);
+            leafProgress.setIsCompleted(isNowCompleted);
+            if (!isNowCompleted) {
+                leafProgress.setCompletedAt(null);
+            }
+            progressRepository.save(leafProgress);
+        }
+    }
+
+    private void propagateUncompletedToParents(Long userId, Long criteriaId, Long academicYearId) {
         List<StudentCriteriaProgress> criteriaProgresses = progressRepository.findAllByUserIdAndAcademicYearId(userId, academicYearId);
         Map<Long, StudentCriteriaProgress> progressMap = criteriaProgresses.stream()
                 .collect(Collectors.toMap(StudentCriteriaProgress::getCriteriaId, p -> p));
@@ -224,7 +253,6 @@ public class StudentCriteriaProgressCommandServiceImpl implements StudentCriteri
             updatedProgressList.add(parentProgress);
         }
 
-        progressRepository.delete(leafProgress);
         if (!updatedProgressList.isEmpty()) {
             progressRepository.saveAll(updatedProgressList);
         }

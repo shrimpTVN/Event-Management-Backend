@@ -11,6 +11,8 @@ public record CriteriaProgressItemDto(
         Integer childrenOrder,
         Integer requiredChildren,
         int completedChildrenCount,
+        Integer requiredOccurrences,
+        int completedOccurrences,
         boolean isCompleted,
         List<CriteriaProgressItemDto> children
 ) {

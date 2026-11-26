@@ -8,6 +8,7 @@ public record CriteriaResponseDto(
         Integer level,
         Integer childrenOrder,
         Integer requiredChildren,
+        Integer requiredOccurrences,
         Long parentId,
         boolean isActive
 ) {

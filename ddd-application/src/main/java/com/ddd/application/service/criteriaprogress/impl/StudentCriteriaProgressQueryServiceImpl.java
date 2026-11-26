@@ -81,6 +81,12 @@ public class StudentCriteriaProgressQueryServiceImpl implements StudentCriteriaP
         int completedChildrenCount = progressEntity != null && progressEntity.getCompletedChildrenCount() != null
                 ? progressEntity.getCompletedChildrenCount()
                 : 0;
+        int completedOccurrences = progressEntity != null && progressEntity.getCompletedOccurrences() != null
+                ? progressEntity.getCompletedOccurrences()
+                : 0;
+        int requiredOccurrences = node.requiredOccurrences() != null && node.requiredOccurrences() > 0
+                ? node.requiredOccurrences()
+                : 1;
 
         boolean isCompleted = dbCompleted;
         if (!childDtos.isEmpty()) {
@@ -101,6 +107,8 @@ public class StudentCriteriaProgressQueryServiceImpl implements StudentCriteriaP
                 node.childrenOrder(),
                 node.requiredChildren(),
                 completedChildrenCount,
+                requiredOccurrences,
+                completedOccurrences,
                 isCompleted,
                 childDtos);
     }

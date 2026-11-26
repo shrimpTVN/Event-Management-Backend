@@ -10,6 +10,7 @@ public record CriteriaTreeNodeDto(
         Integer level,
         Integer childrenOrder,
         Integer requiredChildren,
+        Integer requiredOccurrences,
         List<CriteriaTreeNodeDto> children
 ) {
 }

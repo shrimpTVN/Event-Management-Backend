@@ -31,6 +31,9 @@ public class CriteriaServiceImpl implements CriteriaService {
     @Override
     public CriteriaDto createCriteria(CriteriaDto criteriaDto) {
         Criteria criteria = criteriaDtoMapper.toCriteria(criteriaDto);
+        if (criteria.getRequiredOccurrences() == null) {
+            criteria.setRequiredOccurrences(1);
+        }
         if (criteria.getParentId() != null) {
             Criteria parent = criteriaRepository.findById(criteria.getParentId())
                     .orElseThrow(() -> new ResourceNotFoundException("Parent criteria not found with id: " + criteria.getParentId()));
@@ -139,6 +142,7 @@ public class CriteriaServiceImpl implements CriteriaService {
                 current.getLevel(),
                 current.getChildrenOrder(),
                 current.getRequiredChildren(),
+                current.getRequiredOccurrences() != null ? current.getRequiredOccurrences() : 1,
                 children
         );
     }

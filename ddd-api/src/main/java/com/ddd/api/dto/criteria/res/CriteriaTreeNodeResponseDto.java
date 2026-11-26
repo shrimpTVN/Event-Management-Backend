@@ -12,6 +12,7 @@ public record CriteriaTreeNodeResponseDto(
         Integer level,
         Integer childrenOrder,
         Integer requiredChildren,
+        Integer requiredOccurrences,
         List<CriteriaTreeNodeDto> children
 ) {
 }

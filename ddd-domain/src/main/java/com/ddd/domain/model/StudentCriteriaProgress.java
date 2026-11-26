@@ -17,16 +17,22 @@ public class StudentCriteriaProgress extends BaseModel {
     private Boolean isCompleted = Boolean.FALSE;
     private Instant completedAt;
     private Integer completedChildrenCount = 0;
+    private Integer completedOccurrences = 0;
 
     public StudentCriteriaProgress(Long userId, Long criteriaId, Long academicYearId) {
         this.userId = userId;
         this.criteriaId = criteriaId;
         this.academicYearId = academicYearId;
         this.completedChildrenCount = 0;
+        this.completedOccurrences = 0;
         this.isCompleted = Boolean.FALSE;
     }
 
     public void setIsCompleted(Boolean isCompleted) {
         this.isCompleted = isCompleted != null ? isCompleted : Boolean.FALSE;
+    }
+
+    public void setCompletedOccurrences(Integer completedOccurrences) {
+        this.completedOccurrences = completedOccurrences != null ? Math.max(0, completedOccurrences) : 0;
     }
 }

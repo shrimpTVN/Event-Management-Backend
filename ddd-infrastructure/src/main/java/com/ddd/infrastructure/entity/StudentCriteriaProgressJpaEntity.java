@@ -44,6 +44,10 @@ public class StudentCriteriaProgressJpaEntity extends BaseEntityJpa {
     @ColumnDefault("0")
     private Integer completedChildrenCount=0;
 
+    @Column(name = "completed_occurrences", nullable = false)
+    @ColumnDefault("0")
+    private Integer completedOccurrences = 0;
+
     @ColumnDefault("false")
     @Column(name = "is_completed", nullable = false)
     private Boolean isCompleted=false;

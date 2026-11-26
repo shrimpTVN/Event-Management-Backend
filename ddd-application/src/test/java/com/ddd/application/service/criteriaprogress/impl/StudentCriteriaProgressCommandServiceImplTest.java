@@ -323,4 +323,157 @@ class StudentCriteriaProgressCommandServiceImplTest {
         assertFalse(updatedParent.getIsCompleted());
         assertNull(updatedParent.getCompletedAt());
     }
+
+    @Test
+    @DisplayName("Should track partial occurrences and propagate to parent only when reaching requiredOccurrences")
+    void bulkMarkCompleted_whenRequiredOccurrencesIsThree_shouldTrackPartialAndCompleteOnlyOnThird() {
+        Long leafId = 402L;
+        Long parentId = 4L;
+
+        Criteria leafCriteria = new Criteria();
+        leafCriteria.setId(leafId);
+        leafCriteria.setParentId(parentId);
+        leafCriteria.setRequiredOccurrences(3);
+
+        Criteria parentCriteria = new Criteria();
+        parentCriteria.setId(parentId);
+        parentCriteria.setRequiredChildren(1);
+
+        StudentCriteriaProgress leafProgress = new StudentCriteriaProgress(userId, leafId, academicYearId);
+        StudentCriteriaProgress parentProgress = new StudentCriteriaProgress(userId, parentId, academicYearId);
+
+        when(criteriaRepository.findById(leafId)).thenReturn(Optional.of(leafCriteria));
+        when(criteriaRepository.findAllByIsActive(true)).thenReturn(List.of(leafCriteria, parentCriteria));
+        when(progressRepository.findByUserIdsAndCriteriaIdAndAcademicYearId(List.of(userId), leafId, academicYearId))
+                .thenReturn(Collections.emptyList())
+                .thenReturn(List.of(leafProgress))
+                .thenReturn(List.of(leafProgress))
+                .thenReturn(List.of(leafProgress));
+        when(progressRepository.findAllByUserIdsAndAcademicYearId(List.of(userId), academicYearId))
+                .thenReturn(List.of(leafProgress, parentProgress));
+
+        // 1st occurrence -> 1/3, not completed, parent not updated
+        service.bulkMarkCompleted(List.of(userId), leafId, academicYearId);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<StudentCriteriaProgress>> firstCaptor = ArgumentCaptor.forClass(List.class);
+        verify(progressRepository, times(1)).saveAll(firstCaptor.capture());
+        StudentCriteriaProgress afterFirst = firstCaptor.getValue().get(0);
+        assertEquals(1, afterFirst.getCompletedOccurrences());
+        assertFalse(afterFirst.getIsCompleted());
+        leafProgress.setCompletedOccurrences(1);
+        leafProgress.setIsCompleted(false);
+
+        // 2nd occurrence -> 2/3, not completed, parent still not updated
+        service.bulkMarkCompleted(List.of(userId), leafId, academicYearId);
+        assertEquals(2, leafProgress.getCompletedOccurrences());
+        assertFalse(leafProgress.getIsCompleted());
+        assertEquals(0, parentProgress.getCompletedChildrenCount());
+
+        // 3rd occurrence -> 3/3, completed! Parent incremented +1 and marked completed
+        service.bulkMarkCompleted(List.of(userId), leafId, academicYearId);
+        assertEquals(3, leafProgress.getCompletedOccurrences());
+        assertTrue(leafProgress.getIsCompleted());
+        assertEquals(1, parentProgress.getCompletedChildrenCount());
+        assertTrue(parentProgress.getIsCompleted());
+
+        // 4th occurrence -> 4/3, stays completed, parent NOT incremented a second time
+        service.bulkMarkCompleted(List.of(userId), leafId, academicYearId);
+        assertEquals(4, leafProgress.getCompletedOccurrences());
+        assertTrue(leafProgress.getIsCompleted());
+        assertEquals(1, parentProgress.getCompletedChildrenCount());
+    }
+
+    @Test
+    @DisplayName("Should keep leaf completed and not decrement parent when occurrences drop from 4 to 3")
+    void markUncompleted_whenOccurrencesDropFromFourToThree_shouldKeepCompletedAndNotDecrementParent() {
+        Long leafId = 402L;
+        Criteria leafCriteria = new Criteria();
+        leafCriteria.setId(leafId);
+        leafCriteria.setRequiredOccurrences(3);
+
+        StudentCriteriaProgress leafProgress = new StudentCriteriaProgress(userId, leafId, academicYearId);
+        leafProgress.setCompletedOccurrences(4);
+        leafProgress.setIsCompleted(true);
+        leafProgress.setCompletedAt(Instant.now());
+
+        when(progressRepository.findByUserIdAndCriteriaIdAndAcademicYearId(userId, leafId, academicYearId))
+                .thenReturn(Optional.of(leafProgress));
+        when(criteriaRepository.findById(leafId)).thenReturn(Optional.of(leafCriteria));
+
+        service.markUncompleted(userId, leafId, academicYearId);
+
+        assertEquals(3, leafProgress.getCompletedOccurrences());
+        assertTrue(leafProgress.getIsCompleted());
+        verify(progressRepository).save(leafProgress);
+        verify(progressRepository, never()).delete(any());
+        verify(progressRepository, never()).findAllByUserIdAndAcademicYearId(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should mark leaf uncompleted, keep row, and decrement parent when dropping from 3 to 2")
+    void markUncompleted_whenOccurrencesDropFromThreeToTwo_shouldMarkUncompletedKeepRowAndDecrementParent() {
+        Long leafId = 402L;
+        Long parentId = 4L;
+
+        Criteria leafCriteria = new Criteria();
+        leafCriteria.setId(leafId);
+        leafCriteria.setParentId(parentId);
+        leafCriteria.setRequiredOccurrences(3);
+
+        Criteria parentCriteria = new Criteria();
+        parentCriteria.setId(parentId);
+        parentCriteria.setRequiredChildren(1);
+
+        StudentCriteriaProgress leafProgress = new StudentCriteriaProgress(userId, leafId, academicYearId);
+        leafProgress.setCompletedOccurrences(3);
+        leafProgress.setIsCompleted(true);
+        leafProgress.setCompletedAt(Instant.now());
+
+        StudentCriteriaProgress parentProgress = new StudentCriteriaProgress(userId, parentId, academicYearId);
+        parentProgress.setCompletedChildrenCount(1);
+        parentProgress.setIsCompleted(true);
+
+        when(progressRepository.findByUserIdAndCriteriaIdAndAcademicYearId(userId, leafId, academicYearId))
+                .thenReturn(Optional.of(leafProgress));
+        when(criteriaRepository.findById(leafId)).thenReturn(Optional.of(leafCriteria));
+        when(progressRepository.findAllByUserIdAndAcademicYearId(userId, academicYearId))
+                .thenReturn(List.of(leafProgress, parentProgress));
+        when(criteriaRepository.findAllById(anyList()))
+                .thenReturn(List.of(leafCriteria, parentCriteria));
+
+        service.markUncompleted(userId, leafId, academicYearId);
+
+        assertEquals(2, leafProgress.getCompletedOccurrences());
+        assertFalse(leafProgress.getIsCompleted());
+        assertNull(leafProgress.getCompletedAt());
+        assertEquals(0, parentProgress.getCompletedChildrenCount());
+        assertFalse(parentProgress.getIsCompleted());
+        verify(progressRepository).save(leafProgress);
+        verify(progressRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Should decrement occurrences from 2 to 1 without decrementing parent")
+    void markUncompleted_whenOccurrencesDropFromTwoToOne_shouldDecrementOccurrencesAndNotDecrementParent() {
+        Long leafId = 402L;
+        Criteria leafCriteria = new Criteria();
+        leafCriteria.setId(leafId);
+        leafCriteria.setRequiredOccurrences(3);
+
+        StudentCriteriaProgress leafProgress = new StudentCriteriaProgress(userId, leafId, academicYearId);
+        leafProgress.setCompletedOccurrences(2);
+        leafProgress.setIsCompleted(false);
+
+        when(progressRepository.findByUserIdAndCriteriaIdAndAcademicYearId(userId, leafId, academicYearId))
+                .thenReturn(Optional.of(leafProgress));
+        when(criteriaRepository.findById(leafId)).thenReturn(Optional.of(leafCriteria));
+
+        service.markUncompleted(userId, leafId, academicYearId);
+
+        assertEquals(1, leafProgress.getCompletedOccurrences());
+        assertFalse(leafProgress.getIsCompleted());
+        verify(progressRepository).save(leafProgress);
+        verify(progressRepository, never()).delete(any());
+        verify(progressRepository, never()).findAllByUserIdAndAcademicYearId(any(), any());
+    }
 }

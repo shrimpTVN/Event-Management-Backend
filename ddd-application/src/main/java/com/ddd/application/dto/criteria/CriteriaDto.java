@@ -8,6 +8,7 @@ public record CriteriaDto(
         Integer level,
         Integer childrenOrder,
         Integer requiredChildren,
+        Integer requiredOccurrences,
         Long parentId,
         boolean isActive
 ) {
