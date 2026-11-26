@@ -15,11 +15,8 @@ WITH generated_students AS (
         gs AS idx,
         500 + gs AS uid,
         (ARRAY['Nguyễn','Trần','Lê','Phạm','Huỳnh','Võ','Đặng','Bùi','Đỗ','Hồ','Ngô','Dương'])[1 + floor(random() * 12)::int] AS ho,
-        (ARRAY[
-            ['Minh Khoa','MALE'], ['Ngọc Anh','FEMALE'], ['Quốc Trung','MALE'], ['Thảo Nhi','FEMALE'],
-            ['Hoàng Long','MALE'], ['Mỹ Linh','FEMALE'], ['Gia Thịnh','MALE'], ['Thanh Vy','FEMALE'],
-            ['Anh Kiệt','MALE'], ['Khánh Vy','FEMALE'], ['Tuấn Đạt','MALE'], ['Thu Hằng','FEMALE']
-        ])[1 + (gs % 12)] AS name_gender,
+        (ARRAY['Minh Khoa','Ngọc Anh','Quốc Trung','Thảo Nhi','Hoàng Long','Mỹ Linh','Gia Thịnh','Thanh Vy','Anh Kiệt','Khánh Vy','Tuấn Đạt','Thu Hằng'])[1 + (gs % 12)] AS ten,
+        (ARRAY['MALE','FEMALE','MALE','FEMALE','MALE','FEMALE','MALE','FEMALE','MALE','FEMALE','MALE','FEMALE'])[1 + (gs % 12)] AS gt,
         (ARRAY[47, 48, 49, 50])[1 + (gs % 4)] AS khoahoc,
         (ARRAY[
             'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
@@ -36,9 +33,9 @@ ins_users AS (
         uid,
         'sv.diverse' || lpad(idx::text, 2, '0') || '@student.ctu.edu.vn',
         '$2a$10$5snZONh3FshSppF3fNtoD.N0VHU31/mhWPRzv2FnnOMyvMRBMw3Ee',
-        name_gender[1],
+        ten,
         ho,
-        name_gender[2],
+        gt,
         ava,
         TRUE,
         NOW() - ((idx % 30) || ' days')::INTERVAL,

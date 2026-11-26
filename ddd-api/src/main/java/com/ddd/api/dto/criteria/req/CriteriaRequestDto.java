@@ -9,6 +9,7 @@ public record CriteriaRequestDto(
         String name,
         String note,
         @NotNull(message = "Criteria scope is required")
+        @jakarta.validation.constraints.Pattern(regexp = "UNIVERSITY|FACULTY", message = "Scope must be UNIVERSITY or FACULTY")
         String scope,
 
         @NotNull

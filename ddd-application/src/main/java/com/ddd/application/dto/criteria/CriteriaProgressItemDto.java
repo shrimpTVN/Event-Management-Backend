@@ -14,6 +14,15 @@ public record CriteriaProgressItemDto(
         Integer requiredOccurrences,
         int completedOccurrences,
         boolean isCompleted,
+        int totalChildren,
+        boolean isLeaf,
+        boolean isSystemRecorded,
+        boolean isSystemCompleted,
+        boolean isSelfEvaluated,
+        String selfEvaluationNote,
+        Long manualTransactionId,
+        String completionSource,
+        String systemEventName,
+        int completionPercentage,
         List<CriteriaProgressItemDto> children
-) {
-}
+) {}

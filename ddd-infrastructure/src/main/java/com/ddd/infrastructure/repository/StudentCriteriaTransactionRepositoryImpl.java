@@ -67,6 +67,9 @@ public class StudentCriteriaTransactionRepositoryImpl implements StudentCriteria
             var criteriaRef = em.getReference(CriteriaJpaEntity.class, transaction.getCriteriaId());
             transactionEntity.setCriteria(criteriaRef);
         }
+        if (transaction.getEventId() != null) {
+            transactionEntity.setEvent(em.getReference(com.ddd.infrastructure.entity.EventJpaEntity.class, transaction.getEventId()));
+        }
         if (transaction.getAcademicYearId() != null) {
             var academicYearRef = em.getReference(AcademicYearJpaEntity.class, transaction.getAcademicYearId());
             transactionEntity.setAcademicYear(academicYearRef);

@@ -3,6 +3,7 @@ package com.ddd.application.service.criteria.impl;
 import com.ddd.application.dto.criteria.CriteriaDto;
 import com.ddd.application.dto.criteria.CriteriaTreeNodeDto;
 import com.ddd.application.mapper.CriteriaDtoMapper;
+import com.ddd.domain.enums.CriteriaScopeEnum;
 import com.ddd.domain.model.Criteria;
 import com.ddd.domain.repository.CriteriaRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -89,5 +90,45 @@ class CriteriaServiceImplTest {
         assertEquals(1, tree.get(0).requiredOccurrences());
         assertEquals(1, tree.get(0).children().size());
         assertEquals(3, tree.get(0).children().get(0).requiredOccurrences());
+    }
+
+    @Test
+    @DisplayName("Should filter criteria tree by scope and unwrap container root for that scope")
+    void getCriteriaTree_whenScopeProvided_shouldFilterByScopeAndUnwrapContainerRoot() {
+        Criteria uniRoot = new Criteria();
+        uniRoot.setId(1L);
+        uniRoot.setName("SV5T University");
+        uniRoot.setScope("UNIVERSITY");
+        uniRoot.setLevel(0);
+        uniRoot.setChildrenOrder(1);
+        uniRoot.setParentId(null);
+
+        Criteria uniMain = new Criteria();
+        uniMain.setId(2L);
+        uniMain.setName("Đạo đức tốt");
+        uniMain.setScope("UNIVERSITY");
+        uniMain.setLevel(1);
+        uniMain.setChildrenOrder(1);
+        uniMain.setParentId(1L);
+
+        Criteria schoolRoot = new Criteria();
+        schoolRoot.setId(100L);
+        schoolRoot.setName("SV5T School");
+        schoolRoot.setScope("FACULTY");
+        schoolRoot.setLevel(0);
+        schoolRoot.setChildrenOrder(1);
+        schoolRoot.setParentId(null);
+
+        when(criteriaRepository.findAllByIsActive(true)).thenReturn(List.of(uniRoot, uniMain, schoolRoot));
+
+        List<CriteriaTreeNodeDto> uniTree = service.getCriteriaTree(CriteriaScopeEnum.UNIVERSITY);
+        assertEquals(1, uniTree.size());
+        assertEquals(2L, uniTree.get(0).id());
+        assertEquals("UNIVERSITY", uniTree.get(0).scope());
+
+        List<CriteriaTreeNodeDto> schoolTree = service.getCriteriaTree(CriteriaScopeEnum.FACULTY);
+        assertEquals(1, schoolTree.size());
+        assertEquals(100L, schoolTree.get(0).id());
+        assertEquals("FACULTY", schoolTree.get(0).scope());
     }
 }

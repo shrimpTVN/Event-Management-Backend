@@ -5,6 +5,7 @@ import com.ddd.application.dto.criteria.CriteriaTreeNodeDto;
 import com.ddd.application.dto.criteria.StudentCriteriaProgressDto;
 import com.ddd.application.service.criteria.CriteriaService;
 import com.ddd.application.service.criteriaprogress.StudentCriteriaProgressQueryService;
+import com.ddd.domain.enums.CriteriaScopeEnum;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.infrastructure.entity.AcademicYearJpaEntity;
 import com.ddd.infrastructure.entity.StudentCriteriaProgressJpaEntity;
@@ -27,90 +28,59 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
 public class StudentCriteriaProgressQueryServiceImpl implements StudentCriteriaProgressQueryService {
 
     private final CriteriaService criteriaService;
-    private final StudentCriteriaProgressJpaRepository progressJpaRepository;
+    private final com.ddd.infrastructure.repository.jpaRepository.StudentCriteriaTransactionJpaRepository transactions;
     private final UserJpaRepository userJpaRepository;
     private final AcademicYearJpaRepository academicYearJpaRepository;
 
     @Override
     public StudentCriteriaProgressDto getProgress(String email, Long academicYearId) {
+        return getProgress(email, academicYearId, null);
+    }
+
+    @Override
+    public StudentCriteriaProgressDto getProgress(String email, Long academicYearId, CriteriaScopeEnum scope) {
+        var full = loadProgress(email, academicYearId, scope);
+        var visible = full.criterias().stream().flatMap(node ->
+                Integer.valueOf(0).equals(node.level()) && !node.children().isEmpty()
+                        ? node.children().stream() : java.util.stream.Stream.of(node)).toList();
+        int completed = (int) visible.stream().filter(CriteriaProgressItemDto::isCompleted).count();
+        int total = visible.size();
+        return new StudentCriteriaProgressDto(full.academicYearId(), full.academicYear(), completed, total,
+                visible, full.scope(), total == 0 ? 0 : completed * 100 / total, total > 0 && completed == total);
+    }
+
+    private StudentCriteriaProgressDto loadProgress(String email, Long academicYearId, CriteriaScopeEnum scope) {
         UserJpaEntity user = userJpaRepository.findByEmail(email);
         if (user == null) {
             throw new ResourceNotFoundException("User not found with email: " + email);
         }
         AcademicYearJpaEntity academicYear = resolveAcademicYear(academicYearId);
 
-        List<CriteriaTreeNodeDto> criteriaTree = criteriaService.getCriteriaTree();
+        List<CriteriaTreeNodeDto> criteriaTree = criteriaService.getCriteriaHierarchy(scope);
 
-        List<StudentCriteriaProgressJpaEntity> progressList = progressJpaRepository
-                .findAllByUserIdAndAcademicYearId(user.getId(), academicYearId);
-        Map<Long, StudentCriteriaProgressJpaEntity> progressMap = progressList.stream()
-                .collect(Collectors.toMap(p -> p.getCriteria().getId(), p -> p, (existing, replacement) -> existing));
-
-
-        List<CriteriaProgressItemDto> progressTree = criteriaTree.stream()
-                .map(node -> attachProgress(node, progressMap)).toList();
-
-        int completedMain = (int) progressTree.stream().filter(CriteriaProgressItemDto::isCompleted).count();
-
-        return new StudentCriteriaProgressDto(academicYear.getId(), academicYear.getCode(), completedMain, progressTree.size(), progressTree);
+        var records = transactions.findByUserIdAndAcademicYearId(user.getId(), academicYear.getId());
+        var progressTree = CriteriaProgressProjection.build(criteriaTree, records);
+        int completed = (int) progressTree.stream().filter(CriteriaProgressItemDto::isCompleted).count();
+        int total = progressTree.size();
+        return new StudentCriteriaProgressDto(academicYear.getId(), academicYear.getCode(), completed, total,
+                progressTree, scope == null ? null : scope.name(), total == 0 ? 0 : completed * 100 / total,
+                total > 0 && completed == total);
     }
 
     @Override
     public CriteriaProgressItemDto getCriteriaProgress(String email, Long criteriaId, Long academicYearId) {
-        StudentCriteriaProgressDto overallProgress = getProgress(email, academicYearId);
-        return findCriteriaInTree(overallProgress.criterias(), criteriaId)
-                .orElseThrow(() -> new ResourceNotFoundException("Criteria not found with id: " + criteriaId));
+        return getCriteriaProgress(email, criteriaId, academicYearId, null);
     }
 
-    /**
-     * Recursively traverses the tree top-down and computes node completion status with rollup.
-     */
-    private CriteriaProgressItemDto attachProgress(CriteriaTreeNodeDto node,
-                                                   Map<Long, StudentCriteriaProgressJpaEntity> progressMap) {
-
-        // Recursively build children first so their completion statuses are known
-        List<CriteriaProgressItemDto> childDtos = node.children() == null ? List.of() :
-                node.children().stream().map(child -> attachProgress(child, progressMap)).toList();
-
-        StudentCriteriaProgressJpaEntity progressEntity = progressMap.get(node.id());
-        boolean dbCompleted = progressEntity != null && Boolean.TRUE.equals(progressEntity.getIsCompleted());
-        int completedChildrenCount = progressEntity != null && progressEntity.getCompletedChildrenCount() != null
-                ? progressEntity.getCompletedChildrenCount()
-                : 0;
-        int completedOccurrences = progressEntity != null && progressEntity.getCompletedOccurrences() != null
-                ? progressEntity.getCompletedOccurrences()
-                : 0;
-        int requiredOccurrences = node.requiredOccurrences() != null && node.requiredOccurrences() > 0
-                ? node.requiredOccurrences()
-                : 1;
-
-        boolean isCompleted = dbCompleted;
-        if (!childDtos.isEmpty()) {
-            long completedChildren = childDtos.stream().filter(CriteriaProgressItemDto::isCompleted).count();
-            completedChildrenCount = Math.max(completedChildrenCount, (int) completedChildren);
-            int required = (node.requiredChildren() != null && node.requiredChildren() > 0)
-                    ? node.requiredChildren()
-                    : childDtos.size();
-            isCompleted = dbCompleted || (completedChildren >= required);
-        }
-
-        return new CriteriaProgressItemDto(
-                node.id(),
-                node.name(),
-                node.note(),
-                node.scope(),
-                node.level(),
-                node.childrenOrder(),
-                node.requiredChildren(),
-                completedChildrenCount,
-                requiredOccurrences,
-                completedOccurrences,
-                isCompleted,
-                childDtos);
+    @Override
+    public CriteriaProgressItemDto getCriteriaProgress(String email, Long criteriaId, Long academicYearId, CriteriaScopeEnum scope) {
+        StudentCriteriaProgressDto overallProgress = loadProgress(email, academicYearId, scope);
+        return findCriteriaInTree(overallProgress.criterias(), criteriaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Criteria not found with id: " + criteriaId));
     }
 
     private AcademicYearJpaEntity resolveAcademicYear(Long academicYearId) {
