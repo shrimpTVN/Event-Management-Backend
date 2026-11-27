@@ -12,6 +12,8 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface StudentSemesterPointApiMapper {
+    com.ddd.api.dto.semesterpoint.res.StudentSemesterPointSummaryResponseDto toSummaryResponseDto(com.ddd.application.dto.semesterpoint.StudentSemesterPointSummaryDto dto);
+
     StudentSemesterPointResponseDto toResponseDto(StudentSemesterPointInfoDto dto);
 
     StudentSemesterPointGroupedTreeResponseDto toGroupedTreeResponseDto(StudentSemesterPointGroupedTreeDto dto);

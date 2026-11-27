@@ -1,232 +1,82 @@
 package com.ddd.application.service.semesterpoint.impl;
 
-import com.ddd.application.dto.semesterpoint.StudentSemesterPointFlattenedItemDto;
-import com.ddd.application.dto.semesterpoint.StudentSemesterPointGroupedTreeDto;
-import com.ddd.application.mapper.StudentSemesterPointDtoMapper;
-import com.ddd.domain.exception.AuthException;
-import com.ddd.domain.model.PointCategory;
-import com.ddd.domain.model.Semester;
-import com.ddd.domain.model.StudentSemesterPoint;
+import com.ddd.domain.model.*;
+import com.ddd.domain.repository.*;
 import com.ddd.domain.model.port.security.SecurityContextPort;
-import com.ddd.domain.repository.PointCategoryRepository;
-import com.ddd.domain.repository.SemesterRepository;
-import com.ddd.domain.repository.StudentSemesterPointRepository;
-import com.ddd.infrastructure.repository.jpaRepository.StudentSemesterPointJpaRepository;
-import com.ddd.infrastructure.repository.jpaRepository.UserJpaRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import com.ddd.infrastructure.entity.UserJpaEntity;
+import com.ddd.infrastructure.repository.jpaRepository.*;
+import com.ddd.domain.exception.AuthException;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
+import java.util.*;
+import static com.ddd.application.service.semesterpoint.impl.StudentSemesterPointCalculatorTest.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class StudentSemesterPointQueryServiceImplTest {
-
-    @Mock
-    private StudentSemesterPointJpaRepository studentSemesterPointJpaRepository;
-
-    @Mock
-    private StudentSemesterPointDtoMapper studentSemesterPointDtoMapper;
-
-    @Mock
-    private UserJpaRepository userJpaRepository;
-
-    @Mock
-    private StudentSemesterPointRepository studentSemesterPointRepository;
-
-    @Mock
-    private PointCategoryRepository pointCategoryRepository;
-
-    @Mock
-    private SemesterRepository semesterRepository;
-
-    @Mock
-    private SecurityContextPort securityContextPort;
-
-    @InjectMocks
-    private StudentSemesterPointQueryServiceImpl queryService;
-
-    private final Long userId = 100L;
-    private final Long semesterId = 2024L;
-    private final LocalDate semesterEndDate = LocalDate.of(2026, 12, 31);
-
-    @BeforeEach
-    void setUpSemester() {
-        Semester semester = new Semester();
-        semester.setId(semesterId);
-        semester.setEndDate(semesterEndDate);
-        lenient().when(semesterRepository.findById(semesterId)).thenReturn(Optional.of(semester));
+    @Mock UserJpaRepository users;
+    @Mock StudentSemesterPointRepository snapshots;
+    @Mock PointTransactionRepository transactions;
+    @Mock SemesterPointCategoryPolicy policy;
+    @Spy StudentSemesterPointCalculator calculator=new StudentSemesterPointCalculator();
+    @Mock SecurityContextPort security;
+    @Mock RegistrationJpaRepository registrations;
+    @InjectMocks StudentSemesterPointQueryServiceImpl service;
+    @BeforeEach void setup() {
+        lenient().when(security.getCurrentUserId()).thenReturn(7L);
+        var user=new UserJpaEntity();user.setId(7L);
+        lenient().when(users.findByEmail("s")).thenReturn(user);
+        lenient().when(policy.effectiveCategories(9L)).thenReturn(List.of(category(1,null,20,false),category(2,1L,10,false)));
+        lenient().when(transactions.findAllByUserIdsAndSemesterId(List.of(7L),9L)).thenReturn(List.of());
     }
-
-    @Test
-    @DisplayName("Should return grouped tree with attached student points and fallback to 0 for unrecorded categories")
-    void getSemesterPointTreeForCurrentStudent_shouldReturnGroupedTreeWithAttachedPoints() {
-        when(securityContextPort.getCurrentUserId()).thenReturn(userId);
-
-        PointCategory root = new PointCategory();
-        root.setId(1L);
-        root.setName("I. Học tập");
-        root.setMaximum(20);
-        root.setLevel(1);
-        root.setParentCategoryId(0L);
-        root.setChildrenOrder(1);
-        root.setIsMaxChild(false);
-        root.setActive(true);
-        root.setDateApply(LocalDate.of(2024, 1, 1));
-
-        PointCategory child1 = new PointCategory();
-        child1.setId(10L);
-        child1.setName("Đi học đúng giờ");
-        child1.setMaximum(10);
-        child1.setLevel(2);
-        child1.setParentCategoryId(1L);
-        child1.setChildrenOrder(1);
-        child1.setIsMaxChild(false);
-        child1.setActive(true);
-
-        PointCategory child2 = new PointCategory();
-        child2.setId(11L);
-        child2.setName("Tham gia NCKH");
-        child2.setMaximum(15);
-        child2.setLevel(2);
-        child2.setParentCategoryId(1L);
-        child2.setChildrenOrder(2);
-        child2.setIsMaxChild(false);
-        child2.setActive(true);
-
-        when(pointCategoryRepository.findActiveEffectiveAsOf(semesterEndDate)).thenReturn(List.of(root, child1, child2));
-
-        StudentSemesterPoint rootPoint = new StudentSemesterPoint();
-        rootPoint.setId(501L);
-        rootPoint.setPointCategoryId(1L);
-        rootPoint.setUserId(userId);
-        rootPoint.setSemesterId(semesterId);
-        rootPoint.setTotalPoint(12);
-        rootPoint.setSystemPointRecord(8);
-        rootPoint.setManualPointRecord(4);
-
-        StudentSemesterPoint child1Point = new StudentSemesterPoint();
-        child1Point.setId(502L);
-        child1Point.setPointCategoryId(10L);
-        child1Point.setUserId(userId);
-        child1Point.setSemesterId(semesterId);
-        child1Point.setTotalPoint(8);
-        child1Point.setSystemPointRecord(8);
-        child1Point.setManualPointRecord(0);
-
-        when(studentSemesterPointRepository.findAllByUserIdAndSemesterId(userId, semesterId))
-                .thenReturn(List.of(rootPoint, child1Point));
-
-        List<StudentSemesterPointGroupedTreeDto> tree = queryService.getSemesterPointTreeForCurrentStudent(semesterId);
-
-        assertNotNull(tree);
-        assertEquals(1, tree.size());
-
-        StudentSemesterPointGroupedTreeDto rootDto = tree.get(0);
-        assertEquals(1L, rootDto.id());
-        assertEquals("I. Học tập", rootDto.name());
-        assertEquals(20, rootDto.maximum());
-        assertEquals(501L, rootDto.studentSemesterPointId());
-        assertEquals(12, rootDto.totalPoint());
-        assertEquals(8, rootDto.systemPointRecord());
-        assertEquals(4, rootDto.manualPointRecord());
-
-        assertEquals(2, rootDto.items().size());
-
-        StudentSemesterPointFlattenedItemDto item1 = rootDto.items().get(0);
-        assertEquals(10L, item1.id());
-        assertEquals(10, item1.maximum());
-        assertEquals(502L, item1.studentSemesterPointId());
-        assertEquals(8, item1.totalPoint());
-        assertEquals(8, item1.systemPointRecord());
-        assertEquals(0, item1.manualPointRecord());
-        assertTrue(item1.isLeaf());
-
-        StudentSemesterPointFlattenedItemDto item2 = rootDto.items().get(1);
-        assertEquals(11L, item2.id());
-        assertEquals(15, item2.maximum());
-        assertNull(item2.studentSemesterPointId());
-        assertEquals(0, item2.totalPoint());
-        assertEquals(0, item2.systemPointRecord());
-        assertEquals(0, item2.manualPointRecord());
-        assertTrue(item2.isLeaf());
+    @Test void treeAndFlatReturnSameRawLeafAndServerMetadata() {
+        when(transactions.findAllByUserIdsAndSemesterId(List.of(7L),9L)).thenReturn(List.of(transaction(2,8,"CHECKOUT_REWARD"),transaction(2,7,"MANUAL")));
+        var tree=service.getSemesterPointTreeForCurrentStudent(9L);
+        var leaf=tree.getFirst().items().getFirst();
+        assertEquals(15,leaf.totalPoint());assertEquals(8,leaf.systemPointRecord());assertTrue(leaf.isAtMaximum());
+        assertEquals(100,leaf.completionPercentage());assertEquals(10,tree.getFirst().totalPoint());
+        var flat=service.getSemesterPointsForStudent("s",9L);
+        assertEquals(15,flat.stream().filter(p->p.pointCategoryId()==2L).findFirst().orElseThrow().totalPoint());
+        verify(snapshots,never()).saveAll(any());
     }
-
-    @Test
-    @DisplayName("Should throw AuthException when current user is not authenticated")
-    void getSemesterPointTreeForCurrentStudent_shouldThrowAuthException_whenNotAuthenticated() {
-        when(securityContextPort.getCurrentUserId()).thenReturn(null);
-
-        assertThrows(AuthException.class, () ->
-                queryService.getSemesterPointTreeForCurrentStudent(semesterId)
-        );
+    @Test void newStudentAndEmptyConfigurationHaveSafeZeroTotals() {
+        assertEquals(0,service.getSemesterPointTreeForCurrentStudent(9L).getFirst().totalPoint());
+        when(policy.effectiveCategories(9L)).thenReturn(List.of());
+        var result=service.getSummaryForCurrentStudent(9L);
+        assertEquals(0,result.totalPoint());assertEquals("Kém",result.classificationLabel());assertEquals(35,result.pointsNeeded());
     }
-
-    @Test
-    @DisplayName("Should throw IllegalArgumentException when parameters are null")
-    void getSemesterPointTreeForStudent_shouldThrowIllegalArgumentException_whenParamsNull() {
-        assertThrows(IllegalArgumentException.class, () ->
-                queryService.getSemesterPointTreeForStudent(null, semesterId)
-        );
-        assertThrows(IllegalArgumentException.class, () ->
-                queryService.getSemesterPointTreeForStudent(userId, null)
-        );
+    @ParameterizedTest
+    @CsvSource({"34,Kém,1","35,Yếu,15","49,Yếu,1","50,Trung Bình,30","64,Trung Bình,16","65,Trung Bình,15","79,Trung Bình,1","80,Tốt,10","89,Tốt,1","90,Xuất sắc,0","120,Xuất sắc,0"})
+    void summaryUsesBackendRankBoundaries(int score,String label,int needed) {
+        when(policy.effectiveCategories(9L)).thenReturn(List.of(category(1,null,200,false)));
+        when(transactions.findAllByUserIdsAndSemesterId(List.of(7L),9L)).thenReturn(List.of(transaction(1,score,"MANUAL")));
+        when(registrations.countByUserIdAndEventSemesterIdAndStatusIn(eq(7L),eq(9L),any())).thenReturn(3L);
+        var result=service.getSummaryForCurrentStudent(9L);
+        assertEquals(score,result.totalPoint());assertEquals(100,result.maximum());assertEquals(label,result.classificationLabel());
+        assertEquals(needed,result.pointsNeeded());assertEquals(3,result.activitiesCount());
     }
-
-    @Test
-    @DisplayName("Should clamp displayed totalPoint, systemPointRecord, and manualPointRecord to category maximum")
-    void getSemesterPointTreeForStudent_whenStoredPointsExceedMaximum_shouldClampDisplayedPoints() {
-        PointCategory root = new PointCategory();
-        root.setId(1L);
-        root.setName("I. Học tập");
-        root.setMaximum(20);
-        root.setLevel(0);
-        root.setParentCategoryId(null);
-        root.setChildrenOrder(1);
-        root.setIsMaxChild(false);
-        root.setActive(true);
-
-        PointCategory leaf = new PointCategory();
-        leaf.setId(1045L);
-        leaf.setName("Tham gia CLB học thuật");
-        leaf.setMaximum(2);
-        leaf.setLevel(1);
-        leaf.setParentCategoryId(1L);
-        leaf.setChildrenOrder(1);
-        leaf.setIsMaxChild(false);
-        leaf.setActive(true);
-
-        when(pointCategoryRepository.findActiveEffectiveAsOf(semesterEndDate)).thenReturn(List.of(root, leaf));
-
-        StudentSemesterPoint rootPoint = new StudentSemesterPoint(userId, semesterId, 1L, 22);
-        rootPoint.setSystemPointRecord(22);
-        rootPoint.setManualPointRecord(0);
-
-        StudentSemesterPoint leafPoint = new StudentSemesterPoint(userId, semesterId, 1045L, 4);
-        leafPoint.setSystemPointRecord(4);
-        leafPoint.setManualPointRecord(0);
-
-        when(studentSemesterPointRepository.findAllByUserIdAndSemesterId(userId, semesterId))
-                .thenReturn(List.of(rootPoint, leafPoint));
-
-        List<StudentSemesterPointGroupedTreeDto> tree = queryService.getSemesterPointTreeForStudent(userId, semesterId);
-
-        assertEquals(1, tree.size());
-        StudentSemesterPointGroupedTreeDto rootDto = tree.get(0);
-        assertEquals(20, rootDto.totalPoint());
-        assertEquals(20, rootDto.systemPointRecord());
-
-        StudentSemesterPointFlattenedItemDto leafDto = rootDto.items().get(0);
-        assertEquals(2, leafDto.totalPoint());
-        assertEquals(2, leafDto.systemPointRecord());
+    @Test void adminMaximumChangesAreVisibleOnNextReadEvenForExistingSnapshots() {
+        var leaf=category(2,1L,10,false);var root=category(1,null,20,false);
+        when(policy.effectiveCategories(9L)).thenReturn(List.of(root,leaf));
+        when(transactions.findAllByUserIdsAndSemesterId(List.of(7L),9L)).thenReturn(List.of(transaction(2,10,"MANUAL")));
+        assertEquals(10,service.getSemesterPointTreeForCurrentStudent(9L).getFirst().totalPoint());
+        leaf.setMaximum(5);
+        assertEquals(5,service.getSemesterPointTreeForCurrentStudent(9L).getFirst().totalPoint());
+    }
+    @Test void rejectsUnauthenticatedRead() {
+        when(security.getCurrentUserId()).thenReturn(null);
+        assertThrows(AuthException.class,()->service.getSemesterPointTreeForCurrentStudent(9L));
+    }
+    @Test void summaryCountUsesSelectedSemesterAndExactActivityStatuses() {
+        service.getSummaryForCurrentStudent(9L);
+        verify(registrations).countByUserIdAndEventSemesterIdAndStatusIn(7L,9L,
+            List.of(com.ddd.domain.enums.RegistrationStatusEnum.COMPLETED,com.ddd.domain.enums.RegistrationStatusEnum.CONFIRMED,com.ddd.domain.enums.RegistrationStatusEnum.RECORDED));
+        var parsed=new org.springframework.data.repository.query.parser.PartTree("countByUserIdAndEventSemesterIdAndStatusIn",com.ddd.infrastructure.entity.RegistrationJpaEntity.class);
+        assertEquals(List.of("user.id","event.semester.id","status"),parsed.stream().flatMap(or->or.stream()).map(part->part.getProperty().toDotPath()).toList());
     }
 }

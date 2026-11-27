@@ -142,12 +142,12 @@ Race condition được tách sang giai đoạn sau. Rebuild dựa trên dữ li
 
 **Interfaces** — các mutation cấu hình tìm tập cặp bị ảnh hưởng theo cây hiệu lực trước/sau, gọi rebuild task 2 cho từng cặp. Rebuild không gọi ngược service cấu hình để tạo vòng phụ thuộc bean.
 
-- [ ] Test giảm trần lá 10 xuống 5 cập nhật leaf raw, parent và grandparent đã lưu ngay khi admin mutation thành công.
-- [ ] Test tăng trần, đổi SUM sang MAX, chuyển lá từ A sang B, tắt category và đổi dateApply làm thay phiên bản hiệu lực. Cả nhánh cũ và mới được xét lại.
-- [ ] Test sửa root với parent null và chặn A nằm dưới hậu duệ A. Cập nhật DTO/mapping phù hợp cho mutation hiện hữu.
-- [ ] Test đổi ngày học kỳ làm tập danh mục hiệu lực thay đổi. Cặp user/semester có transaction nhưng chưa có snapshot cũng được rebuild.
-- [ ] Thực hiện theo transaction hiện hữu. Đo thời gian trên tập dữ liệu mẫu, ghi lại giới hạn xử lý đồng bộ trước triển khai môi trường thật.
-- [ ] Chạy `PointCategoryServiceImplTest`, `SemesterServiceImplTest` và calculator/command test. Commit task.
+- [x] Test giảm trần lá 10 xuống 5 cập nhật leaf raw, parent và grandparent đã lưu ngay khi admin mutation thành công.
+- [x] Test tăng trần, đổi SUM sang MAX, chuyển lá từ A sang B, tắt category và đổi dateApply làm thay phiên bản hiệu lực. Cả nhánh cũ và mới được xét lại.
+- [x] Test sửa root với parent null và chặn A nằm dưới hậu duệ A. Cập nhật DTO/mapping phù hợp cho mutation hiện hữu.
+- [x] Test đổi ngày học kỳ làm tập danh mục hiệu lực thay đổi. Cặp user/semester có transaction nhưng chưa có snapshot cũng được rebuild.
+- [x] Thực hiện theo transaction hiện hữu. Đo thời gian trên tập dữ liệu mẫu, ghi lại giới hạn xử lý đồng bộ trước triển khai môi trường thật.
+- [x] Chạy `PointCategoryServiceImplTest`, `SemesterServiceImplTest` và calculator/command test. Commit task.
 
 ## Task 5 — Contract đọc thống nhất và summary do BE trả về
 
@@ -155,11 +155,11 @@ Race condition được tách sang giai đoạn sau. Rebuild dựa trên dữ li
 
 **Interfaces** — giữ hai API đọc hiện hữu và thêm API summary theo Thiết kế nghiệp vụ. Query batch-read giao dịch hợp lệ và cây hiệu lực, dùng calculator task 1 trả raw totalPoint, raw nguồn ghi nhận và nodeMetadata từ cùng kết quả. Ghép ID/finalizedAt/audit của snapshot đã lưu theo categoryId khi có. Endpoint danh sách và summary dùng cùng kết quả tính này. GET chỉ đọc dữ liệu. Trong luồng tuần tự sau một mutation thành công, kết quả tính phải khớp snapshot task 2 đã lưu.
 
-- [ ] Viết serialization test xác nhận không cắt mất raw leaf total 15 khi maximum 10. API danh sách và API cây trả cùng raw totalPoint cho cùng node.
-- [ ] Test sau admin mutation, leaf/cha/summary trả khớp snapshot mới. Test cây trống, sinh viên mới có đầy đủ node 0 và không có chia cho 0.
-- [ ] Test boundary xếp loại 34/35, 49/50, 64/65, 79/80, 89/90, pointsNeeded và summary vượt 100 vẫn có effective 100.
-- [ ] Test activitiesCount chỉ thuộc học kỳ chọn, dùng ba trạng thái đã quy định. Sidebar và trang chính nhận cùng summary API.
-- [ ] Chạy query/controller tests qua `mvn -pl ddd-api -am -Dtest=StudentSemesterPointQueryServiceImplTest,StudentSemesterPointControllerTest -Dsurefire.failIfNoSpecifiedTests=false test`. Commit task.
+- [x] Viết serialization test xác nhận không cắt mất raw leaf total 15 khi maximum 10. API danh sách và API cây trả cùng raw totalPoint cho cùng node.
+- [x] Test sau admin mutation, leaf/cha/summary trả khớp snapshot mới. Test cây trống, sinh viên mới có đầy đủ node 0 và không có chia cho 0.
+- [x] Test boundary xếp loại 34/35, 49/50, 64/65, 79/80, 89/90, pointsNeeded và summary vượt 100 vẫn có effective 100.
+- [x] Test activitiesCount chỉ thuộc học kỳ chọn, dùng ba trạng thái đã quy định. Sidebar và trang chính nhận cùng summary API.
+- [x] Chạy query/controller tests qua `mvn -pl ddd-api -am -Dtest=StudentSemesterPointQueryServiceImplTest,StudentSemesterPointControllerTest -Dsurefire.failIfNoSpecifiedTests=false test`. Commit task.
 
 ## Task 6 — FE hiển thị dữ liệu BE và sửa đúng transaction
 
@@ -167,26 +167,27 @@ Race condition được tách sang giai đoạn sau. Rebuild dựa trên dữ li
 
 **Interfaces** — service thêm getSemesterPointSummary và updatePointTransaction. Page/sidebar dùng tree và summary, query key gồm user + semester. Hàm render điểm node chỉ là `Math.min(maximum, totalPoint)` với input đã được BE kiểm tra hợp lệ.
 
-- [ ] Test leaf manual từ response là 13 luôn hiển thị theo response sau mutation/refetch. Gỡ studentScores/studentDescriptions làm nguồn dữ liệu đã lưu và gỡ override sau POST.
-- [ ] Gỡ computeSectionCategoryScores khỏi đường render, phép SUM/MAX ở accordion, chọn nhánh thắng và phần xếp loại/tính pointsNeeded ở FE. Lưu helper áp trần node nếu còn dùng. Rà soát caller trước khi xóa helper cũ.
-- [ ] Bảng và modal đọc totalPoint, systemPointRecord, manualPointRecord, isAtMaximum và metadata BE. Giao dịch chỉ phục vụ hiển thị lịch sử hoặc chọn ID để thao tác.
-- [ ] Form thêm gọi POST. Form sửa mở với `transaction.points`, gọi PATCH đúng ID. Form xóa gọi DELETE đúng ID. Trường hợp nhiều manual hiển thị/chọn riêng từng ghi nhận, tránh chọn ngẫu nhiên một transaction để đại diện tổng.
-- [ ] Mutation chờ invalidate/refetch tree, summary và history có liên quan sau thành công. Nếu mutation lỗi thì giữ draft và thông báo lỗi, tránh hiển thị điểm như đã lưu thành công.
-- [ ] Trang chính/sidebar dùng summary BE. Với mọi node, chỉ áp trần của chính node để hiển thị. Metadata badge/progress lấy từ BE. Trường hợp tải lỗi hoặc không có cấu hình hiển thị error/empty state theo response, tránh fallback sang bộ danh mục của học kỳ khác.
-- [ ] Thêm test sửa 8 thành 5 hiển thị 5 ngay sau refetch và vẫn 5 sau reload, thêm mới 5 vào 8 hiển thị 13 hoặc mức trần tương ứng, xóa đúng một trong nhiều manual, nhánh isMaxChild ngang điểm, đổi học kỳ trong lúc request chạy và summary/sidebar đồng nhất.
-- [ ] Chạy `npm run test -- src/features/training-points`, các test page/sidebar liên quan, `npm run typecheck` và `npm run build`. Commit task.
+- [x] Test leaf manual từ response là 13 luôn hiển thị theo response sau mutation/refetch. Gỡ studentScores/studentDescriptions làm nguồn dữ liệu đã lưu và gỡ override sau POST.
+- [x] Gỡ computeSectionCategoryScores khỏi đường render, phép SUM/MAX ở accordion, chọn nhánh thắng và phần xếp loại/tính pointsNeeded ở FE. Lưu helper áp trần node nếu còn dùng. Rà soát caller trước khi xóa helper cũ.
+- [x] Bảng và modal đọc totalPoint, systemPointRecord, manualPointRecord, isAtMaximum và metadata BE. Giao dịch chỉ phục vụ hiển thị lịch sử hoặc chọn ID để thao tác.
+- [x] Form thêm gọi POST. Form sửa mở với `transaction.points`, gọi PATCH đúng ID. Form xóa gọi DELETE đúng ID. Trường hợp nhiều manual hiển thị/chọn riêng từng ghi nhận, tránh chọn ngẫu nhiên một transaction để đại diện tổng.
+- [x] Mutation chờ invalidate/refetch tree, summary và history có liên quan sau thành công. Nếu mutation lỗi thì giữ draft và thông báo lỗi, tránh hiển thị điểm như đã lưu thành công.
+- [x] Trang chính/sidebar dùng summary BE. Với mọi node, chỉ áp trần của chính node để hiển thị. Metadata badge/progress lấy từ BE. Trường hợp tải lỗi hoặc không có cấu hình hiển thị error/empty state theo response, tránh fallback sang bộ danh mục của học kỳ khác.
+- [x] Thêm test sửa 8 thành 5 hiển thị 5 ngay sau refetch và vẫn 5 sau reload, thêm mới 5 vào 8 hiển thị 13 hoặc mức trần tương ứng, xóa đúng một trong nhiều manual, nhánh isMaxChild ngang điểm, đổi học kỳ trong lúc request chạy và summary/sidebar đồng nhất.
+- [x] Chạy `npm run test -- src/features/training-points`, các test page/sidebar liên quan, `npm run typecheck` và `npm run build`. Commit task.
 
 ## Task 7 — Đối soát dữ liệu cũ và triển khai
 
 **Files** — tạo `ddd-infrastructure/src/main/resources/database/migration/student-semester-points-reconcile.sql` hoặc runner nội bộ dùng calculator của task 1. Ưu tiên tái sử dụng calculator để chỉ duy trì một bộ quy tắc. Ghi hướng dẫn chạy trong tài liệu triển khai của chính thay đổi này.
 
-- [ ] Dry-run trên các cặp user/semester có transaction hoặc snapshot, báo số dòng đổi trước/sau và các giao dịch không hợp lệ. Báo riêng trường hợp snapshot có điểm nhưng thiếu transaction nguồn để quyết định dữ liệu trước khi repair.
-- [ ] Dữ liệu manual cũ được giữ theo từng ID. Các khoản trùng do hành vi lưu trước đây cần được người sở hữu dữ liệu xem xét qua báo cáo, tránh tự động gộp theo giá trị hoặc description.
-- [ ] Repair chỉ dựng lại snapshot từ dữ liệu nguồn đã chốt. Test chạy lại hai lần giữ nguyên kết quả và không tạo thêm transaction. Test rollback khi một cặp bị lỗi.
-- [ ] Kiểm tra các consumer khác đọc student_semester_points hoặc API totalPoint để cập nhật theo raw/effective mới, gồm recommendation/statistic nếu có caller. Dùng CodeGraph kiểm tra blast radius trước khi đổi semantics public.
+- [x] Dry-run trên các cặp user/semester có transaction hoặc snapshot, báo số dòng đổi trước/sau và các giao dịch không hợp lệ. Báo riêng trường hợp snapshot có điểm nhưng thiếu transaction nguồn để quyết định dữ liệu trước khi repair.
+- [x] Dữ liệu manual cũ được giữ theo từng ID. Các khoản trùng do hành vi lưu trước đây cần được người sở hữu dữ liệu xem xét qua báo cáo, tránh tự động gộp theo giá trị hoặc description.
+- [x] Repair chỉ dựng lại snapshot từ dữ liệu nguồn đã chốt. Test chạy lại hai lần giữ nguyên kết quả và không tạo thêm transaction. Test rollback khi một cặp bị lỗi.
+- [x] Kiểm tra các consumer khác đọc student_semester_points hoặc API totalPoint để cập nhật theo raw/effective mới, gồm recommendation/statistic nếu có caller. Dùng CodeGraph kiểm tra blast radius trước khi đổi semantics public.
 - [ ] Triển khai phối hợp BE và FE vì totalPoint của node có thể vượt maximum trong contract mới. Chạy repair trên môi trường đích sau khi xem báo cáo và duyệt phạm vi dữ liệu.
 - [ ] Smoke test thêm/sửa/xóa manual, chốt sự kiện, admin đổi trần và cây, reload, đổi học kỳ. Đối chiếu transaction, snapshot DB, response và điểm hiển thị.
-- [ ] Ghi rõ các rủi ro đồng thời còn lại trong kết quả bàn giao để xử lý ở giai đoạn race condition.
+- [x] Ghi rõ các rủi ro đồng thời còn lại trong kết quả bàn giao để xử lý ở giai đoạn race condition.
+
 
 ## Điều kiện hoàn thành
 
@@ -207,4 +208,4 @@ Các thao tác tuần tự thêm/sửa/xóa, chốt sự kiện và cập nhật
 
 Bộ registration cũ có baseline 9 failure và 4 error đã được kiểm chứng trước refactor. Các test riêng cho điểm và chốt phần thưởng đều pass. Test rollback dùng Spring transaction manager với mock JDBC connection. Chưa có integration toàn luồng với DB thật cho task 1–3.
 
-Task 4–7 gồm cập nhật cấu hình admin, contract đọc/summary, FE và đối soát dữ liệu vẫn chờ triển khai. Refactor race condition dành cho giai đoạn sau.
+Task 4–7 đã được triển khai và kiểm chứng ở local ngày 27/11/2026. Người dùng chốt chỉ hoàn tất local trước; triển khai và repair môi trường đích được để lại cho lần sau. Chi tiết code, kiểm thử, runner và giới hạn tại `docs/artifact/student-semester-point-tasks-4-7.md`. Refactor race condition dành cho giai đoạn sau.

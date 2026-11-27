@@ -31,6 +31,9 @@ import static org.mockito.Mockito.when;
 class PointCategoryServiceImplTest {
 
         @Mock
+    private com.ddd.application.service.semesterpoint.impl.PointConfigurationRefresh pointRefresh;
+
+    @Mock
         private PointCategoryRepository pointCategoryRepository;
 
         @Mock
@@ -236,4 +239,25 @@ class PointCategoryServiceImplTest {
                 verify(semesterRepository).findById(semesterId);
                 verify(pointCategoryRepository).findActiveEffectiveAsOf(endDate);
         }
+    @Test void updatingRootAllowsNullParentAndRefreshesAfterSave() {
+        var root=new PointCategory();root.setId(1L);root.setLevel(0);
+        var dto=new com.ddd.application.dto.pointcategory.PointCategoryUpdateDto("Root",null,0,LocalDate.now(),null,1,true,false);
+        when(pointCategoryRepository.findById(1L)).thenReturn(Optional.of(root));
+        when(pointCategoryRepository.save(root)).thenReturn(root);
+        pointCategoryService.updatePointCategory(1L,dto);
+        assertEquals(null,root.getParentCategoryId());assertEquals(0,root.getLevel());
+        var order=org.mockito.Mockito.inOrder(pointRefresh,pointCategoryRepository);
+        order.verify(pointRefresh).capture();order.verify(pointCategoryRepository).findById(1L);
+        order.verify(pointCategoryRepository).save(root);order.verify(pointCategoryRepository).findByParentId(1L);
+        order.verify(pointRefresh).refresh(any());
+    }
+    @Test void descendantCannotBecomeParentAndNothingIsSaved() {
+        var root=new PointCategory();root.setId(1L);
+        var child=new PointCategory();child.setId(2L);child.setParentCategoryId(1L);
+        when(pointCategoryRepository.findById(1L)).thenReturn(Optional.of(root));
+        when(pointCategoryRepository.findById(2L)).thenReturn(Optional.of(child));
+        var dto=new com.ddd.application.dto.pointcategory.PointCategoryUpdateDto("Root",null,10,LocalDate.now(),2L,1,true,false);
+        assertThrows(IllegalArgumentException.class,()->pointCategoryService.updatePointCategory(1L,dto));
+        verify(pointCategoryRepository,never()).save(any());verify(pointRefresh,never()).refresh(any());
+    }
 }

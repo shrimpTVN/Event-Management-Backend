@@ -24,7 +24,21 @@ public class SemesterPointCategoryPolicy {
                 .orElseThrow(() -> new ResourceNotFoundException("Semester not found: " + semesterId));
         LocalDate date = semester.getEndDate() != null ? semester.getEndDate()
                 : semester.getStartDate() != null ? semester.getStartDate() : LocalDate.now();
-        return categories.findActiveEffectiveAsOf(date);
+        List<PointCategory> effective = categories.findActiveEffectiveAsOf(date);
+        var byId = effective.stream().filter(PointCategory::isActive)
+                .collect(Collectors.toMap(PointCategory::getId, c -> c));
+        java.util.Set<Long> reachable = new java.util.HashSet<>();
+        for (var category : byId.values()) {
+            java.util.Set<Long> visited = new java.util.HashSet<>();
+            PointCategory current = category;
+            while (current != null) {
+                if (!visited.add(current.getId())) throw new BusinessException("Cycle in effective point categories");
+                Long parent = current.getParentCategoryId();
+                if (parent == null || parent == 0L) { reachable.addAll(visited); break; }
+                current = byId.get(parent);
+            }
+        }
+        return effective.stream().filter(c -> reachable.contains(c.getId())).toList();
     }
 
     public void requireLeaves(Long semesterId, Collection<Long> categoryIds) {

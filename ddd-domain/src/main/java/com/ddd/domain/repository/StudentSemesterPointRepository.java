@@ -14,6 +14,8 @@ public interface StudentSemesterPointRepository {
 
     List<StudentSemesterPoint> findAllIn(List<Long> studentUserIds, Long semesterId, List<Long> pointCategoryIds);
 
+    List<com.ddd.domain.model.StudentSemesterPointScope> findAllScopes();
+
     void saveAll(List<StudentSemesterPoint> studentSemesterPoints);
 
     void save(StudentSemesterPoint studentSemesterPoint);

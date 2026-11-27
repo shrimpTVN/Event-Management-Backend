@@ -29,6 +29,9 @@ import static org.mockito.Mockito.when;
 class SemesterServiceImplTest {
 
     @Mock
+    private com.ddd.application.service.semesterpoint.impl.PointConfigurationRefresh pointRefresh;
+
+    @Mock
     private SemesterRepository semesterRepository;
 
     @Mock
@@ -43,7 +46,7 @@ class SemesterServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new SemesterServiceImpl(semesterRepository, academicYearRepository, academicYearService, semesterDtoMapper);
+        service = new SemesterServiceImpl(semesterRepository, academicYearRepository, academicYearService, semesterDtoMapper, pointRefresh);
     }
 
     private AcademicYear activeYear() {

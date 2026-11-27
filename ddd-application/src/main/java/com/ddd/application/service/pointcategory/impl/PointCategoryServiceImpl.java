@@ -31,9 +31,11 @@ public class PointCategoryServiceImpl implements PointCategoryService {
     private final PointCategoryRepository pointCategoryRepository;
     private final SemesterRepository semesterRepository;
     private final PointCategoryDtoMapper pointCategoryDtoMapper;
+    private final com.ddd.application.service.semesterpoint.impl.PointConfigurationRefresh pointRefresh;
 
     @Override
     public PointCategoryInfoDto createPointCategory(PointCategoryCreateDto pointCategoryCreateDto) {
+        var before = pointRefresh.capture();
         PointCategory pointCategory = pointCategoryDtoMapper.toEntity(pointCategoryCreateDto);
         if (pointCategory.getIsMaxChild() == null) {
             pointCategory.setIsMaxChild(false);
@@ -46,7 +48,9 @@ public class PointCategoryServiceImpl implements PointCategoryService {
                     .orElseThrow(() -> new ResourceNotFoundException("Parent category not found"));
             pointCategory.setLevel(parentCategory.getLevel() + 1);
         }
-        return pointCategoryDtoMapper.toInfoDto(pointCategoryRepository.save(pointCategory));
+        var saved = pointCategoryRepository.save(pointCategory);
+        pointRefresh.refresh(before);
+        return pointCategoryDtoMapper.toInfoDto(saved);
     }
 
     @Transactional(readOnly = true)
@@ -123,10 +127,19 @@ public class PointCategoryServiceImpl implements PointCategoryService {
 
     @Override
     public PointCategoryInfoDto updatePointCategory(Long id, PointCategoryUpdateDto pointCategoryUpdateDto) {
+        var before = pointRefresh.capture();
         PointCategory existingCategory = pointCategoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Point category not found with id: " + id));
 
+        java.util.Set<Long> ancestors = new java.util.HashSet<>();
+        Long ancestor = pointCategoryUpdateDto.parentCategoryId();
+        while (ancestor != null && ancestor != 0L) {
+            if (ancestor.equals(id) || !ancestors.add(ancestor)) throw new IllegalArgumentException("Cycle in point categories");
+            ancestor = pointCategoryRepository.findById(ancestor)
+                    .orElseThrow(() -> new ResourceNotFoundException("Parent category not found")).getParentCategoryId();
+        }
         pointCategoryDtoMapper.updateEntityFromDto(pointCategoryUpdateDto, existingCategory);
+        existingCategory.setParentCategoryId(pointCategoryUpdateDto.parentCategoryId());
 
         if (pointCategoryUpdateDto.parentCategoryId() == null) {
             existingCategory.setLevel(0);
@@ -141,12 +154,26 @@ public class PointCategoryServiceImpl implements PointCategoryService {
             existingCategory.setLevel(parentCategory.getLevel() + 1);
         }
 
-        return pointCategoryDtoMapper.toInfoDto(pointCategoryRepository.save(existingCategory));
+        var saved = pointCategoryRepository.save(existingCategory);
+        updateDescendantLevels(saved, new java.util.HashSet<>());
+        pointRefresh.refresh(before);
+        return pointCategoryDtoMapper.toInfoDto(saved);
+    }
+
+    private void updateDescendantLevels(PointCategory parent, java.util.Set<Long> visited) {
+        if (!visited.add(parent.getId())) throw new IllegalArgumentException("Cycle in point categories");
+        for (var child : pointCategoryRepository.findByParentId(parent.getId())) {
+            child.setLevel(parent.getLevel() + 1);
+            pointCategoryRepository.save(child);
+            updateDescendantLevels(child, visited);
+        }
     }
 
     @Override
     public void deletePointCategory(Long id) {
+        var before = pointRefresh.capture();
         pointCategoryRepository.delete(id);
+        pointRefresh.refresh(before);
     }
 
     @Override

@@ -20,6 +20,10 @@ public record StudentSemesterPointGroupedTreeResponseDto(
         Integer systemPointRecord,
         Integer manualPointRecord,
         Instant finalizedAt,
+        boolean isAtMaximum,
+        int completionPercentage,
+        Long selectedChildId,
+        boolean contributesToParent,
         List<StudentSemesterPointFlattenedItemResponseDto> items
 ) {
 }

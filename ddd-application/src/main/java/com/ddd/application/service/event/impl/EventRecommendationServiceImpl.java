@@ -432,7 +432,7 @@ public class EventRecommendationServiceImpl implements EventRecommendationServic
                 studentSemesterPointJpaRepository.findByUserIdAndSemesterId(userId, activeSemester.getId());
         for (StudentSemesterPointJpaEntity p : pointsList) {
             if (p.getPointCategory() != null && p.getTotalPoint() != null) {
-                pointsMap.put(p.getPointCategory().getId(), p.getTotalPoint());
+                pointsMap.put(p.getPointCategory().getId(), Math.min(p.getPointCategory().getMaximum(), p.getTotalPoint()));
             }
         }
         return pointsMap;
