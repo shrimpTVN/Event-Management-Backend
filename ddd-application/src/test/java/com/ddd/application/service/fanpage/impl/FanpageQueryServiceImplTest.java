@@ -247,4 +247,75 @@ class FanpageQueryServiceImplTest {
         assertEquals(0, result.getTotalElements());
         verify(fanpageJpaRepository).findAll(any(Specification.class), any(Pageable.class));
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void searchAndFilterFanpagesForAdmin_returnsRejectionReasonAndPrefersCreatorRepresentative() {
+        FanpageJpaEntity fp = new FanpageJpaEntity();
+        fp.setId(10L);
+        fp.setName("CLB Sáng tạo");
+        fp.setCreatedBy(500L);
+        fp.setStatus("REJECTED");
+        fp.setRejectionReason("Thiếu giấy xác nhận");
+
+        when(fanpageJpaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(fp)));
+        when(fanpageDtoMapper.toInfoDto(fp)).thenReturn(new FanpageInfoDto(
+                10L, "CLB Sáng tạo", null, null, null, null, null, null, null, null, null,
+                "REJECTED", false, null, null, null, null, null, null, null, "Thiếu giấy xác nhận"
+        ));
+        when(followingJpaRepository.countFollowersByFanpageIds(List.of(10L), FollowingStatusEnum.FOLLOWING))
+                .thenReturn(List.of());
+        when(eventJpaRepository.countActiveEventsByFanpageIds(List.of(10L)))
+                .thenReturn(List.of());
+
+        UserJpaEntity otherAdminUser = new UserJpaEntity();
+        otherAdminUser.setId(100L);
+        otherAdminUser.setFirstName("Other");
+        otherAdminUser.setLastName("Admin");
+        otherAdminUser.setEmail("other@ctu.edu.vn");
+        FanpageMemberJpaEntity otherMember = new FanpageMemberJpaEntity();
+        otherMember.setId(new FanpageMemberJpaEntityId(10L, 100L));
+        otherMember.setUser(otherAdminUser);
+
+        UserJpaEntity creatorUser = new UserJpaEntity();
+        creatorUser.setId(500L);
+        creatorUser.setFirstName("Creator");
+        creatorUser.setLastName("Owner");
+        creatorUser.setEmail("creator@ctu.edu.vn");
+        FanpageMemberJpaEntity creatorMember = new FanpageMemberJpaEntity();
+        creatorMember.setId(new FanpageMemberJpaEntityId(10L, 500L));
+        creatorMember.setUser(creatorUser);
+
+        when(fanpageMemberJpaRepository.findActiveMembersByFanpageIdsAndRole(List.of(10L), FanpageRoleEnum.ADMIN.name()))
+                .thenReturn(List.of(otherMember, creatorMember));
+
+        Page<FanpageInfoDto> result = fanpageQueryService.searchAndFilterFanpagesForAdmin(
+                new FanpageSearchCriteriaDto(null, null, null, null, 0, 20, "createdAt", "desc")
+        );
+
+        FanpageInfoDto dto = result.getContent().get(0);
+        assertEquals("Thiếu giấy xác nhận", dto.rejectionReason());
+        assertEquals(500L, dto.representativeUserId());
+        assertEquals("Creator Owner", dto.representativeName());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void searchAndFilterFanpages_redactsRejectionReasonForPublicListing() {
+        FanpageJpaEntity fp = new FanpageJpaEntity();
+        fp.setId(12L);
+        when(fanpageJpaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(fp)));
+        when(fanpageDtoMapper.toInfoDto(fp)).thenReturn(new FanpageInfoDto(
+                12L, "CLB", null, null, null, null, null, null, null, null, null,
+                "ACTIVE", true, null, null, null, null, null, null, null, "Internal reason"
+        ));
+
+        Page<FanpageInfoDto> result = fanpageQueryService.searchAndFilterFanpages(
+                new FanpageSearchCriteriaDto(null, "ACTIVE", null, true, 0, 20, "createdAt", "desc")
+        );
+
+        assertNull(result.getContent().get(0).rejectionReason());
+    }
 }

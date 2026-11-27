@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +87,9 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
                 criteria.orgType(),
                 criteria.isActive()
         );
-        return fanpageJpaRepository.findAll(spec, pageable).map(fanpageDtoMapper::toInfoDto);
+        return fanpageJpaRepository.findAll(spec, pageable)
+                .map(fanpageDtoMapper::toInfoDto)
+                .map(FanpageQueryServiceImpl::redactRejectionReason);
     }
 
     @Override
@@ -107,6 +110,12 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
         List<Long> fanpageIds = page.getContent().stream()
                 .map(FanpageJpaEntity::getId)
                 .toList();
+        Map<Long, Long> creatorByFanpageId = new HashMap<>();
+        for (FanpageJpaEntity entity : page.getContent()) {
+            if (entity.getId() != null && entity.getCreatedBy() != null) {
+                creatorByFanpageId.put(entity.getId(), entity.getCreatedBy());
+            }
+        }
 
         Map<Long, Long> followerCounts = toCountsMap(
                 followingJpaRepository.countFollowersByFanpageIds(fanpageIds, FollowingStatusEnum.FOLLOWING));
@@ -118,7 +127,11 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
                 .collect(Collectors.toMap(
                         member -> member.getId().getFanpageId(),
                         member -> member,
-                        (existing, replacement) -> existing
+                        (existing, candidate) -> selectPreferredRepresentative(
+                                existing,
+                                candidate,
+                                creatorByFanpageId.get(existing.getId().getFanpageId())
+                        )
                 ));
 
         return page.map(entity -> enrichAdminFanpageInfo(
@@ -127,6 +140,53 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
                 eventCounts.getOrDefault(entity.getId(), 0L),
                 adminByFanpageId.get(entity.getId())
         ));
+    }
+
+    private static FanpageMemberJpaEntity selectPreferredRepresentative(
+            FanpageMemberJpaEntity current,
+            FanpageMemberJpaEntity candidate,
+            Long creatorUserId
+    ) {
+        Long currentUserId = current.getId() != null ? current.getId().getUserId() : null;
+        Long candidateUserId = candidate.getId() != null ? candidate.getId().getUserId() : null;
+        boolean currentIsCreator = creatorUserId != null && creatorUserId.equals(currentUserId);
+        boolean candidateIsCreator = creatorUserId != null && creatorUserId.equals(candidateUserId);
+        if (currentIsCreator != candidateIsCreator) {
+            return candidateIsCreator ? candidate : current;
+        }
+        return Comparator.<Long, Long>comparing(
+                        id -> id,
+                        Comparator.nullsLast(Long::compareTo))
+                .compare(currentUserId, candidateUserId) <= 0 ? current : candidate;
+    }
+
+    private static FanpageInfoDto redactRejectionReason(FanpageInfoDto dto) {
+        if (dto == null || dto.rejectionReason() == null) {
+            return dto;
+        }
+        return new FanpageInfoDto(
+                dto.id(),
+                dto.name(),
+                dto.description(),
+                dto.avatarUrl(),
+                dto.orgType(),
+                dto.orgName(),
+                dto.parentOrg(),
+                dto.evidenceUrl(),
+                dto.helpContact(),
+                dto.helpPhone(),
+                dto.createdAt(),
+                dto.status(),
+                dto.isActive(),
+                dto.followerCount(),
+                dto.eventsCount(),
+                dto.representativeUserId(),
+                dto.representativeName(),
+                dto.representativeEmail(),
+                dto.representativeCode(),
+                dto.representativePhone(),
+                null
+        );
     }
 
     private static Map<Long, Long> toCountsMap(List<Object[]> rows) {
@@ -191,7 +251,8 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
                 repName,
                 repEmail,
                 repCode,
-                repPhone
+                repPhone,
+                base.rejectionReason()
         );
     }
 
@@ -213,7 +274,7 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
             throw new ResourceNotFoundException("Fanpage not found with id: " + fanpageId);
         }
 
-        return fanpageDtoMapper.toInfoDto(fanpage);
+        return redactRejectionReason(fanpageDtoMapper.toInfoDto(fanpage));
     }
 
     @Override
@@ -274,7 +335,8 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
                 pageable
         );
 
-        return fanpages.map(fanpageDtoMapper::toInfoDto);
+        return fanpages.map(fanpageDtoMapper::toInfoDto)
+                .map(FanpageQueryServiceImpl::redactRejectionReason);
     }
 
     @Override

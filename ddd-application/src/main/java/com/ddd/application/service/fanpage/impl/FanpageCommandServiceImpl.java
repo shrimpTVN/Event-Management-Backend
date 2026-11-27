@@ -71,7 +71,7 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
     @Override
     public void acceptFanpage(Long fanpageId) {
         Fanpage fanpage = fanpageRepository.findById(fanpageId).orElseThrow(() -> new ResourceNotFoundException("Fanpage not found"));
-        fanpage.setStatus(FanpageStatusEnum.ACTIVE.name());
+        fanpage.approve();
         fanpageRepository.save(fanpage);
         log.info("Fanpage accepted successfully: {}", fanpage.getName());
         applicationEventPublisher.publishEvent(new FanpageApprovedEvent(
@@ -162,7 +162,7 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
     @Override
     public void unbanFanpage(Long fanpageId) {
         Fanpage fanpage = fanpageRepository.findById(fanpageId).orElseThrow(() -> new ResourceNotFoundException("Fanpage not found"));
-        fanpage.setStatus(FanpageStatusEnum.ACTIVE.name());
+        fanpage.unban();
         fanpageRepository.save(fanpage);
         log.info("Fanpage unbanned successfully: {}", fanpage.getName());
     }

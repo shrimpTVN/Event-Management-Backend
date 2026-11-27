@@ -22,7 +22,8 @@ public record FanpageResponseDto(
         String representativeName,
         String representativeEmail,
         String representativeCode,
-        String representativePhone
+        String representativePhone,
+        String rejectionReason
 ) {
     public FanpageResponseDto(
             Long id,
@@ -41,6 +42,6 @@ public record FanpageResponseDto(
     ) {
         this(id, name, description, avatarUrl, orgType, orgName, parentOrg, evidenceUrl,
                 helpContact, helpPhone, createdAt, status, isActive,
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
     }
 }

@@ -22,7 +22,8 @@ public record FanpageInfoDto(
         String representativeName,
         String representativeEmail,
         String representativeCode,
-        String representativePhone
+        String representativePhone,
+        String rejectionReason
 ) {
     public FanpageInfoDto(
             Long id,
@@ -41,6 +42,6 @@ public record FanpageInfoDto(
     ) {
         this(id, name, description, avatarUrl, orgType, orgName, parentOrg, evidenceUrl,
                 helpContact, helpPhone, createdAt, status, isActive,
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
     }
 }

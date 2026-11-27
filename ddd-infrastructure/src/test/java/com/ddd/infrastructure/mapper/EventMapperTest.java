@@ -4,7 +4,9 @@ import com.ddd.domain.model.Event;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EventMapperTest {
@@ -36,5 +38,23 @@ class EventMapperTest {
         mapper.updateJpaEntity(event, entity);
         assertFalse(entity.isGenderConstraint());
         assertFalse(mapper.toDomainModel(entity).isGenderConstraint());
+    }
+
+    @Test
+    void restorationClearsViolationReasonToNullWhenUpdatingEntity() {
+        EventMapper mapper = Mappers.getMapper(EventMapper.class);
+        Event event = new Event();
+        event.setActive(false);
+        event.setViolationReason("Spam content");
+        var entity = mapper.toJpaEntity(event);
+        assertEquals("Spam content", entity.getViolationReason());
+
+        event.setActive(true);
+        event.setViolationReason(null);
+        mapper.updateJpaEntity(event, entity);
+
+        assertTrue(entity.getIsActive());
+        assertNull(entity.getViolationReason());
+        assertNull(mapper.toDomainModel(entity).getViolationReason());
     }
 }

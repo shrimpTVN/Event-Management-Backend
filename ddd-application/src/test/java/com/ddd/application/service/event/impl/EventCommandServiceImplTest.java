@@ -328,6 +328,16 @@ class EventCommandServiceImplTest {
                 () -> eventCommandService.updateEventVisibilityByAdmin(55L, true, "Spam"));
         verify(eventRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("Should throw BusinessException when admin hides event with blank reason")
+    void updateEventVisibilityByAdmin_shouldThrowBusinessException_whenHideReasonBlank() {
+        when(securityContextPort.hasRole("ADMIN")).thenReturn(true);
+
+        assertThrows(BusinessException.class,
+                () -> eventCommandService.updateEventVisibilityByAdmin(55L, true, "   "));
+        verify(eventRepository, never()).save(any());
+    }
     @Test
     void createEventRejectsInvalidAwardCategoryBeforePersistingEvent() {
         when(fanpageRepository.findById(10L)).thenReturn(Optional.of(testFanpage));

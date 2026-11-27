@@ -1,5 +1,6 @@
 package com.ddd.domain.model;
 
+import com.ddd.domain.exception.BusinessException;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -39,9 +40,24 @@ public class Fanpage extends BaseModel {
     }
 
     public void reject(String reason) {
+        if (reason == null || reason.trim().isEmpty()) {
+            throw BusinessException.withField("reason", "Rejection reason is required");
+        }
         this.status = "REJECTED";
-        this.rejectionReason = reason;
+        this.rejectionReason = reason.trim();
         this.setActive(false);
+    }
+
+    public void approve() {
+        this.status = "ACTIVE";
+        this.rejectionReason = null;
+        this.setActive(true);
+    }
+
+    public void unban() {
+        this.status = "ACTIVE";
+        this.rejectionReason = null;
+        this.setActive(true);
     }
 
     public void deactivate() {

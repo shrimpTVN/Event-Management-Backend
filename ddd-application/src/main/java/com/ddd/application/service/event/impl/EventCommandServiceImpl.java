@@ -171,9 +171,16 @@ public class EventCommandServiceImpl implements EventCommandService {
         if (!securityContextPort.hasRole("ADMIN")) {
             throw new UnauthorizedException("Only Super Admin can change event visibility");
         }
+        String normalizedReason = null;
+        if (hidden) {
+            if (reason == null || reason.trim().isEmpty()) {
+                throw BusinessException.withField("reason", "Hide reason is required");
+            }
+            normalizedReason = reason.trim();
+        }
         Event event = eventRepository.findByIdForUpdate(id);
         event.setActive(!hidden);
-        event.setViolationReason(hidden ? reason : null);
+        event.setViolationReason(hidden ? normalizedReason : null);
         eventRepository.save(event);
         log.info("Admin updated visibility for event id: {}", id);
     }

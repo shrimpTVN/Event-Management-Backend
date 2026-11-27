@@ -1,6 +1,6 @@
 # Kế hoạch hoàn thiện chức năng Super Admin giữa FE và BE
 
-Ngày lập: 27/11/2026. Trạng thái: **kế hoạch, chưa triển khai mã chức năng**.
+Ngày lập: 27/11/2026. Cập nhật: 27/11/2026 — **Đã triển khai và kiểm chứng mức unit test/build cho Task 1–6** (không dùng facets/tab counts, giữ lọc server-side + phân trang; `rejectionReason` Option A; ẩn/khôi phục sự kiện qua `PATCH /events/admin/{id}/visibility`; TopNav global search & notification dropdown; dọn mã học kỳ/prop thừa). Còn kiểm tra thủ công E2E với dữ liệu thật ở Task 7.
 
 ## 1. Mục tiêu và phạm vi
 

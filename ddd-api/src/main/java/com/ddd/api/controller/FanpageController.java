@@ -137,9 +137,8 @@ public class FanpageController {
 
     @PostMapping("/admin/reject-fanpage/{fanpageId}")
     public BaseResponse<?> rejectFanpage(@PathVariable Long fanpageId,
-                                         @RequestBody(required = false) RejectFanpageRequestDto request) {
-        String reason = request != null ? request.reason() : null;
-        fanpageCommandService.rejectFanpage(fanpageId, reason);
+                                         @Valid @RequestBody RejectFanpageRequestDto request) {
+        fanpageCommandService.rejectFanpage(fanpageId, request.reason());
         return BaseResponse.ok();
     }
 

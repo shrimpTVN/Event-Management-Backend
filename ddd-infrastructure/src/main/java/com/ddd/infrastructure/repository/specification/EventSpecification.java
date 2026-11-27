@@ -147,13 +147,7 @@ public final class EventSpecification {
                             cb.equal(root.get("isActive"), true),
                             cb.equal(root.get("status"), EventStatusEnum.CANCELLED)
                     ));
-                    case "VIOLATED", "HIDDEN" -> predicates.add(cb.or(
-                            cb.equal(root.get("isActive"), false),
-                            cb.and(
-                                    cb.isNotNull(root.get("violationReason")),
-                                    cb.notEqual(cb.trim(root.get("violationReason")), "")
-                            )
-                    ));
+                    case "VIOLATED", "HIDDEN" -> predicates.add(cb.equal(root.get("isActive"), false));
                     default -> { }
                 }
             } else if (statuses != null && !statuses.isEmpty()) {
