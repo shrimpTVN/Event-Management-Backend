@@ -60,7 +60,7 @@ Nguồn: `StudentSemesterPointQueryServiceImpl.java`, `StudentSemesterPointContr
 
 ## 5. FE hiển thị và thao tác
 
-Trang điểm và sidebar gọi cùng tree/summary API với query key chứa **user và semester**. FE hiển thị điểm của từng node bằng duy nhất `Math.min(maximum, totalPoint)`. Bảng lấy hai cột nguồn điểm từ `systemPointRecord` và `manualPointRecord`; badge đủ trần lấy `isAtMaximum`, thanh tiến độ lấy `completionPercentage`, dấu nhánh MAX không được cộng lấy `contributesToParent`. Modal chi tiết dùng cùng dữ liệu node và lịch sử transaction để trình bày, không tính lại tổng từ lịch sử.
+Trang điểm và sidebar gọi cùng tree/summary API với query key chứa **user và semester**. Cột điểm thực tế của mọi node hiển thị `Math.min(maximum, totalPoint)`. Hai cột nguồn điểm lấy từ `systemPointRecord` và `manualPointRecord`: **node lá hiện nguyên giá trị BE kể cả vượt trần; node cha và dòng tổng mục hiện `min(maximum, điểm nguồn)` riêng cho từng cột**. Đây là quy tắc trình bày, không đổi dữ liệu BE hay phép tính `totalPoint`. Hai cột nguồn ở cha có thể cộng lại lớn hơn điểm thực tế vì chúng được áp trần riêng và vì BE đã áp trần ở các cấp con. Badge đủ trần lấy `isAtMaximum`, thanh tiến độ lấy `completionPercentage`, dấu nhánh MAX không được cộng lấy `contributesToParent`. Modal chi tiết dùng cùng dữ liệu node và lịch sử transaction để trình bày, không tính lại tổng từ lịch sử.
 
 Điểm học kỳ, nhãn xếp loại, số điểm cần lên hạng và số hoạt động lấy từ **summary BE**. FE chỉ áp trần của summary để hiển thị con số (`min(summary.maximum, summary.totalPoint)`). FE không cộng các node, không chọn lại con thắng MAX và không tự tính xếp loại. Nếu lỗi tải tree/summary, màn hình báo lỗi; nếu chưa có học kỳ cấu hình, không fallback sang học kỳ ID khác.
 
