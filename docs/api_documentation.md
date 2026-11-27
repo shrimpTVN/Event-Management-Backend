@@ -1496,6 +1496,7 @@ export interface PageResponse<T> {
 
 #### 2.11.1 Schools (`SchoolController` - `/schools`)
 - `GET /schools?isActive={boolean}`: List all schools.
+- `GET /schools/with-majors`: List all schools along with their nested majors (`List<SchoolDetailResponseDto>`), used by the Super Admin Schools & Majors management view.
 - `GET /schools/{id}`: Detailed school profile including list of linked majors (`SchoolDetailResponseDto`).
 - `POST /schools/admin`: Create school (`CreateSchoolRequestDto`: `{ "name": "...", "code": "..." }`).
 - `PUT /schools/admin/{id}`: Update school (`UpdateSchoolRequestDto`).

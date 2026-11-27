@@ -82,6 +82,7 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
         Specification<FanpageJpaEntity> spec = FanpageSpecification.withFilter(
                 criteria.keyword(),
                 criteria.status(),
+                criteria.statuses(),
                 criteria.orgType(),
                 criteria.isActive()
         );
@@ -94,6 +95,7 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
         Specification<FanpageJpaEntity> spec = FanpageSpecification.withFilter(
                 criteria.keyword(),
                 criteria.status(),
+                criteria.statuses(),
                 criteria.orgType(),
                 criteria.isActive()
         );

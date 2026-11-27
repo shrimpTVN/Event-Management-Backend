@@ -233,4 +233,18 @@ class FanpageQueryServiceImplTest {
         assertEquals(1, result.size());
         assertEquals(11L, result.get(0).fanpageId());
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void searchAndFilterFanpagesForAdmin_supportsMultiStatusListWithoutDefaultingAllToActive() {
+        when(fanpageJpaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        Page<FanpageInfoDto> result = fanpageQueryService.searchAndFilterFanpagesForAdmin(
+                new FanpageSearchCriteriaDto("ai", null, List.of("BANNED", "REJECTED"), null, null, 0, 20, "createdAt", "desc")
+        );
+
+        assertEquals(0, result.getTotalElements());
+        verify(fanpageJpaRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
 }

@@ -82,7 +82,7 @@ class AdminUserControllerTest {
         when(adminUserQueryService.getAllUsers(true, 0, 10, "createdAt", "desc")).thenReturn(page);
         when(userInfoApiMapper.toUserInfoResponseDto(summary)).thenReturn(res);
 
-        BaseResponse<Page<UserInfoResponseDto>> response = userController.getAllUsers(true, 0, 10, "createdAt", "desc");
+        BaseResponse<Page<UserInfoResponseDto>> response = userController.getAllUsers(true, null, null, 0, 10, "createdAt", "desc");
 
         assertNotNull(response);
         assertNotNull(response.data());
@@ -167,5 +167,19 @@ class AdminUserControllerTest {
         assertEquals(1, response.data().size());
         assertEquals(7L, response.data().get(0).fanpageId());
         assertEquals("ADMIN", response.data().get(0).role());
+    }
+
+    @Test
+    @DisplayName("getAllUsers should forward nullable isActive, role, and keyword filters")
+    void getAllUsers_withRoleAndKeyword_shouldDelegateToService() {
+        when(adminUserQueryService.getAllUsers(null, "FANPAGE_ADMIN", "ngoc", 0, 20, "createdAt", "desc"))
+                .thenReturn(Page.empty());
+
+        BaseResponse<Page<UserInfoResponseDto>> response = userController.getAllUsers(
+                null, "FANPAGE_ADMIN", "ngoc", 0, 20, "createdAt", "desc"
+        );
+
+        assertNotNull(response.data());
+        verify(adminUserQueryService).getAllUsers(null, "FANPAGE_ADMIN", "ngoc", 0, 20, "createdAt", "desc");
     }
 }

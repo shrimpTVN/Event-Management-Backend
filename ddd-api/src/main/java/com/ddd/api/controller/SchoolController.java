@@ -34,6 +34,14 @@ public class SchoolController {
         return BaseResponse.of(response);
     }
 
+    @GetMapping("/with-majors")
+    public BaseResponse<List<SchoolDetailResponseDto>> getSchoolsWithMajors() {
+        List<SchoolDetailResponseDto> response = schoolService.findAllWithMajors().stream()
+                .map(schoolApiMapper::toSchoolDetailResponseDto)
+                .toList();
+        return BaseResponse.of(response);
+    }
+
     @GetMapping("/{id}")
     public BaseResponse<SchoolDetailResponseDto> getSchoolById(@PathVariable Long id) {
         SchoolDetailDto schoolDetail = schoolService.findById(id);

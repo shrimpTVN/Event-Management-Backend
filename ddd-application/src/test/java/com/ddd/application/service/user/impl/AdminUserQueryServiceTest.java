@@ -138,4 +138,24 @@ class AdminUserQueryServiceTest {
 
         assertThrows(ResourceNotFoundException.class, () -> adminUserQueryService.getStaffProfileByUserId(99L));
     }
+
+    @Test
+    @DisplayName("getAllUsers with role/keyword or null isActive should query via Specification findAdminUsers")
+    void getAllUsers_withRoleAndKeyword_shouldUseSpecificationQuery() {
+        UserJpaEntity user = new UserJpaEntity();
+        user.setId(21L);
+        user.setEmail("sv@student.ctu.edu.vn");
+        user.setIsActive(true);
+        Page<UserJpaEntity> page = new PageImpl<>(List.of(user));
+
+        when(userJpaRepository.findAdminUsers(any(), any(Pageable.class))).thenReturn(page);
+        when(userJpaRepository.findUsersWithRolesByIdIn(List.of(21L))).thenReturn(List.of(user));
+
+        Page<UserInfoDto> result = adminUserQueryService.getAllUsers(null, "STUDENT", "B23", 0, 20, "createdAt", "desc");
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals(21L, result.getContent().get(0).userId());
+        verify(userJpaRepository).findAdminUsers(any(), any(Pageable.class));
+        verify(userJpaRepository, never()).findAllAdminUsersByIsActive(anyBoolean(), any(Pageable.class));
+    }
 }

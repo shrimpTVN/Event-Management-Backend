@@ -126,12 +126,16 @@ public class UserController {
     }
 
     @GetMapping("/admin")
-    public BaseResponse<Page<UserInfoResponseDto>> getAllUsers(@RequestParam(defaultValue = "true") boolean isActive,
-                                                                @RequestParam(defaultValue = "0") int page,
-                                                                @RequestParam(defaultValue = "10") int size,
-                                                                @RequestParam(defaultValue = "createdAt") String sortBy,
-                                                                @RequestParam(defaultValue = "desc") String sortDir) {
-        Page<UserInfoDto> pageUsers = adminUserQueryService.getAllUsers(isActive, page, size, sortBy, sortDir);
+    public BaseResponse<Page<UserInfoResponseDto>> getAllUsers(@RequestParam(required = false) Boolean isActive,
+                                                               @RequestParam(required = false) String role,
+                                                               @RequestParam(required = false) String keyword,
+                                                               @RequestParam(defaultValue = "0") int page,
+                                                               @RequestParam(defaultValue = "10") int size,
+                                                               @RequestParam(defaultValue = "createdAt") String sortBy,
+                                                               @RequestParam(defaultValue = "desc") String sortDir) {
+        Page<UserInfoDto> pageUsers = (role == null || role.isBlank()) && (keyword == null || keyword.isBlank()) && isActive != null
+                ? adminUserQueryService.getAllUsers(isActive, page, size, sortBy, sortDir)
+                : adminUserQueryService.getAllUsers(isActive, role, keyword, page, size, sortBy, sortDir);
         return BaseResponse.of(pageUsers.map(userInfoApiMapper::toUserInfoResponseDto));
     }
 

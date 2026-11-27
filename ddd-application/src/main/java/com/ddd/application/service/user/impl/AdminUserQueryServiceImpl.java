@@ -9,6 +9,7 @@ import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.infrastructure.entity.RoleJpaEntity;
 import com.ddd.infrastructure.entity.UserJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.UserJpaRepository;
+import com.ddd.infrastructure.repository.specification.UserSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +31,19 @@ public class AdminUserQueryServiceImpl implements AdminUserQueryService {
 
     @Override
     public Page<UserInfoDto> getAllUsers(boolean isActive, int page, int size, String sortBy, String sortDir) {
+        return getAllUsers(Boolean.valueOf(isActive), null, null, page, size, sortBy, sortDir);
+    }
+
+    @Override
+    public Page<UserInfoDto> getAllUsers(
+            Boolean isActive,
+            String role,
+            String keyword,
+            int page,
+            int size,
+            String sortBy,
+            String sortDir
+    ) {
         Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
         Sort sort = pageable.getSort();
         if (sort.getOrderFor("id") == null) {
@@ -37,7 +51,13 @@ public class AdminUserQueryServiceImpl implements AdminUserQueryService {
             pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort.and(Sort.by(direction, "id")));
         }
 
-        Page<UserJpaEntity> userPage = userJpaRepository.findAllAdminUsersByIsActive(isActive, pageable);
+        boolean hasExtraFilters = (role != null && !role.isBlank())
+                || (keyword != null && !keyword.isBlank())
+                || isActive == null;
+
+        Page<UserJpaEntity> userPage = hasExtraFilters
+                ? userJpaRepository.findAdminUsers(UserSpecification.adminUsersWithFilter(isActive, role, keyword), pageable)
+                : userJpaRepository.findAllAdminUsersByIsActive(isActive, pageable);
         if (userPage.isEmpty()) {
             return Page.empty(pageable);
         }

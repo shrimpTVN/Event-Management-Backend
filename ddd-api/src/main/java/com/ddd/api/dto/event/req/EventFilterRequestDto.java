@@ -9,6 +9,7 @@ public record EventFilterRequestDto(
         String keyword,
         String status,
         List<EventStatusEnum> statuses,
+        String adminTab,
         List<Long> eventTypeIds,
         Long semesterId,
         Long schoolId,
@@ -38,6 +39,27 @@ public record EventFilterRequestDto(
         }
     }
 
+    public EventFilterRequestDto(
+            String keyword,
+            String status,
+            List<EventStatusEnum> statuses,
+            List<Long> eventTypeIds,
+            Long semesterId,
+            Long schoolId,
+            List<Long> criteriaIds,
+            List<Long> pointCategoryIds,
+            Instant dateHappenFrom,
+            Instant dateHappenTo,
+            Boolean isActive,
+            Integer page,
+            Integer size,
+            String sortBy,
+            String sortDir
+    ) {
+        this(keyword, status, statuses, null, eventTypeIds, semesterId, schoolId, criteriaIds,
+                pointCategoryIds, dateHappenFrom, dateHappenTo, isActive, page, size, sortBy, sortDir);
+    }
+
     public EventFilterRequestDto(EventFilterRequestDto other) {
         this(
                 other.keyword,
@@ -46,6 +68,7 @@ public record EventFilterRequestDto(
                         ? EventStatusEnum.PUBLISHED.name()
                         : other.status,
                 other.statuses,
+                null,
                 other.eventTypeIds,
                 other.semesterId,
                 other.schoolId,

@@ -9,6 +9,7 @@ import java.util.List;
 public interface SchoolService {
 
     List<SchoolDto> findAll();
+    List<SchoolDetailDto> findAllWithMajors();
     SchoolDetailDto findById(Long id);
     SchoolDto createSchool(SchoolDto schoolDto);
     SchoolDto updateSchool(Long id, SchoolDto schoolDto);
