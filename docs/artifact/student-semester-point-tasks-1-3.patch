@@ -1,0 +1,1631 @@
+diff --git a/ddd-api/src/test/java/com/ddd/api/controller/PointTransactionControllerTest.java b/ddd-api/src/test/java/com/ddd/api/controller/PointTransactionControllerTest.java
+new file mode 100644
+--- /dev/null
++++ b/ddd-api/src/test/java/com/ddd/api/controller/PointTransactionControllerTest.java
+@@ -0,0 +1,24 @@
++package com.ddd.api.controller;
++
++import com.ddd.api.mapper.PointTransactionApiMapper;
++import com.ddd.application.service.semesterpoint.*;
++import org.junit.jupiter.api.Test;
++import org.springframework.http.MediaType;
++import org.springframework.test.web.servlet.setup.MockMvcBuilders;
++import static org.mockito.Mockito.*;
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
++
++class PointTransactionControllerTest {
++    @Test void patchUpdatesSelectedRecordAndValidatesPositivePoints() throws Exception {
++        var commands=mock(PointTransactionCommandService.class);
++        var mvc=MockMvcBuilders.standaloneSetup(new PointTransactionController(
++                mock(PointTransactionQueryService.class),commands,mock(PointTransactionApiMapper.class))).build();
++        mvc.perform(patch("/point-transactions/me/42").contentType(MediaType.APPLICATION_JSON)
++                .content("{\"points\":5,\"description\":\"edited\"}")).andExpect(status().isOk());
++        verify(commands).updatePointTransactionForStudent(42L,5,"edited");
++        mvc.perform(patch("/point-transactions/me/42").contentType(MediaType.APPLICATION_JSON)
++                .content("{\"points\":0}")).andExpect(status().isBadRequest());
++        verifyNoMoreInteractions(commands);
++    }
++}
+diff --git a/ddd-api/src/main/java/com/ddd/api/controller/PointTransactionController.java b/ddd-api/src/main/java/com/ddd/api/controller/PointTransactionController.java
+--- a/ddd-api/src/main/java/com/ddd/api/controller/PointTransactionController.java
++++ b/ddd-api/src/main/java/com/ddd/api/controller/PointTransactionController.java
+@@ -2,6 +2,7 @@
+ 
+ import com.ddd.api.common.BaseResponse;
+ import com.ddd.api.dto.semesterpoint.req.PointTransactionRequestDto;
++import com.ddd.api.dto.semesterpoint.req.UpdatePointTransactionRequestDto;
+ import com.ddd.api.dto.semesterpoint.res.PointTransactionResponseDto;
+ import com.ddd.api.mapper.PointTransactionApiMapper;
+ import com.ddd.application.dto.semesterpoint.PointTransactionInfoDto;
+@@ -42,6 +43,13 @@
+         return BaseResponse.ok();
+     }
+ 
++    @PatchMapping("/me/{pointTransactionId}")
++    public BaseResponse<Void> updatePointTransactionForStudent(@PathVariable Long pointTransactionId,
++            @RequestBody @Valid UpdatePointTransactionRequestDto requestDto) {
++        pointTransactionCommandService.updatePointTransactionForStudent(pointTransactionId, requestDto.points(), requestDto.description());
++        return BaseResponse.ok();
++    }
++
+     @DeleteMapping("/me/{pointTransactionId}")
+     public BaseResponse<Void> deletePointTransactionForStudent(@PathVariable Long pointTransactionId){
+         pointTransactionCommandService.deletePointTransactionForStudent(pointTransactionId);
+diff --git a/ddd-api/src/main/java/com/ddd/api/dto/semesterpoint/req/UpdatePointTransactionRequestDto.java b/ddd-api/src/main/java/com/ddd/api/dto/semesterpoint/req/UpdatePointTransactionRequestDto.java
+new file mode 100644
+--- /dev/null
++++ b/ddd-api/src/main/java/com/ddd/api/dto/semesterpoint/req/UpdatePointTransactionRequestDto.java
+@@ -0,0 +1,6 @@
++package com.ddd.api.dto.semesterpoint.req;
++
++import jakarta.validation.constraints.NotNull;
++import jakarta.validation.constraints.Positive;
++
++public record UpdatePointTransactionRequestDto(@NotNull @Positive Integer points, String description) {}
+diff --git a/ddd-application/src/test/java/com/ddd/application/service/registration/impl/RegistrationPointAwardTest.java b/ddd-application/src/test/java/com/ddd/application/service/registration/impl/RegistrationPointAwardTest.java
+new file mode 100644
+--- /dev/null
++++ b/ddd-application/src/test/java/com/ddd/application/service/registration/impl/RegistrationPointAwardTest.java
+@@ -0,0 +1,65 @@
++package com.ddd.application.service.registration.impl;
++
++import com.ddd.application.mapper.RegistrationDtoMapper;
++import com.ddd.application.service.event.cache.RecommendationCacheService;
++import com.ddd.application.service.criteriaprogress.StudentCriteriaTransactionCommandService;
++import com.ddd.application.service.semesterpoint.StudentSemesterPointCommandService;
++import com.ddd.application.service.semesterpoint.impl.SemesterPointCategoryPolicy;
++import com.ddd.domain.model.*;
++import com.ddd.domain.enums.RegistrationStatusEnum;
++import com.ddd.domain.exception.BusinessException;
++import com.ddd.domain.repository.*;
++import com.ddd.domain.model.port.security.SecurityContextPort;
++import org.springframework.context.ApplicationEventPublisher;
++import org.junit.jupiter.api.*;
++import org.junit.jupiter.api.extension.ExtendWith;
++import org.mockito.*;
++import org.mockito.junit.jupiter.MockitoExtension;
++import java.time.Instant;
++import java.util.List;
++import static org.junit.jupiter.api.Assertions.*;
++import static org.mockito.Mockito.*;
++
++@ExtendWith(MockitoExtension.class)
++class RegistrationPointAwardTest {
++    @Mock RegistrationRepository registrations;
++    @Mock UserRepository users;
++    @Mock EventRepository events;
++    @Mock FanpageMemberRepository members;
++    @Mock EventPointRepository eventPoints;
++    @Mock PointTransactionRepository transactions;
++    @Mock StudentSemesterPointCommandService rebuild;
++    @Mock StudentCriteriaTransactionCommandService criteria;
++    @Mock SecurityContextPort security;
++    @Mock ApplicationEventPublisher publisher;
++    @Mock StudentProfileRepository profiles;
++    @Mock RegistrationDtoMapper mapper;
++    @Mock RecommendationCacheService cache;
++    @Mock SemesterPointCategoryPolicy categoryPolicy;
++    @InjectMocks RegistrationCommandServiceImpl service;
++    @BeforeEach void setup() {
++        var event=new Event();event.setId(1L);event.setFanpageId(20L);event.setSemesterId(9L);
++        event.setStatus("PUBLISHED");event.setActive(true);event.setDateHappen(Instant.now().minusSeconds(60));
++        when(security.getCurrentUserId()).thenReturn(99L);
++        when(events.findByIdForUpdate(1L)).thenReturn(event);
++        when(members.isActiveMember(20L,99L)).thenReturn(true);
++        var registration=new Registration();registration.setUserId(7L);registration.setStatus(RegistrationStatusEnum.COMPLETED);
++        when(registrations.findAllByEvent(1L)).thenReturn(List.of(registration));
++        var award=new EventPoint();award.setPointCategoryId(2L);award.setPoint(3);
++        when(eventPoints.findByEventId(1L)).thenReturn(List.of(award));
++    }
++    @Test void savesLedgerBeforeRebuildingAndDoesNotAwardTwice() {
++        service.fanpageMemberMarkEventAsCompleted(1L);
++        service.fanpageMemberMarkEventAsCompleted(1L);
++        var order=inOrder(categoryPolicy,transactions,rebuild);
++        order.verify(categoryPolicy).requireLeaves(9L,List.of(2L));
++        order.verify(transactions).saveAll(argThat(list->list.size()==1 && list.getFirst().getUserId()==7L && list.getFirst().getPoints()==3));
++        order.verify(rebuild).rebuildSemesterPoints(List.of(7L),9L);
++        verify(transactions,times(1)).saveAll(anyList());
++    }
++    @Test void rejectsInvalidAwardCategoryBeforeSavingPoints() {
++        doThrow(new BusinessException("parent or non-effective category")).when(categoryPolicy).requireLeaves(9L,List.of(2L));
++        assertThrows(BusinessException.class,()->service.fanpageMemberMarkEventAsCompleted(1L));
++        verify(transactions,never()).saveAll(anyList());verifyNoInteractions(rebuild);
++    }
++}
+diff --git a/ddd-application/src/test/java/com/ddd/application/service/registration/impl/RegistrationCommandServiceImplTest.java b/ddd-application/src/test/java/com/ddd/application/service/registration/impl/RegistrationCommandServiceImplTest.java
+--- a/ddd-application/src/test/java/com/ddd/application/service/registration/impl/RegistrationCommandServiceImplTest.java
++++ b/ddd-application/src/test/java/com/ddd/application/service/registration/impl/RegistrationCommandServiceImplTest.java
+@@ -66,6 +66,9 @@
+     private EventPointRepository eventPointRepository;
+ 
+     @Mock
++    private com.ddd.application.service.semesterpoint.impl.SemesterPointCategoryPolicy semesterPointCategoryPolicy;
++
++    @Mock
+     private PointTransactionRepository pointTransactionRepository;
+ 
+     @Mock
+diff --git a/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/PointTransactionRollbackTest.java b/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/PointTransactionRollbackTest.java
+new file mode 100644
+--- /dev/null
++++ b/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/PointTransactionRollbackTest.java
+@@ -0,0 +1,56 @@
++package com.ddd.application.service.semesterpoint.impl;
++
++import com.ddd.application.dto.semesterpoint.PointTransactionRequestInfoDto;
++import com.ddd.application.mapper.PointTransactionDtoMapper;
++import com.ddd.application.service.semesterpoint.*;
++import com.ddd.domain.model.PointTransaction;
++import com.ddd.domain.model.port.security.SecurityContextPort;
++import com.ddd.domain.repository.PointTransactionRepository;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.context.annotation.*;
++import org.springframework.jdbc.datasource.DataSourceTransactionManager;
++import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
++import org.springframework.transaction.PlatformTransactionManager;
++import org.springframework.transaction.annotation.EnableTransactionManagement;
++import javax.sql.DataSource;
++import java.sql.Connection;
++import static org.junit.jupiter.api.Assertions.*;
++import static org.mockito.Mockito.*;
++
++@SpringJUnitConfig(PointTransactionRollbackTest.Config.class)
++class PointTransactionRollbackTest {
++    @Autowired PointTransactionCommandService service;
++    @Autowired PointTransactionRepository transactions;
++    @Autowired StudentSemesterPointCommandService rebuild;
++    @Autowired PointTransactionDtoMapper mapper;
++    @Autowired SecurityContextPort security;
++    @Autowired DataSource dataSource;
++    @Test void rebuildFailureRollsBackSpringTransactionInsteadOfCommitting() throws Exception {
++        var connection=mock(Connection.class);
++        when(dataSource.getConnection()).thenReturn(connection);
++        when(connection.getAutoCommit()).thenReturn(true);
++        when(security.getCurrentUserId()).thenReturn(7L);
++        var request=new PointTransactionRequestInfoDto(9L,2L,null,8,"note");
++        when(mapper.toDomain(request)).thenReturn(new PointTransaction());
++        doThrow(new IllegalStateException("rebuild failed")).when(rebuild).rebuildSemesterPoints(7L,9L);
++        assertThrows(IllegalStateException.class,()->service.createPointTransactionForStudent(request));
++        verify(transactions).save(any());
++        verify(connection).rollback();verify(connection,never()).commit();
++    }
++    @Configuration
++    @EnableTransactionManagement
++    static class Config {
++        @Bean DataSource dataSource(){return mock(DataSource.class);}
++        @Bean PlatformTransactionManager transactionManager(DataSource source){return new DataSourceTransactionManager(source);}
++        @Bean PointTransactionRepository transactions(){return mock(PointTransactionRepository.class);}
++        @Bean StudentSemesterPointCommandService rebuild(){return mock(StudentSemesterPointCommandService.class);}
++        @Bean PointTransactionDtoMapper mapper(){return mock(PointTransactionDtoMapper.class);}
++        @Bean SecurityContextPort security(){return mock(SecurityContextPort.class);}
++        @Bean SemesterPointCategoryPolicy policy(){return mock(SemesterPointCategoryPolicy.class);}
++        @Bean PointTransactionCommandService service(PointTransactionDtoMapper mapper,PointTransactionRepository transactions,
++                SemesterPointCategoryPolicy policy,StudentSemesterPointCommandService rebuild,SecurityContextPort security){
++            return new PointTransactionCommandServiceImpl(mapper,transactions,policy,rebuild,security);
++        }
++    }
++}
+diff --git a/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/SemesterPointCategoryPolicyTest.java b/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/SemesterPointCategoryPolicyTest.java
+new file mode 100644
+--- /dev/null
++++ b/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/SemesterPointCategoryPolicyTest.java
+@@ -0,0 +1,26 @@
++package com.ddd.application.service.semesterpoint.impl;
++
++import com.ddd.domain.model.Semester;
++import com.ddd.domain.repository.*;
++import com.ddd.domain.exception.BusinessException;
++import org.junit.jupiter.api.Test;
++import java.time.LocalDate;
++import java.util.*;
++import static com.ddd.application.service.semesterpoint.impl.StudentSemesterPointCalculatorTest.category;
++import static org.junit.jupiter.api.Assertions.*;
++import static org.mockito.Mockito.*;
++
++class SemesterPointCategoryPolicyTest {
++    @Test void acceptsOnlyActiveLeavesInSemestersEffectiveTree() {
++        var semesters=mock(SemesterRepository.class);var categories=mock(PointCategoryRepository.class);
++        var semester=new Semester();semester.setEndDate(LocalDate.of(2026,12,31));
++        when(semesters.findById(9L)).thenReturn(Optional.of(semester));
++        var inactive=category(3,1L,10,false);inactive.setActive(false);
++        when(categories.findActiveEffectiveAsOf(semester.getEndDate())).thenReturn(List.of(category(1,null,20,false),category(2,1L,10,false),inactive));
++        var policy=new SemesterPointCategoryPolicy(semesters,categories);
++        assertDoesNotThrow(()->policy.requireLeaves(9L,List.of(2L)));
++        assertThrows(BusinessException.class,()->policy.requireLeaves(9L,List.of(1L)));
++        assertThrows(BusinessException.class,()->policy.requireLeaves(9L,List.of(3L)));
++        assertThrows(BusinessException.class,()->policy.requireLeaves(9L,List.of(99L)));
++    }
++}
+diff --git a/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/PointTransactionCommandServiceImplTest.java b/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/PointTransactionCommandServiceImplTest.java
+new file mode 100644
+--- /dev/null
++++ b/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/PointTransactionCommandServiceImplTest.java
+@@ -0,0 +1,70 @@
++package com.ddd.application.service.semesterpoint.impl;
++
++import com.ddd.application.dto.semesterpoint.PointTransactionRequestInfoDto;
++import com.ddd.application.mapper.PointTransactionDtoMapper;
++import com.ddd.domain.exception.BusinessException;
++import com.ddd.domain.model.*;
++import com.ddd.domain.model.port.security.SecurityContextPort;
++import com.ddd.domain.repository.*;
++import org.junit.jupiter.api.*;
++import org.junit.jupiter.api.extension.ExtendWith;
++import org.mockito.*;
++import org.mockito.junit.jupiter.MockitoExtension;
++import java.util.*;
++import java.util.concurrent.atomic.AtomicLong;
++import static com.ddd.application.service.semesterpoint.impl.StudentSemesterPointCalculatorTest.*;
++import static org.junit.jupiter.api.Assertions.*;
++import static org.mockito.Mockito.*;
++
++@ExtendWith(MockitoExtension.class)
++class PointTransactionCommandServiceImplTest {
++    @Mock PointTransactionDtoMapper mapper;
++    @Mock PointTransactionRepository transactions;
++    @Mock StudentSemesterPointRepository snapshots;
++    @Mock SemesterPointCategoryPolicy policy;
++    @Mock SecurityContextPort security;
++    PointTransactionCommandServiceImpl service;
++    final List<PointTransaction> ledger = new ArrayList<>();
++    final Map<Long,StudentSemesterPoint> stored = new HashMap<>();
++    @BeforeEach void setup() {
++        var rebuild=new StudentSemesterPointCommandServiceImpl(snapshots,transactions,policy,new StudentSemesterPointCalculator());
++        service=new PointTransactionCommandServiceImpl(mapper,transactions,policy,rebuild,security);
++        when(security.getCurrentUserId()).thenReturn(7L);
++        lenient().when(policy.effectiveCategories(9L)).thenReturn(List.of(category(1,null,20,false),category(2,1L,20,false)));
++        lenient().when(transactions.findAllByUserIdsAndSemesterId(List.of(7L),9L)).thenAnswer(i->new ArrayList<>(ledger));
++        lenient().when(snapshots.findAllByUserIdsAndSemesterId(List.of(7L),9L)).thenAnswer(i->new ArrayList<>(stored.values()));
++        lenient().doAnswer(i->{for(StudentSemesterPoint p:i.<List<StudentSemesterPoint>>getArgument(0))stored.put(p.getPointCategoryId(),p);return null;}).when(snapshots).saveAll(anyList());
++        var ids=new AtomicLong();
++        lenient().doAnswer(i->{PointTransaction p=i.getArgument(0);if(p.getId()==null)p.setId(ids.incrementAndGet());ledger.removeIf(tx->tx.getId().equals(p.getId()));ledger.add(p);return null;}).when(transactions).save(any());
++        lenient().when(transactions.findById(anyLong())).thenAnswer(i->ledger.stream().filter(tx->tx.getId().equals(i.getArgument(0))).findFirst());
++        lenient().doAnswer(i->{PointTransaction p=i.getArgument(0);ledger.removeIf(tx->tx.getId().equals(p.getId()));return null;}).when(transactions).delete(any());
++        lenient().when(mapper.toDomain(any(PointTransactionRequestInfoDto.class))).thenAnswer(i->{
++            PointTransactionRequestInfoDto p=i.getArgument(0);var tx=transaction(p.pointCategoryId(),p.points(),"MANUAL");tx.setDescription(p.description());return tx;
++        });
++    }
++    @Test void addEditAndPhysicallyDeleteUpdateSnapshotsWithoutAccumulationErrors() {
++        service.createPointTransactionForStudent(new PointTransactionRequestInfoDto(9L,2L,null,8,"first"));
++        service.createPointTransactionForStudent(new PointTransactionRequestInfoDto(9L,2L,null,5,"second"));
++        assertEquals(13,stored.get(1L).getTotalPoint());assertEquals(2,ledger.size());
++        service.updatePointTransactionForStudent(1L,5,"edited");
++        assertEquals(10,stored.get(1L).getTotalPoint());assertEquals(2,ledger.size());assertEquals("edited",ledger.getLast().getDescription());
++        service.deletePointTransactionForStudent(2L);
++        assertEquals(1,ledger.size());assertEquals(5,stored.get(1L).getTotalPoint());assertEquals(1L,ledger.getFirst().getId());
++    }
++    @Test void rejectsOtherStudentsAndSystemTransactionsForEditAndDelete() {
++        var other=transaction(2,8,"MANUAL");other.setUserId(8L);other.setId(1L);ledger.add(other);
++        assertThrows(IllegalArgumentException.class,()->service.updatePointTransactionForStudent(1L,5,"edited"));
++        assertThrows(IllegalArgumentException.class,()->service.deletePointTransactionForStudent(1L));
++        other.setUserId(7L);other.setType("CHECKOUT_REWARD");
++        assertThrows(IllegalArgumentException.class,()->service.updatePointTransactionForStudent(1L,5,"edited"));
++        assertThrows(IllegalArgumentException.class,()->service.deletePointTransactionForStudent(1L));
++        verify(transactions,never()).save(any());verify(transactions,never()).delete(any());
++    }
++    @Test void rejectsNonEffectiveCategoryBeforeSavingOrEditing() {
++        doThrow(new BusinessException("outside effective tree")).when(policy).requireLeaves(9L,List.of(2L));
++        assertThrows(BusinessException.class,()->service.createPointTransactionForStudent(new PointTransactionRequestInfoDto(9L,2L,null,5,"note")));
++        var own=transaction(2,8,"MANUAL");own.setId(1L);ledger.add(own);
++        assertThrows(BusinessException.class,()->service.updatePointTransactionForStudent(1L,5,"edited"));
++        assertEquals(8,own.getPoints());verify(transactions,never()).save(any());
++    }
++}
+diff --git a/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCalculatorTest.java b/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCalculatorTest.java
+new file mode 100644
+--- /dev/null
++++ b/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCalculatorTest.java
+@@ -0,0 +1,80 @@
++package com.ddd.application.service.semesterpoint.impl;
++
++import com.ddd.domain.exception.BusinessException;
++import com.ddd.domain.model.PointCategory;
++import com.ddd.domain.model.PointTransaction;
++import org.junit.jupiter.api.Test;
++import java.util.List;
++import static org.junit.jupiter.api.Assertions.*;
++
++class StudentSemesterPointCalculatorTest {
++    private final StudentSemesterPointCalculator calculator = new StudentSemesterPointCalculator();
++    static PointCategory category(long id, Long parent, int max, boolean maxChild) {
++        var category = new PointCategory();
++        category.setId(id); category.setParentCategoryId(parent);
++        category.setMaximum(max); category.setIsMaxChild(maxChild);
++        return category;
++    }
++    static PointTransaction transaction(long category, int points, String type) {
++        var transaction = new PointTransaction();
++        transaction.setUserId(7L); transaction.setSemesterId(9L);
++        transaction.setPointCategoryId(category); transaction.setPoints(points);
++        transaction.setType(type); transaction.setStatus("CONFIRMED");
++        return transaction;
++    }
++    @Test void retainsRawLeafAndCapsContributionAtEveryLevel() {
++        var result = calculator.calculate(7L,9L,
++                List.of(category(1,null,100,false),category(2,1L,10,false),category(3,2L,20,false)),
++                List.of(transaction(3,8,"CHECKOUT_REWARD"),transaction(3,7,"MANUAL")));
++        var leaf = result.points().stream().filter(p->p.getPointCategoryId()==3).findFirst().orElseThrow();
++        var parent = result.points().stream().filter(p->p.getPointCategoryId()==2).findFirst().orElseThrow();
++        var root = result.points().stream().filter(p->p.getPointCategoryId()==1).findFirst().orElseThrow();
++        assertEquals(15,leaf.getTotalPoint()); assertEquals(15,parent.getTotalPoint());
++        assertEquals(10,root.getTotalPoint()); assertTrue(result.nodeMetadata().get(2L).isAtMaximum());
++    }
++    @Test void countsExistingTransactionsRegardlessOfStatusAndIsolatesStudentAndSemester() {
++        var pending=transaction(1,10,"MANUAL");pending.setStatus("PENDING");
++        var revoked=transaction(1,10,"MANUAL");revoked.setStatus("REVOKED");
++        var other=transaction(1,10,"MANUAL");other.setUserId(8L);
++        var wrongSemester=transaction(1,10,"MANUAL");wrongSemester.setSemesterId(10L);
++        var result=calculator.calculate(7L,9L,List.of(category(1,null,10,false)),
++                List.of(pending,revoked,other,wrongSemester));
++        assertEquals(20,result.points().getFirst().getTotalPoint());
++    }
++    @Test void choosesMaxChildByRawManualThenSmallerIdRegardlessOfInputOrder() {
++        var result=calculator.calculate(7L,9L,List.of(category(1,null,20,true),category(3,1L,10,false),category(2,1L,10,false)),
++                List.of(transaction(3,10,"CHECKOUT_REWARD"),transaction(2,100,"MANUAL")));
++        assertEquals(2L,result.nodeMetadata().get(1L).selectedChildId());
++        assertFalse(result.nodeMetadata().get(3L).contributesToParent());
++        var tie=calculator.calculate(7L,9L,List.of(category(1,null,20,true),category(3,1L,10,false),category(2,1L,10,false)),
++                List.of(transaction(3,10,"MANUAL"),transaction(2,10,"MANUAL")));
++        assertEquals(2L,tie.nodeMetadata().get(1L).selectedChildId());
++    }
++    @Test void signedAdjustmentsAreOrderIndependentAndZeroMaximumContributesZero() {
++        var result=calculator.calculate(7L,9L,List.of(category(1,null,0,false)),
++                List.of(transaction(1,-8,"PENALTY_DEDUCTION"),transaction(1,10,"MANUAL")));
++        assertEquals(2,result.points().getFirst().getTotalPoint());
++        assertEquals(0,result.nodeMetadata().get(1L).completionPercentage());
++        assertFalse(result.nodeMetadata().get(1L).isAtMaximum());
++    }
++    @Test void excludesParentAndNonEffectiveAwardsFromRollup() {
++        var result=calculator.calculate(7L,9L,List.of(category(1,null,10,false),category(2,1L,10,false)),
++                List.of(transaction(1,5,"MANUAL"),transaction(99,5,"MANUAL"),transaction(2,2,"MANUAL")));
++        assertEquals(2,result.points().stream().filter(p->p.getPointCategoryId()==1).findFirst().orElseThrow().getTotalPoint());
++    }
++    @Test void rejectsCyclesAndIntegerOverflow() {
++        assertThrows(BusinessException.class,()->calculator.calculate(7L,9L,
++                List.of(category(1,2L,10,false),category(2,1L,10,false)),List.of()));
++        assertThrows(BusinessException.class,()->calculator.calculate(7L,9L,List.of(category(1,null,10,false)),
++                List.of(transaction(1,Integer.MAX_VALUE,"MANUAL"),transaction(1,1,"MANUAL"))));
++    }
++    @Test void leafRetainsFifteenRawPointsWhenItsMaximumIsTen() {
++        var result=calculator.calculate(7L,9L,List.of(category(1,null,10,false)),
++                List.of(transaction(1,8,"CHECKOUT_REWARD"),transaction(1,7,"MANUAL")));
++        assertEquals(15,result.points().getFirst().getTotalPoint());
++        assertEquals(8,result.points().getFirst().getSystemPointRecord());
++        assertEquals(7,result.points().getFirst().getManualPointRecord());
++        assertEquals(100,result.nodeMetadata().get(1L).completionPercentage());
++    }
++
++}
+diff --git a/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCommandServiceImplTest.java b/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCommandServiceImplTest.java
+--- a/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCommandServiceImplTest.java
++++ b/ddd-application/src/test/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCommandServiceImplTest.java
+@@ -1,362 +1,65 @@
+ package com.ddd.application.service.semesterpoint.impl;
+ 
+-import com.ddd.domain.enums.PointTransactionTypeEnum;
+-import com.ddd.domain.model.PointCategory;
+-import com.ddd.domain.model.Semester;
+-import com.ddd.domain.model.StudentSemesterPoint;
+-import com.ddd.domain.repository.PointCategoryRepository;
+-import com.ddd.domain.repository.SemesterRepository;
+-import com.ddd.domain.repository.StudentSemesterPointRepository;
+-import org.junit.jupiter.api.BeforeEach;
+-import org.junit.jupiter.api.DisplayName;
+-import org.junit.jupiter.api.Test;
++import com.ddd.domain.model.*;
++import com.ddd.domain.repository.*;
++import org.junit.jupiter.api.*;
+ import org.junit.jupiter.api.extension.ExtendWith;
+-import org.mockito.ArgumentCaptor;
+-import org.mockito.InjectMocks;
+-import org.mockito.Mock;
++import org.mockito.*;
+ import org.mockito.junit.jupiter.MockitoExtension;
+-
+-import java.time.LocalDate;
+-import java.util.ArrayList;
+-import java.util.List;
+-import java.util.Map;
+-import java.util.Optional;
+-
++import java.time.Instant;
++import java.util.*;
++import static com.ddd.application.service.semesterpoint.impl.StudentSemesterPointCalculatorTest.*;
+ import static org.junit.jupiter.api.Assertions.*;
+-import static org.mockito.ArgumentMatchers.any;
+-import static org.mockito.ArgumentMatchers.anyList;
+ import static org.mockito.Mockito.*;
+ 
+ @ExtendWith(MockitoExtension.class)
+ class StudentSemesterPointCommandServiceImplTest {
++    @Mock StudentSemesterPointRepository points;
++    @Mock PointTransactionRepository transactions;
++    @Mock SemesterPointCategoryPolicy categoryPolicy;
++    @Spy StudentSemesterPointCalculator calculator = new StudentSemesterPointCalculator();
++    @InjectMocks StudentSemesterPointCommandServiceImpl service;
++    final Map<Long,StudentSemesterPoint> stored = new HashMap<>();
++    final List<PointTransaction> ledger = new ArrayList<>();
+ 
+-    @Mock
+-    private StudentSemesterPointRepository studentSemesterPointRepository;
+-
+-    @Mock
+-    private PointCategoryRepository pointCategoryRepository;
+-
+-    @Mock
+-    private SemesterRepository semesterRepository;
+-
+-    @InjectMocks
+-    private StudentSemesterPointCommandServiceImpl service;
+-
+-    private final Long userId = 100L;
+-    private final Long semesterId = 2024L;
+-    private final LocalDate semesterEndDate = LocalDate.of(2026, 12, 31);
+-
+-    @BeforeEach
+-    void setUpSemester() {
+-        Semester semester = new Semester();
+-        semester.setId(semesterId);
+-        semester.setEndDate(semesterEndDate);
+-        lenient().when(semesterRepository.findById(semesterId)).thenReturn(Optional.of(semester));
++    @BeforeEach void setup() {
++        when(categoryPolicy.effectiveCategories(9L)).thenReturn(List.of(category(1,null,100,false),category(2,1L,10,false),category(3,2L,20,false)));
++        when(transactions.findAllByUserIdsAndSemesterId(List.of(7L),9L)).thenAnswer(i->new ArrayList<>(ledger));
++        when(points.findAllByUserIdsAndSemesterId(List.of(7L),9L)).thenAnswer(i->new ArrayList<>(stored.values()));
++        doAnswer(i->{
++            for (StudentSemesterPoint point : i.<List<StudentSemesterPoint>>getArgument(0)) {
++                if(point.getId()==null) point.setId(point.getPointCategoryId()+100);
++                stored.put(point.getPointCategoryId(),point);
++            }
++            return null;
++        }).when(points).saveAll(anyList());
+     }
+-
+-    @Test
+-    @DisplayName("Should update leaf point and sum ancestors when isMaxChild is false")
+-    void recordPointAndPropagate_whenManualPoint_shouldUpdateLeafAndSumAncestors() {
+-        Long leafId = 10L;
+-        Long parentId = 2L;
+-        Long rootId = 1L;
+-
+-        PointCategory leaf = new PointCategory();
+-        leaf.setId(leafId);
+-        leaf.setParentCategoryId(parentId);
+-        leaf.setMaximum(10);
+-        leaf.setIsMaxChild(false);
+-
+-        PointCategory parent = new PointCategory();
+-        parent.setId(parentId);
+-        parent.setParentCategoryId(rootId);
+-        parent.setMaximum(20);
+-        parent.setIsMaxChild(false);
+-
+-        PointCategory root = new PointCategory();
+-        root.setId(rootId);
+-        root.setParentCategoryId(null);
+-        root.setMaximum(50);
+-        root.setIsMaxChild(false);
+-
+-        when(pointCategoryRepository.findActiveEffectiveAsOf(semesterEndDate)).thenReturn(List.of(leaf, parent, root));
+-        when(studentSemesterPointRepository.findAllByUserIdsAndSemesterId(List.of(userId), semesterId))
+-                .thenReturn(new ArrayList<>());
+-
+-        service.recordPointAndPropagate(userId, semesterId, leafId, 5, PointTransactionTypeEnum.MANUAL);
+-
+-        @SuppressWarnings("unchecked")
+-        ArgumentCaptor<List<StudentSemesterPoint>> captor = ArgumentCaptor.forClass(List.class);
+-        verify(studentSemesterPointRepository).saveAll(captor.capture());
+-
+-        List<StudentSemesterPoint> saved = captor.getValue();
+-        assertEquals(3, saved.size());
+-
+-        StudentSemesterPoint savedLeaf = saved.stream().filter(p -> p.getPointCategoryId().equals(leafId)).findFirst().orElseThrow();
+-        assertEquals(5, savedLeaf.getManualPointRecord());
+-        assertEquals(0, savedLeaf.getSystemPointRecord());
+-        assertEquals(5, savedLeaf.getTotalPoint());
+-
+-        StudentSemesterPoint savedParent = saved.stream().filter(p -> p.getPointCategoryId().equals(parentId)).findFirst().orElseThrow();
+-        assertEquals(5, savedParent.getManualPointRecord());
+-        assertEquals(0, savedParent.getSystemPointRecord());
+-        assertEquals(5, savedParent.getTotalPoint());
+-
+-        StudentSemesterPoint savedRoot = saved.stream().filter(p -> p.getPointCategoryId().equals(rootId)).findFirst().orElseThrow();
+-        assertEquals(5, savedRoot.getManualPointRecord());
+-        assertEquals(0, savedRoot.getSystemPointRecord());
+-        assertEquals(5, savedRoot.getTotalPoint());
++    @Test void rebuildingTwiceKeepsIdsAuditAndRawPointsStable() {
++        ledger.add(transaction(3,15,"MANUAL"));
++        service.rebuildSemesterPoints(7L,9L);
++        var leaf=stored.get(3L);
++        Instant created=leaf.getCreatedAt(); leaf.setFinalizedAt(Instant.EPOCH);
++        service.rebuildSemesterPoints(7L,9L);
++        assertEquals(3,stored.size());assertEquals(103L,stored.get(3L).getId());
++        assertEquals(created,stored.get(3L).getCreatedAt());assertEquals(Instant.EPOCH,stored.get(3L).getFinalizedAt());
++        assertEquals(15,stored.get(2L).getTotalPoint());assertEquals(10,stored.get(1L).getTotalPoint());
+     }
+-
+-    @Test
+-    @DisplayName("Should take maximum child point when parent has isMaxChild true")
+-    void recordPointAndPropagate_whenIsMaxChildIsTrue_shouldTakeMaxChildPoints() {
+-        Long leafAId = 10L;
+-        Long leafBId = 11L;
+-        Long parentId = 2L;
+-
+-        PointCategory leafA = new PointCategory();
+-        leafA.setId(leafAId);
+-        leafA.setParentCategoryId(parentId);
+-        leafA.setMaximum(10);
+-        leafA.setIsMaxChild(false);
+-
+-        PointCategory leafB = new PointCategory();
+-        leafB.setId(leafBId);
+-        leafB.setParentCategoryId(parentId);
+-        leafB.setMaximum(15);
+-        leafB.setIsMaxChild(false);
+-
+-        PointCategory parent = new PointCategory();
+-        parent.setId(parentId);
+-        parent.setParentCategoryId(null);
+-        parent.setMaximum(15);
+-        parent.setIsMaxChild(true); // Takes MAX of children
+-
+-        // Leaf A already has 8 points
+-        StudentSemesterPoint existingLeafA = new StudentSemesterPoint(userId, semesterId, leafAId, 8);
+-        existingLeafA.setSystemPointRecord(8);
+-        existingLeafA.setManualPointRecord(0);
+-
+-        when(pointCategoryRepository.findActiveEffectiveAsOf(semesterEndDate)).thenReturn(List.of(leafA, leafB, parent));
+-        when(studentSemesterPointRepository.findAllByUserIdsAndSemesterId(List.of(userId), semesterId))
+-                .thenReturn(new ArrayList<>(List.of(existingLeafA)));
+-
+-        // Award 12 points to Leaf B via CHECKOUT_REWARD
+-        service.recordPointAndPropagate(userId, semesterId, leafBId, 12, PointTransactionTypeEnum.CHECKOUT_REWARD);
+-
+-        @SuppressWarnings("unchecked")
+-        ArgumentCaptor<List<StudentSemesterPoint>> captor = ArgumentCaptor.forClass(List.class);
+-        verify(studentSemesterPointRepository).saveAll(captor.capture());
+-
+-        List<StudentSemesterPoint> saved = captor.getValue();
+-        assertEquals(2, saved.size()); // leafB and parent
+-
+-        StudentSemesterPoint savedLeafB = saved.stream().filter(p -> p.getPointCategoryId().equals(leafBId)).findFirst().orElseThrow();
+-        assertEquals(12, savedLeafB.getSystemPointRecord());
+-        assertEquals(0, savedLeafB.getManualPointRecord());
+-        assertEquals(12, savedLeafB.getTotalPoint());
+-
+-        StudentSemesterPoint savedParent = saved.stream().filter(p -> p.getPointCategoryId().equals(parentId)).findFirst().orElseThrow();
+-        // Since Leaf B (12) > Leaf A (8), parent takes max (Leaf B's 12 points)
+-        assertEquals(12, savedParent.getTotalPoint());
+-        assertEquals(12, savedParent.getSystemPointRecord());
+-        assertEquals(0, savedParent.getManualPointRecord());
++    @Test void deletingOneOfTwoTransactionsRecomputesAllAncestors() {
++        ledger.add(transaction(3,8,"MANUAL"));ledger.add(transaction(3,7,"MANUAL"));
++        service.rebuildSemesterPoints(7L,9L);
++        ledger.removeFirst();service.rebuildSemesterPoints(7L,9L);
++        assertEquals(7,stored.get(3L).getTotalPoint());assertEquals(7,stored.get(2L).getTotalPoint());assertEquals(7,stored.get(1L).getTotalPoint());
+     }
+-
+-    @Test
+-    @DisplayName("Should batch process multiple students and propagate points up to ancestors")
+-    void bulkRecordPointsAndPropagate_shouldProcessMultipleStudentsAndMultipleCategories() {
+-        Long user1 = 101L;
+-        Long user2 = 102L;
+-        Long leafId = 10L;
+-        Long parentId = 2L;
+-
+-        PointCategory leaf = new PointCategory();
+-        leaf.setId(leafId);
+-        leaf.setParentCategoryId(parentId);
+-
+-        PointCategory parent = new PointCategory();
+-        parent.setId(parentId);
+-        parent.setParentCategoryId(null);
+-        parent.setIsMaxChild(false);
+-
+-        when(pointCategoryRepository.findActiveEffectiveAsOf(semesterEndDate)).thenReturn(List.of(leaf, parent));
+-        when(studentSemesterPointRepository.findAllByUserIdsAndSemesterId(List.of(user1, user2), semesterId))
+-                .thenReturn(new ArrayList<>());
+-
+-        service.bulkRecordPointsAndPropagate(List.of(user1, user2), semesterId, Map.of(leafId, 5), PointTransactionTypeEnum.CHECKOUT_REWARD);
+-
+-        @SuppressWarnings("unchecked")
+-        ArgumentCaptor<List<StudentSemesterPoint>> captor = ArgumentCaptor.forClass(List.class);
+-        verify(studentSemesterPointRepository).saveAll(captor.capture());
+-
+-        List<StudentSemesterPoint> saved = captor.getValue();
+-        // 2 students * 2 categories (leaf + parent) = 4 records
+-        assertEquals(4, saved.size());
+-
+-        List<StudentSemesterPoint> user1Points = saved.stream().filter(p -> p.getUserId().equals(user1)).toList();
+-        assertEquals(2, user1Points.size());
+-        assertTrue(user1Points.stream().allMatch(p -> p.getTotalPoint() == 5 && p.getSystemPointRecord() == 5));
+-
+-        List<StudentSemesterPoint> user2Points = saved.stream().filter(p -> p.getUserId().equals(user2)).toList();
+-        assertEquals(2, user2Points.size());
+-        assertTrue(user2Points.stream().allMatch(p -> p.getTotalPoint() == 5 && p.getSystemPointRecord() == 5));
++    @Test void rebuildRepairsOldSnapshotsAndZerosRemovedCategories() {
++        var old = new StudentSemesterPoint(7L,9L,3L,999);old.setId(77L);stored.put(3L,old);
++        var stale=new StudentSemesterPoint(7L,9L,99L,20);stored.put(99L,stale);
++        ledger.add(transaction(3,5,"MANUAL"));service.rebuildSemesterPoints(7L,9L);
++        assertEquals(5,stored.get(3L).getTotalPoint());assertEquals(77L,stored.get(3L).getId());assertEquals(0,stored.get(99L).getTotalPoint());
+     }
+-
+-    @Test
+-    @DisplayName("Should retain raw total on leaf when exceeding maximum, cap contribution to parent, and handle deduction")
+-    void recordPointAndPropagate_whenLeafExceedsMaximum_shouldNotOverflowParentAndSupportDeduction() {
+-        Long leafId = 1045L;
+-        Long parentId = 2L;
+-
+-        PointCategory leaf = new PointCategory();
+-        leaf.setId(leafId);
+-        leaf.setParentCategoryId(parentId);
+-        leaf.setMaximum(2);
+-        leaf.setIsMaxChild(false);
+-
+-        PointCategory parent = new PointCategory();
+-        parent.setId(parentId);
+-        parent.setParentCategoryId(null);
+-        parent.setMaximum(20);
+-        parent.setIsMaxChild(false);
+-
+-        StudentSemesterPoint existingLeaf = new StudentSemesterPoint(userId, semesterId, leafId, 2);
+-        existingLeaf.setSystemPointRecord(2);
+-        existingLeaf.setManualPointRecord(0);
+-
+-        StudentSemesterPoint existingParent = new StudentSemesterPoint(userId, semesterId, parentId, 2);
+-        existingParent.setSystemPointRecord(2);
+-        existingParent.setManualPointRecord(0);
+-
+-        when(pointCategoryRepository.findActiveEffectiveAsOf(semesterEndDate)).thenReturn(List.of(leaf, parent));
+-        when(studentSemesterPointRepository.findAllByUserIdsAndSemesterId(List.of(userId), semesterId))
+-                .thenReturn(new ArrayList<>(List.of(existingLeaf, existingParent)));
+-
+-        // Award another +2 on leaf (raw becomes 4, max is 2)
+-        service.recordPointAndPropagate(userId, semesterId, leafId, 2, PointTransactionTypeEnum.CHECKOUT_REWARD);
+-
+-        @SuppressWarnings("unchecked")
+-        ArgumentCaptor<List<StudentSemesterPoint>> captor = ArgumentCaptor.forClass(List.class);
+-        verify(studentSemesterPointRepository).saveAll(captor.capture());
+-
+-        List<StudentSemesterPoint> saved = captor.getValue();
+-        StudentSemesterPoint savedLeaf = saved.stream().filter(p -> p.getPointCategoryId().equals(leafId)).findFirst().orElseThrow();
+-        assertEquals(4, savedLeaf.getTotalPoint());
+-        assertEquals(4, savedLeaf.getSystemPointRecord());
+-
+-        StudentSemesterPoint savedParent = saved.stream().filter(p -> p.getPointCategoryId().equals(parentId)).findFirst().orElseThrow();
+-        assertEquals(2, savedParent.getTotalPoint());
+-        assertEquals(2, savedParent.getSystemPointRecord());
+-
+-        // Now deduct -2 from leaf (raw becomes 2), parent remains 2
+-        service.recordPointAndPropagate(userId, semesterId, leafId, -2, PointTransactionTypeEnum.CHECKOUT_REWARD);
+-        assertEquals(2, savedLeaf.getTotalPoint());
+-        assertEquals(2, savedParent.getTotalPoint());
+-    }
+-
+-    @Test
+-    @DisplayName("Should clamp sum rollup to parent maximum when children sum exceeds parent maximum")
+-    void recordPointAndPropagate_whenChildrenSumExceedsParentMax_shouldClampParentTotal() {
+-        Long leafAId = 10L;
+-        Long leafBId = 11L;
+-        Long parentId = 1L;
+-
+-        PointCategory leafA = new PointCategory();
+-        leafA.setId(leafAId);
+-        leafA.setParentCategoryId(parentId);
+-        leafA.setMaximum(12);
+-        leafA.setIsMaxChild(false);
+-
+-        PointCategory leafB = new PointCategory();
+-        leafB.setId(leafBId);
+-        leafB.setParentCategoryId(parentId);
+-        leafB.setMaximum(12);
+-        leafB.setIsMaxChild(false);
+-
+-        PointCategory parent = new PointCategory();
+-        parent.setId(parentId);
+-        parent.setParentCategoryId(null);
+-        parent.setMaximum(20);
+-        parent.setIsMaxChild(false);
+-
+-        StudentSemesterPoint existingLeafA = new StudentSemesterPoint(userId, semesterId, leafAId, 12);
+-        existingLeafA.setSystemPointRecord(12);
+-        existingLeafA.setManualPointRecord(0);
+-
+-        when(pointCategoryRepository.findActiveEffectiveAsOf(semesterEndDate)).thenReturn(List.of(leafA, leafB, parent));
+-        when(studentSemesterPointRepository.findAllByUserIdsAndSemesterId(List.of(userId), semesterId))
+-                .thenReturn(new ArrayList<>(List.of(existingLeafA)));
+-
+-        service.recordPointAndPropagate(userId, semesterId, leafBId, 10, PointTransactionTypeEnum.MANUAL);
+-
+-        @SuppressWarnings("unchecked")
+-        ArgumentCaptor<List<StudentSemesterPoint>> captor = ArgumentCaptor.forClass(List.class);
+-        verify(studentSemesterPointRepository).saveAll(captor.capture());
+-
+-        StudentSemesterPoint savedParent = captor.getValue().stream()
+-                .filter(p -> p.getPointCategoryId().equals(parentId))
+-                .findFirst()
+-                .orElseThrow();
+-        assertEquals(20, savedParent.getTotalPoint());
+-        assertEquals(12, savedParent.getSystemPointRecord());
+-        assertEquals(10, savedParent.getManualPointRecord());
+-    }
+-
+-    @Test
+-    @DisplayName("Should compare effective totals and break ties deterministically when isMaxChild is true")
+-    void recordPointAndPropagate_whenIsMaxChildTieOrOverflow_shouldCompareEffectiveAndBreakTies() {
+-        Long leafAId = 10L;
+-        Long leafBId = 11L;
+-        Long parentId = 2L;
+-
+-        PointCategory leafA = new PointCategory();
+-        leafA.setId(leafAId);
+-        leafA.setParentCategoryId(parentId);
+-        leafA.setMaximum(5);
+-        leafA.setIsMaxChild(false);
+-
+-        PointCategory leafB = new PointCategory();
+-        leafB.setId(leafBId);
+-        leafB.setParentCategoryId(parentId);
+-        leafB.setMaximum(8);
+-        leafB.setIsMaxChild(false);
+-
+-        PointCategory parent = new PointCategory();
+-        parent.setId(parentId);
+-        parent.setParentCategoryId(null);
+-        parent.setMaximum(6);
+-        parent.setIsMaxChild(true);
+-
+-        // Leaf A has raw 10 but maximum is 5 -> effective = 5
+-        StudentSemesterPoint existingLeafA = new StudentSemesterPoint(userId, semesterId, leafAId, 10);
+-        existingLeafA.setSystemPointRecord(10);
+-        existingLeafA.setManualPointRecord(0);
+-
+-        StudentSemesterPoint existingLeafB = new StudentSemesterPoint(userId, semesterId, leafBId, 0);
+-        existingLeafB.setSystemPointRecord(0);
+-        existingLeafB.setManualPointRecord(0);
+-
+-        StudentSemesterPoint existingParent = new StudentSemesterPoint(userId, semesterId, parentId, 5);
+-        existingParent.setSystemPointRecord(5);
+-        existingParent.setManualPointRecord(0);
+-
+-        when(pointCategoryRepository.findActiveEffectiveAsOf(semesterEndDate)).thenReturn(List.of(leafA, leafB, parent));
+-        when(studentSemesterPointRepository.findAllByUserIdsAndSemesterId(List.of(userId), semesterId))
+-                .thenReturn(new ArrayList<>(List.of(existingLeafA, existingLeafB, existingParent)));
+-
+-        // Leaf B gets 5 manual -> effective = 5 (tie on effectiveTotal with Leaf A, Leaf B wins on higher manualPointRecord)
+-        service.recordPointAndPropagate(userId, semesterId, leafBId, 5, PointTransactionTypeEnum.MANUAL);
+-
+-        assertEquals(5, existingParent.getTotalPoint());
+-        assertEquals(0, existingParent.getSystemPointRecord());
+-        assertEquals(5, existingParent.getManualPointRecord());
+-
+-        // Leaf B gets +3 manual (total 8, effective 8 > 5) -> clamped to parent.maximum (6)
+-        service.recordPointAndPropagate(userId, semesterId, leafBId, 3, PointTransactionTypeEnum.MANUAL);
+-        assertEquals(6, existingParent.getTotalPoint());
+-        assertEquals(0, existingParent.getSystemPointRecord());
+-        assertEquals(6, existingParent.getManualPointRecord());
++    @Test void maxChildSwitchesWinnerAfterDeletion() {
++        when(categoryPolicy.effectiveCategories(9L)).thenReturn(List.of(category(1,null,100,true),category(2,1L,10,false),category(3,1L,20,false)));
++        ledger.add(transaction(2,8,"MANUAL"));ledger.add(transaction(3,7,"CHECKOUT_REWARD"));
++        service.rebuildSemesterPoints(7L,9L);assertEquals(8,stored.get(1L).getTotalPoint());
++        ledger.removeFirst();service.rebuildSemesterPoints(7L,9L);assertEquals(7,stored.get(1L).getTotalPoint());assertEquals(7,stored.get(1L).getSystemPointRecord());
+     }
+ }
+diff --git a/ddd-application/src/test/java/com/ddd/application/service/event/impl/EventCommandServiceImplTest.java b/ddd-application/src/test/java/com/ddd/application/service/event/impl/EventCommandServiceImplTest.java
+--- a/ddd-application/src/test/java/com/ddd/application/service/event/impl/EventCommandServiceImplTest.java
++++ b/ddd-application/src/test/java/com/ddd/application/service/event/impl/EventCommandServiceImplTest.java
+@@ -62,7 +62,7 @@
+     private SchoolRepository schoolRepository;
+ 
+     @Mock
+-    private PointCategoryRepository pointCategoryRepository;
++    private com.ddd.application.service.semesterpoint.impl.SemesterPointCategoryPolicy semesterPointCategoryPolicy;
+ 
+     @Mock
+     private SecurityContextPort securityContextPort;
+@@ -325,4 +325,37 @@
+                 () -> eventCommandService.updateEventVisibilityByAdmin(55L, true, "Spam"));
+         verify(eventRepository, never()).save(any());
+     }
++    @Test
++    void createEventRejectsInvalidAwardCategoryBeforePersistingEvent() {
++        when(fanpageRepository.findById(10L)).thenReturn(Optional.of(testFanpage));
++        var dto = buildCreateDto(null);
++        dto = new EventCreateDto(dto.name(), dto.description(), dto.location(), dto.dateOpen(), dto.dateClose(),
++                dto.dateHappen(), dto.capacity(), dto.maleQuantity(), dto.femaleQuantity(), dto.bannerUrl(),
++                dto.eventTypeId(), dto.criteriaId(), dto.fanpageId(), 9L, null, dto.allowSelfCheck(),
++                java.util.List.of(new com.ddd.application.dto.event.EventPointCreateDto(2L,5)));
++        when(securityContextPort.getCurrentUserId()).thenReturn(99L);
++        when(fanpageMemberRepository.findById(10L,99L)).thenReturn(Optional.of(testMember));
++        when(eventTypeRepository.findById(5L)).thenReturn(testEventType);
++        when(semesterRepository.findById(9L)).thenReturn(Optional.of(new com.ddd.domain.model.Semester()));
++        doThrow(new BusinessException("parent or non-effective category")).when(semesterPointCategoryPolicy).requireLeaves(9L,java.util.List.of(2L));
++        EventCreateDto invalid=dto;
++        assertThrows(BusinessException.class,()->eventCommandService.createEvent(invalid));
++        verify(eventRepository,never()).save(any());
++    }
++
++    @Test
++    void updateEventValidatesMappedAwardsAgainstResultingSemester() {
++        var testUser = new User(); testUser.setId(99L);
++        var event=new Event();event.setId(1L);event.setFanpageId(10L);event.setSemesterId(9L);
++        var point=new com.ddd.domain.model.EventPoint();point.setPointCategoryId(2L);point.setPoint(5);
++        event.setEventPoints(java.util.List.of(point));
++        when(eventRepository.findByIdForUpdate(1L)).thenReturn(event);
++        when(userRepository.findByEmail("student@example.com")).thenReturn(testUser);
++        when(fanpageMemberRepository.findById(10L,testUser.getId())).thenReturn(Optional.of(testMember));
++        when(eventTypeRepository.findById(5L)).thenReturn(testEventType);
++        doThrow(new BusinessException("non-effective award")).when(semesterPointCategoryPolicy).requireLeaves(9L,java.util.List.of(2L));
++        assertThrows(BusinessException.class,()->eventCommandService.updateEvent(1L,buildUpdateDto(null),"student@example.com"));
++        verify(eventRepository,never()).save(any());
++    }
++
+ }
+diff --git a/ddd-application/src/main/java/com/ddd/application/dto/semesterpoint/StudentSemesterPointCalculation.java b/ddd-application/src/main/java/com/ddd/application/dto/semesterpoint/StudentSemesterPointCalculation.java
+new file mode 100644
+--- /dev/null
++++ b/ddd-application/src/main/java/com/ddd/application/dto/semesterpoint/StudentSemesterPointCalculation.java
+@@ -0,0 +1,12 @@
++package com.ddd.application.dto.semesterpoint;
++
++import com.ddd.domain.model.StudentSemesterPoint;
++import java.util.List;
++import java.util.Map;
++
++public record StudentSemesterPointCalculation(
++        List<StudentSemesterPoint> points,
++        Map<Long, NodeMetadata> nodeMetadata) {
++    public record NodeMetadata(boolean isAtMaximum, int completionPercentage,
++                               Long selectedChildId, boolean contributesToParent) {}
++}
+diff --git a/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/PointTransactionCommandService.java b/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/PointTransactionCommandService.java
+--- a/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/PointTransactionCommandService.java
++++ b/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/PointTransactionCommandService.java
+@@ -5,5 +5,7 @@
+ public interface PointTransactionCommandService {
+     void createPointTransactionForStudent(PointTransactionRequestInfoDto pointTransactionInfoDto);
+ 
++    void updatePointTransactionForStudent(Long id, Integer points, String description);
++
+     void deletePointTransactionForStudent(Long pointTransactionId);
+ }
+diff --git a/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/StudentSemesterPointCommandService.java b/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/StudentSemesterPointCommandService.java
+--- a/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/StudentSemesterPointCommandService.java
++++ b/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/StudentSemesterPointCommandService.java
+@@ -1,12 +1,8 @@
+ package com.ddd.application.service.semesterpoint;
+ 
+-import com.ddd.domain.enums.PointTransactionTypeEnum;
+-
+ import java.util.List;
+-import java.util.Map;
+ 
+ public interface StudentSemesterPointCommandService {
+-    void recordPointAndPropagate(Long userId, Long semesterId, Long leafCategoryId, Integer points, PointTransactionTypeEnum type);
+-
+-    void bulkRecordPointsAndPropagate(List<Long> userIds, Long semesterId, Map<Long, Integer> categoryPointsMap, PointTransactionTypeEnum type);
++    void rebuildSemesterPoints(Long userId, Long semesterId);
++    void rebuildSemesterPoints(List<Long> userIds, Long semesterId);
+ }
+diff --git a/ddd-application/src/main/java/com/ddd/application/service/registration/impl/RegistrationCommandServiceImpl.java b/ddd-application/src/main/java/com/ddd/application/service/registration/impl/RegistrationCommandServiceImpl.java
+--- a/ddd-application/src/main/java/com/ddd/application/service/registration/impl/RegistrationCommandServiceImpl.java
++++ b/ddd-application/src/main/java/com/ddd/application/service/registration/impl/RegistrationCommandServiceImpl.java
+@@ -5,6 +5,7 @@
+ import com.ddd.application.service.registration.RegistrationCommandService;
+ import com.ddd.application.service.event.cache.RecommendationCacheService;
+ import com.ddd.application.service.semesterpoint.StudentSemesterPointCommandService;
++import com.ddd.application.service.semesterpoint.impl.SemesterPointCategoryPolicy;
+ import com.ddd.domain.enums.EventStatusEnum;
+ import com.ddd.domain.enums.PointTransactionStatusEnum;
+ import com.ddd.domain.enums.PointTransactionTypeEnum;
+@@ -46,6 +47,7 @@
+     private final FanpageMemberRepository fanpageMemberRepository;
+     private final EventPointRepository eventPointRepository;
+     private final PointTransactionRepository pointTransactionRepository;
++    private final SemesterPointCategoryPolicy semesterPointCategoryPolicy;
+     private final StudentSemesterPointCommandService studentSemesterPointCommandService;
+     private final StudentCriteriaTransactionCommandService studentCriteriaTransactionCommandService;
+     private final SecurityContextPort securityContextPort;
+@@ -441,6 +443,8 @@
+             throw new BusinessException("Event is not assigned to any semester");
+         }
+ 
++        semesterPointCategoryPolicy.requireLeaves(event.getSemesterId(),
++                eventPoints.stream().map(EventPoint::getPointCategoryId).toList());
+         List<PointTransaction> pointTransactions = new ArrayList<>();
+ 
+         for (Long studentUserId : studentUserIds) {
+@@ -451,20 +455,7 @@
+ 
+         pointTransactionRepository.saveAll(pointTransactions);
+ 
+-        // Batch propagate leaf points and all ancestors up to roots
+-        Map<Long, Integer> categoryPointsMap = eventPoints.stream()
+-                .collect(Collectors.toMap(
+-                        EventPoint::getPointCategoryId,
+-                        EventPoint::getPoint,
+-                        Integer::sum
+-                ));
+-
+-        studentSemesterPointCommandService.bulkRecordPointsAndPropagate(
+-                studentUserIds,
+-                event.getSemesterId(),
+-                categoryPointsMap,
+-                PointTransactionTypeEnum.CHECKOUT_REWARD
+-        );
++        studentSemesterPointCommandService.rebuildSemesterPoints(studentUserIds, event.getSemesterId());
+     }
+ 
+     private PointTransaction createPointTransaction(Event event, Long studentUserId, EventPoint eventPoint) {
+diff --git a/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/SemesterPointCategoryPolicy.java b/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/SemesterPointCategoryPolicy.java
+new file mode 100644
+--- /dev/null
++++ b/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/SemesterPointCategoryPolicy.java
+@@ -0,0 +1,43 @@
++package com.ddd.application.service.semesterpoint.impl;
++
++import com.ddd.domain.exception.BusinessException;
++import com.ddd.domain.exception.ResourceNotFoundException;
++import com.ddd.domain.model.PointCategory;
++import com.ddd.domain.repository.PointCategoryRepository;
++import com.ddd.domain.repository.SemesterRepository;
++import lombok.RequiredArgsConstructor;
++import org.springframework.stereotype.Component;
++import java.time.LocalDate;
++import java.util.Collection;
++import java.util.List;
++import java.util.Set;
++import java.util.stream.Collectors;
++
++@Component
++@RequiredArgsConstructor
++public class SemesterPointCategoryPolicy {
++    private final SemesterRepository semesters;
++    private final PointCategoryRepository categories;
++
++    public List<PointCategory> effectiveCategories(Long semesterId) {
++        var semester = semesters.findById(semesterId)
++                .orElseThrow(() -> new ResourceNotFoundException("Semester not found: " + semesterId));
++        LocalDate date = semester.getEndDate() != null ? semester.getEndDate()
++                : semester.getStartDate() != null ? semester.getStartDate() : LocalDate.now();
++        return categories.findActiveEffectiveAsOf(date);
++    }
++
++    public void requireLeaves(Long semesterId, Collection<Long> categoryIds) {
++        if (categoryIds.isEmpty()) return;
++        List<PointCategory> effective = effectiveCategories(semesterId);
++        Set<Long> activeIds = effective.stream().filter(PointCategory::isActive)
++                .map(PointCategory::getId).collect(Collectors.toSet());
++        Set<Long> parents = effective.stream().filter(PointCategory::isActive)
++                .map(PointCategory::getParentCategoryId).collect(Collectors.toSet());
++        for (Long id : categoryIds) {
++            if (id == null || !activeIds.contains(id) || parents.contains(id)) {
++                throw new BusinessException("Points require an effective leaf category for semester " + semesterId + ": " + id);
++            }
++        }
++    }
++}
+diff --git a/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCalculator.java b/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCalculator.java
+new file mode 100644
+--- /dev/null
++++ b/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCalculator.java
+@@ -0,0 +1,146 @@
++package com.ddd.application.service.semesterpoint.impl;
++
++import com.ddd.application.dto.semesterpoint.StudentSemesterPointCalculation;
++import com.ddd.application.dto.semesterpoint.StudentSemesterPointCalculation.NodeMetadata;
++import com.ddd.domain.exception.BusinessException;
++import com.ddd.domain.model.PointCategory;
++import com.ddd.domain.model.PointTransaction;
++import com.ddd.domain.model.StudentSemesterPoint;
++import lombok.extern.slf4j.Slf4j;
++import org.springframework.stereotype.Component;
++import java.util.*;
++
++/** Calculates snapshots from the ledger. Parent totals retain their value before their own cap. */
++@Component
++@Slf4j
++public class StudentSemesterPointCalculator {
++    public StudentSemesterPointCalculation calculate(Long userId, Long semesterId,
++            List<PointCategory> categories, List<PointTransaction> transactions) {
++        try {
++            return new Evaluation(userId, semesterId, categories, transactions).calculate();
++        } catch (ArithmeticException exception) {
++            throw new BusinessException("Semester points exceed the supported integer range");
++        }
++    }
++
++    private record SourceTotals(long system, long manual) {}
++
++    private static final class Evaluation {
++        private final Long userId;
++        private final Long semesterId;
++        private final Map<Long, PointCategory> categories = new TreeMap<>();
++        private final Map<Long, List<Long>> children = new HashMap<>();
++        private final Map<Long, SourceTotals> sources = new HashMap<>();
++        private final Map<Long, StudentSemesterPoint> points = new LinkedHashMap<>();
++        private final Map<Long, Long> winners = new HashMap<>();
++        private final Set<Long> visiting = new HashSet<>();
++
++        Evaluation(Long userId, Long semesterId, List<PointCategory> categoryList,
++                   List<PointTransaction> transactions) {
++            this.userId = Objects.requireNonNull(userId);
++            this.semesterId = Objects.requireNonNull(semesterId);
++            for (PointCategory category : categoryList) {
++                if (!category.isActive()) continue;
++                if (category.getId() == null || category.getMaximum() == null || category.getMaximum() < 0) {
++                    throw new BusinessException("Point categories must have an ID and a non-negative maximum");
++                }
++                if (categories.put(category.getId(), category) != null) {
++                    throw new BusinessException("Duplicate point category: " + category.getId());
++                }
++            }
++            for (PointCategory category : categories.values()) {
++                Long parent = category.getParentCategoryId();
++                if (parent == null || parent == 0L) continue;
++                if (!categories.containsKey(parent)) {
++                    throw new BusinessException("Point category has no effective parent: " + category.getId());
++                }
++                children.computeIfAbsent(parent, key -> new ArrayList<>()).add(category.getId());
++            }
++            for (PointTransaction transaction : transactions) {
++                if (!userId.equals(transaction.getUserId()) || !semesterId.equals(transaction.getSemesterId())) continue;
++                Long categoryId = transaction.getPointCategoryId();
++                if (categoryId == null || !categories.containsKey(categoryId) || children.containsKey(categoryId)) {
++                    log.warn("Excluding point transaction {} for non-effective or non-leaf category {}", transaction.getId(), categoryId);
++                    continue;
++                }
++                if (transaction.getPoints() == null) {
++                    throw new BusinessException("Point transaction has no points: " + transaction.getId());
++                }
++                SourceTotals totals = sources.getOrDefault(categoryId, new SourceTotals(0, 0));
++                if ("CHECKOUT_REWARD".equals(transaction.getType())) {
++                    sources.put(categoryId, new SourceTotals(
++                            Math.addExact(totals.system(), transaction.getPoints()), totals.manual()));
++                } else {
++                    sources.put(categoryId, new SourceTotals(totals.system(),
++                            Math.addExact(totals.manual(), transaction.getPoints())));
++                }
++            }
++        }
++
++        StudentSemesterPointCalculation calculate() {
++            for (Long id : categories.keySet()) evaluate(id);
++            Map<Long, NodeMetadata> metadata = new LinkedHashMap<>();
++            for (PointCategory category : categories.values()) {
++                Long id = category.getId();
++                int effective = effective(id);
++                int maximum = category.getMaximum();
++                Long parent = category.getParentCategoryId();
++                boolean contributes = !winners.containsKey(parent) || id.equals(winners.get(parent));
++                metadata.put(id, new NodeMetadata(maximum > 0 && effective >= maximum,
++                        maximum == 0 ? 0 : (int) ((long) effective * 100 / maximum), winners.get(id), contributes));
++            }
++            return new StudentSemesterPointCalculation(List.copyOf(points.values()), Map.copyOf(metadata));
++        }
++
++        private StudentSemesterPoint evaluate(Long id) {
++            if (points.containsKey(id)) return points.get(id);
++            if (!visiting.add(id)) throw new BusinessException("Cycle in point category hierarchy at " + id);
++            PointCategory category = categories.get(id);
++            List<Long> childIds = children.getOrDefault(id, List.of());
++            long system = 0;
++            long manual = 0;
++            long total = 0;
++            if (childIds.isEmpty()) {
++                SourceTotals values = sources.getOrDefault(id, new SourceTotals(0, 0));
++                system = Math.max(0, values.system());
++                manual = Math.max(0, values.manual());
++                total = Math.addExact(system, manual);
++            } else if (category.isMaxChild()) {
++                StudentSemesterPoint best = null;
++                for (Long childId : childIds) {
++                    StudentSemesterPoint child = evaluate(childId);
++                    if (best == null || better(child, best)) best = child;
++                }
++                winners.put(id, best.getPointCategoryId());
++                system = best.getSystemPointRecord();
++                manual = best.getManualPointRecord();
++                total = effective(best.getPointCategoryId());
++            } else {
++                for (Long childId : childIds) {
++                    StudentSemesterPoint child = evaluate(childId);
++                    system = Math.addExact(system, child.getSystemPointRecord());
++                    manual = Math.addExact(manual, child.getManualPointRecord());
++                    total = Math.addExact(total, effective(childId));
++                }
++            }
++            var point = new StudentSemesterPoint(userId, semesterId, id, Math.toIntExact(total));
++            point.setSystemPointRecord(Math.toIntExact(system));
++            point.setManualPointRecord(Math.toIntExact(manual));
++            points.put(id, point);
++            visiting.remove(id);
++            return point;
++        }
++
++        private boolean better(StudentSemesterPoint candidate, StudentSemesterPoint best) {
++            int comparison = Integer.compare(effective(candidate.getPointCategoryId()), effective(best.getPointCategoryId()));
++            if (comparison != 0) return comparison > 0;
++            comparison = Integer.compare(candidate.getManualPointRecord(), best.getManualPointRecord());
++            if (comparison != 0) return comparison > 0;
++            return candidate.getPointCategoryId() < best.getPointCategoryId();
++        }
++
++        private int effective(Long id) {
++            return Math.min(categories.get(id).getMaximum(), points.get(id).getTotalPoint());
++        }
++    }
++}
+diff --git a/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/PointTransactionCommandServiceImpl.java b/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/PointTransactionCommandServiceImpl.java
+--- a/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/PointTransactionCommandServiceImpl.java
++++ b/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/PointTransactionCommandServiceImpl.java
+@@ -9,13 +9,13 @@
+ import com.ddd.domain.exception.ResourceNotFoundException;
+ import com.ddd.domain.model.PointTransaction;
+ import com.ddd.domain.model.port.security.SecurityContextPort;
+-import com.ddd.domain.repository.PointCategoryRepository;
+ import com.ddd.domain.repository.PointTransactionRepository;
+ import lombok.RequiredArgsConstructor;
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
+ 
+ import java.util.Objects;
++import java.util.List;
+ 
+ @Service
+ @RequiredArgsConstructor
+@@ -23,29 +23,36 @@
+ public class PointTransactionCommandServiceImpl implements PointTransactionCommandService {
+     private final PointTransactionDtoMapper pointTransactionDtoMapper;
+     private final PointTransactionRepository pointTransactionRepository;
+-    private final PointCategoryRepository pointCategoryRepository;
++    private final SemesterPointCategoryPolicy categoryPolicy;
+     private final StudentSemesterPointCommandService studentSemesterPointCommandService;
+     private final SecurityContextPort securityContextPort;
+ 
+     @Override
+     public void createPointTransactionForStudent(PointTransactionRequestInfoDto pointTransactionRequestInfoDto) {
+         Long userId = securityContextPort.getCurrentUserId();
+-        boolean isLeaf = !pointCategoryRepository.hasChildren(pointTransactionRequestInfoDto.pointCategoryId());
+-        if (!isLeaf) {
+-            throw new IllegalArgumentException("Only can create point transaction for leaf point category");
+-        }
++        categoryPolicy.requireLeaves(pointTransactionRequestInfoDto.semesterId(), List.of(pointTransactionRequestInfoDto.pointCategoryId()));
+ 
+         PointTransaction pointTransaction = createPointTransaction(pointTransactionRequestInfoDto, userId);
+         pointTransactionRepository.save(pointTransaction);
+ 
+-        // Record leaf point and propagate upward to all ancestors
+-        studentSemesterPointCommandService.recordPointAndPropagate(
+-                userId,
+-                pointTransactionRequestInfoDto.semesterId(),
+-                pointTransactionRequestInfoDto.pointCategoryId(),
+-                pointTransactionRequestInfoDto.points(),
+-                PointTransactionTypeEnum.MANUAL
+-        );
++        studentSemesterPointCommandService.rebuildSemesterPoints(userId, pointTransactionRequestInfoDto.semesterId());
++    }
++
++    @Override
++    public void updatePointTransactionForStudent(Long id, Integer points, String description) {
++        if (points == null || points <= 0) throw new IllegalArgumentException("Points must be positive");
++        Long userId = securityContextPort.getCurrentUserId();
++        PointTransaction transaction = pointTransactionRepository.findById(id)
++                .orElseThrow(() -> new ResourceNotFoundException("Point transaction not found: " + id));
++        if (!Objects.equals(transaction.getUserId(), userId)
++                || !PointTransactionTypeEnum.MANUAL.name().equals(transaction.getType())) {
++            throw new IllegalArgumentException("Only your own manual point transactions can be edited");
++        }
++        categoryPolicy.requireLeaves(transaction.getSemesterId(), List.of(transaction.getPointCategoryId()));
++        transaction.setPoints(points);
++        transaction.setDescription(description);
++        pointTransactionRepository.save(transaction);
++        studentSemesterPointCommandService.rebuildSemesterPoints(userId, transaction.getSemesterId());
+     }
+ 
+     @Override
+@@ -60,14 +67,7 @@
+ 
+         pointTransactionRepository.delete(transaction);
+ 
+-        // Deduct leaf points and propagate upward to all ancestors
+-        studentSemesterPointCommandService.recordPointAndPropagate(
+-                userId,
+-                transaction.getSemesterId(),
+-                transaction.getPointCategoryId(),
+-                -transaction.getPoints(),
+-                PointTransactionTypeEnum.MANUAL
+-        );
++        studentSemesterPointCommandService.rebuildSemesterPoints(userId, transaction.getSemesterId());
+     }
+ 
+     private PointTransaction createPointTransaction(PointTransactionRequestInfoDto pointTransactionRequestInfoDto, Long userId) {
+diff --git a/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCommandServiceImpl.java b/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCommandServiceImpl.java
+--- a/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCommandServiceImpl.java
++++ b/ddd-application/src/main/java/com/ddd/application/service/semesterpoint/impl/StudentSemesterPointCommandServiceImpl.java
+@@ -1,21 +1,14 @@
+ package com.ddd.application.service.semesterpoint.impl;
+ 
+ import com.ddd.application.service.semesterpoint.StudentSemesterPointCommandService;
+-import com.ddd.domain.enums.PointTransactionTypeEnum;
+-import com.ddd.domain.exception.ResourceNotFoundException;
+-import com.ddd.domain.model.PointCategory;
+-import com.ddd.domain.model.Semester;
++import com.ddd.domain.model.PointTransaction;
+ import com.ddd.domain.model.StudentSemesterPoint;
+-import com.ddd.domain.repository.PointCategoryRepository;
+-import com.ddd.domain.repository.SemesterRepository;
++import com.ddd.domain.repository.PointTransactionRepository;
+ import com.ddd.domain.repository.StudentSemesterPointRepository;
+ import lombok.RequiredArgsConstructor;
+-import lombok.extern.slf4j.Slf4j;
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
+-
+ import java.time.Instant;
+-import java.time.LocalDate;
+ import java.util.*;
+ import java.util.function.Function;
+ import java.util.stream.Collectors;
+@@ -23,236 +16,50 @@
+ @Service
+ @RequiredArgsConstructor
+ @Transactional
+-@Slf4j
+ public class StudentSemesterPointCommandServiceImpl implements StudentSemesterPointCommandService {
+-    private final StudentSemesterPointRepository studentSemesterPointRepository;
+-    private final PointCategoryRepository pointCategoryRepository;
+-    private final SemesterRepository semesterRepository;
++    private final StudentSemesterPointRepository points;
++    private final PointTransactionRepository transactions;
++    private final SemesterPointCategoryPolicy categoryPolicy;
++    private final StudentSemesterPointCalculator calculator;
+ 
+     @Override
+-    public void recordPointAndPropagate(Long userId, Long semesterId, Long leafCategoryId, Integer points, PointTransactionTypeEnum type) {
+-        if (userId == null || semesterId == null || leafCategoryId == null || points == null || points == 0) {
+-            return;
+-        }
+-        bulkRecordPointsAndPropagate(List.of(userId), semesterId, Map.of(leafCategoryId, points), type);
++    public void rebuildSemesterPoints(Long userId, Long semesterId) {
++        rebuildSemesterPoints(List.of(userId), semesterId);
+     }
+ 
+     @Override
+-    public void bulkRecordPointsAndPropagate(List<Long> userIds, Long semesterId,
+-                                             Map<Long, Integer> categoryPointsMap,
+-                                             PointTransactionTypeEnum type) {
+-        if (userIds == null || userIds.isEmpty() || semesterId == null || categoryPointsMap == null || categoryPointsMap.isEmpty()) {
+-            return;
+-        }
+-
+-        Semester semester = semesterRepository.findById(semesterId)
+-                .orElseThrow(() -> new ResourceNotFoundException("Semester not found with id: " + semesterId));
+-        LocalDate effectiveDate = semester.getEndDate() != null
+-                ? semester.getEndDate()
+-                : (semester.getStartDate() != null ? semester.getStartDate() : LocalDate.now());
+-
+-        List<PointCategory> allCategories = pointCategoryRepository.findActiveEffectiveAsOf(effectiveDate);
+-        Map<Long, PointCategory> categoryMap = allCategories.stream()
+-                .collect(Collectors.toMap(PointCategory::getId, Function.identity()));
+-
+-        Map<Long, List<PointCategory>> childrenByParent = allCategories.stream()
+-                .filter(c -> c.getParentCategoryId() != null && c.getParentCategoryId() != 0L)
+-                .collect(Collectors.groupingBy(PointCategory::getParentCategoryId));
+-
+-        List<StudentSemesterPoint> existingPoints = studentSemesterPointRepository.findAllByUserIdsAndSemesterId(userIds, semesterId);
+-        Map<Long, Map<Long, StudentSemesterPoint>> userPointsMap = existingPoints.stream()
+-                .collect(Collectors.groupingBy(
+-                        StudentSemesterPoint::getUserId,
+-                        Collectors.toMap(StudentSemesterPoint::getPointCategoryId, Function.identity(), (a, b) -> a)
+-                ));
+-
++    public void rebuildSemesterPoints(List<Long> userIds, Long semesterId) {
++        if (userIds == null || userIds.isEmpty()) return;
++        var distinctUsers = userIds.stream().filter(Objects::nonNull).distinct().sorted().toList();
++        if (distinctUsers.isEmpty()) return;
++        var categories = categoryPolicy.effectiveCategories(semesterId);
++        var ledger = transactions.findAllByUserIdsAndSemesterId(distinctUsers, semesterId).stream()
++                .collect(Collectors.groupingBy(PointTransaction::getUserId));
++        var stored = points.findAllByUserIdsAndSemesterId(distinctUsers, semesterId).stream()
++                .collect(Collectors.groupingBy(StudentSemesterPoint::getUserId));
++        List<StudentSemesterPoint> snapshots = new ArrayList<>();
+         Instant now = Instant.now();
+-        List<StudentSemesterPoint> allPointsToSave = new ArrayList<>();
+-
+-        for (Long userId : userIds) {
+-            Map<Long, StudentSemesterPoint> studentMap = userPointsMap.computeIfAbsent(userId, k -> new HashMap<>());
+-            Map<Long, StudentSemesterPoint> updatedForUser = new LinkedHashMap<>();
+-
+-            for (Map.Entry<Long, Integer> entry : categoryPointsMap.entrySet()) {
+-                Long leafCategoryId = entry.getKey();
+-                Integer addedPoints = entry.getValue();
+-
+-                if (addedPoints == null || addedPoints == 0) {
+-                    continue;
+-                }
+-
+-                // 1. Update or create leaf StudentSemesterPoint (raw total retained for delta deductions)
+-                StudentSemesterPoint leafPoint = studentMap.computeIfAbsent(
+-                        leafCategoryId,
+-                        id -> new StudentSemesterPoint(userId, semesterId, id, 0)
+-                );
+-                updateLeafPoint(leafPoint, addedPoints, type, now);
+-                updatedForUser.put(leafCategoryId, leafPoint);
+-
+-                // 2. Propagate effective (clamped) points to all ancestors upwards
+-                PointCategory leafCategory = categoryMap.get(leafCategoryId);
+-                propagateToAncestors(
+-                        userId,
+-                        semesterId,
+-                        leafCategory,
+-                        categoryMap,
+-                        childrenByParent,
+-                        studentMap,
+-                        updatedForUser,
+-                        now
+-                );
++        for (Long userId : distinctUsers) {
++            var existing = stored.getOrDefault(userId, List.of()).stream()
++                    .collect(Collectors.toMap(StudentSemesterPoint::getPointCategoryId, Function.identity()));
++            var result = calculator.calculate(userId, semesterId, categories, ledger.getOrDefault(userId, List.of()));
++            for (var calculated : result.points()) {
++                var snapshot = existing.remove(calculated.getPointCategoryId());
++                if (snapshot == null) snapshot = calculated;
++                snapshot.setTotalPoint(calculated.getTotalPoint());
++                snapshot.setSystemPointRecord(calculated.getSystemPointRecord());
++                snapshot.setManualPointRecord(calculated.getManualPointRecord());
++                snapshot.setUpdatedAt(now);
++                snapshots.add(snapshot);
+             }
+-            allPointsToSave.addAll(updatedForUser.values());
+-        }
+-
+-        if (!allPointsToSave.isEmpty()) {
+-            studentSemesterPointRepository.saveAll(allPointsToSave);
+-            log.info("Persisted and propagated {} StudentSemesterPoint records across {} users for semester {}",
+-                    allPointsToSave.size(), userIds.size(), semesterId);
+-        }
+-    }
+-
+-    private void updateLeafPoint(StudentSemesterPoint leafPoint,
+-                                 int addedPoints,
+-                                 PointTransactionTypeEnum type,
+-                                 Instant now) {
+-        if (type == PointTransactionTypeEnum.CHECKOUT_REWARD) {
+-            int currentSys = intValue(leafPoint.getSystemPointRecord());
+-            leafPoint.setSystemPointRecord(Math.max(0, currentSys + addedPoints));
+-        } else {
+-            int currentManual = intValue(leafPoint.getManualPointRecord());
+-            leafPoint.setManualPointRecord(Math.max(0, currentManual + addedPoints));
+-        }
+-
+-        int sys = intValue(leafPoint.getSystemPointRecord());
+-        int manual = intValue(leafPoint.getManualPointRecord());
+-        leafPoint.setTotalPoint(sys + manual);
+-        leafPoint.setUpdatedAt(now);
+-    }
+-
+-    private void propagateToAncestors(Long userId,
+-                                      Long semesterId,
+-                                      PointCategory leafCategory,
+-                                      Map<Long, PointCategory> categoryMap,
+-                                      Map<Long, List<PointCategory>> childrenByParent,
+-                                      Map<Long, StudentSemesterPoint> studentMap,
+-                                      Map<Long, StudentSemesterPoint> updatedForUser,
+-                                      Instant now) {
+-        Long currentParentId = leafCategory != null ? leafCategory.getParentCategoryId() : null;
+-
+-        while (currentParentId != null && currentParentId != 0L) {
+-            PointCategory parentCategory = categoryMap.get(currentParentId);
+-            if (parentCategory == null) {
+-                break;
+-            }
+-
+-            List<PointCategory> directChildren = childrenByParent.getOrDefault(currentParentId, List.of());
+-            StudentSemesterPoint parentPoint = studentMap.computeIfAbsent(
+-                    currentParentId,
+-                    id -> new StudentSemesterPoint(userId, semesterId, id, 0)
+-            );
+-
+-            if (parentCategory.isMaxChild()) {
+-                applyMaxChildRollup(parentCategory, parentPoint, directChildren, studentMap);
+-            } else {
+-                applySumRollup(parentCategory, parentPoint, directChildren, studentMap);
+-            }
+-
+-            parentPoint.setUpdatedAt(now);
+-            updatedForUser.put(currentParentId, parentPoint);
+-            currentParentId = parentCategory.getParentCategoryId();
+-        }
+-    }
+-
+-    private void applyMaxChildRollup(PointCategory parentCategory,
+-                                     StudentSemesterPoint parentPoint,
+-                                     List<PointCategory> directChildren,
+-                                     Map<Long, StudentSemesterPoint> studentMap) {
+-        StudentSemesterPoint bestChildPoint = null;
+-        Long bestChildId = null;
+-        int bestEffectiveTotal = 0;
+-
+-        for (PointCategory child : directChildren) {
+-            StudentSemesterPoint childPoint = studentMap.get(child.getId());
+-            if (childPoint == null) {
+-                continue;
+-            }
+-            int childEffectiveTotal = effectiveTotal(childPoint, child);
+-            if (isBetterMaxChildCandidate(childEffectiveTotal, childPoint, child.getId(),
+-                    bestEffectiveTotal, bestChildPoint, bestChildId)) {
+-                bestEffectiveTotal = childEffectiveTotal;
+-                bestChildPoint = childPoint;
+-                bestChildId = child.getId();
++            for (var stale : existing.values()) {
++                stale.setTotalPoint(0);
++                stale.setSystemPointRecord(0);
++                stale.setManualPointRecord(0);
++                stale.setUpdatedAt(now);
++                snapshots.add(stale);
+             }
+         }
+-
+-        if (bestChildPoint != null && bestEffectiveTotal > 0) {
+-            int cappedParentTotal = clampToMaximum(bestEffectiveTotal, parentCategory.getMaximum());
+-            parentPoint.setTotalPoint(cappedParentTotal);
+-            parentPoint.setSystemPointRecord(clampToMaximum(intValue(bestChildPoint.getSystemPointRecord()), cappedParentTotal));
+-            parentPoint.setManualPointRecord(clampToMaximum(intValue(bestChildPoint.getManualPointRecord()), cappedParentTotal));
+-        } else {
+-            parentPoint.setTotalPoint(0);
+-            parentPoint.setSystemPointRecord(0);
+-            parentPoint.setManualPointRecord(0);
+-        }
+-    }
+-
+-    private boolean isBetterMaxChildCandidate(int candidateEffectiveTotal,
+-                                              StudentSemesterPoint candidatePoint,
+-                                              Long candidateId,
+-                                              int bestEffectiveTotal,
+-                                              StudentSemesterPoint bestPoint,
+-                                              Long bestId) {
+-        if (bestPoint == null) {
+-            return true;
+-        }
+-        if (candidateEffectiveTotal != bestEffectiveTotal) {
+-            return candidateEffectiveTotal > bestEffectiveTotal;
+-        }
+-        int candidateManual = intValue(candidatePoint.getManualPointRecord());
+-        int bestManual = intValue(bestPoint.getManualPointRecord());
+-        if (candidateManual != bestManual) {
+-            return candidateManual > bestManual;
+-        }
+-        if (candidateId == null) {
+-            return false;
+-        }
+-        return bestId == null || candidateId < bestId;
+-    }
+-
+-    private void applySumRollup(PointCategory parentCategory,
+-                                StudentSemesterPoint parentPoint,
+-                                List<PointCategory> directChildren,
+-                                Map<Long, StudentSemesterPoint> studentMap) {
+-        int sumTotal = 0;
+-        int sumSys = 0;
+-        int sumManual = 0;
+-        for (PointCategory child : directChildren) {
+-            StudentSemesterPoint childPoint = studentMap.get(child.getId());
+-            if (childPoint != null) {
+-                sumTotal += effectiveTotal(childPoint, child);
+-                sumSys += clampToMaximum(intValue(childPoint.getSystemPointRecord()), child.getMaximum());
+-                sumManual += clampToMaximum(intValue(childPoint.getManualPointRecord()), child.getMaximum());
+-            }
+-        }
+-
+-        Integer parentMax = parentCategory.getMaximum();
+-        parentPoint.setTotalPoint(clampToMaximum(sumTotal, parentMax));
+-        parentPoint.setSystemPointRecord(clampToMaximum(sumSys, parentMax));
+-        parentPoint.setManualPointRecord(clampToMaximum(sumManual, parentMax));
+-    }
+-
+-    private int effectiveTotal(StudentSemesterPoint point, PointCategory category) {
+-        return clampToMaximum(intValue(point.getTotalPoint()), category != null ? category.getMaximum() : null);
+-    }
+-
+-    private int clampToMaximum(int value, Integer maximum) {
+-        int nonNegative = Math.max(0, value);
+-        return maximum != null ? Math.min(maximum, nonNegative) : nonNegative;
+-    }
+-
+-    private int intValue(Integer value) {
+-        return value != null ? value : 0;
++        points.saveAll(snapshots);
+     }
+ }
+diff --git a/ddd-application/src/main/java/com/ddd/application/service/event/impl/EventCommandServiceImpl.java b/ddd-application/src/main/java/com/ddd/application/service/event/impl/EventCommandServiceImpl.java
+--- a/ddd-application/src/main/java/com/ddd/application/service/event/impl/EventCommandServiceImpl.java
++++ b/ddd-application/src/main/java/com/ddd/application/service/event/impl/EventCommandServiceImpl.java
+@@ -6,6 +6,7 @@
+ import com.ddd.application.dto.event.EventUpdateDto;
+ import com.ddd.application.mapper.EventDtoMapper;
+ import com.ddd.application.service.event.EventCommandService;
++import com.ddd.application.service.semesterpoint.impl.SemesterPointCategoryPolicy;
+ import com.ddd.domain.enums.EventStatusEnum;
+ import com.ddd.domain.enums.FollowingStatusEnum;
+ import com.ddd.domain.event.EventCreatedEvent;
+@@ -43,7 +44,7 @@
+     private final EventDtoMapper eventDtoMapper;
+     private final SemesterRepository semesterRepository;
+     private final SchoolRepository schoolRepository;
+-    private final PointCategoryRepository pointCategoryRepository;
++    private final SemesterPointCategoryPolicy semesterPointCategoryPolicy;
+     private final SecurityContextPort securityContextPort;
+     private final ApplicationEventPublisher applicationEventPublisher;
+     private final FollowingRepository followingRepository;
+@@ -101,6 +102,10 @@
+         validateUpdateReferences(dto);
+ 
+         eventDtoMapper.updateEventFromDto(event, dto);
++        if (event.getEventPoints() != null && !event.getEventPoints().isEmpty()) {
++            semesterPointCategoryPolicy.requireLeaves(event.getSemesterId(),
++                    event.getEventPoints().stream().map(EventPoint::getPointCategoryId).toList());
++        }
+         event.validateEventDates();
+         event.validateCapacityAndQuantities();
+ 
+@@ -211,12 +216,8 @@
+         }
+ 
+         if (dto.eventPoints() != null && !dto.eventPoints().isEmpty()) {
+-            for (EventPointCreateDto ep : dto.eventPoints()) {
+-                if (ep.pointCategoryId() != null) {
+-                    pointCategoryRepository.findById(ep.pointCategoryId())
+-                            .orElseThrow(() -> new ResourceNotFoundException("PointCategory not found with id: " + ep.pointCategoryId()));
+-                }
+-            }
++            semesterPointCategoryPolicy.requireLeaves(dto.semesterId(),
++                    dto.eventPoints().stream().map(EventPointCreateDto::pointCategoryId).toList());
+         }
+     }
+ 
+diff --git a/ddd-domain/src/main/java/com/ddd/domain/repository/PointTransactionRepository.java b/ddd-domain/src/main/java/com/ddd/domain/repository/PointTransactionRepository.java
+--- a/ddd-domain/src/main/java/com/ddd/domain/repository/PointTransactionRepository.java
++++ b/ddd-domain/src/main/java/com/ddd/domain/repository/PointTransactionRepository.java
+@@ -6,6 +6,8 @@
+ import java.util.Optional;
+ 
+ public interface PointTransactionRepository {
++    List<PointTransaction> findAllByUserIdsAndSemesterId(List<Long> userIds, Long semesterId);
++
+     void saveAll(List<PointTransaction> pointTransactions);
+ 
+     void save(PointTransaction pointTransaction);
+diff --git a/ddd-infrastructure/src/main/java/com/ddd/infrastructure/repository/PointTransactionRepositoryImpl.java b/ddd-infrastructure/src/main/java/com/ddd/infrastructure/repository/PointTransactionRepositoryImpl.java
+--- a/ddd-infrastructure/src/main/java/com/ddd/infrastructure/repository/PointTransactionRepositoryImpl.java
++++ b/ddd-infrastructure/src/main/java/com/ddd/infrastructure/repository/PointTransactionRepositoryImpl.java
+@@ -19,6 +19,13 @@
+     private final PointTransactionJpaRepository pointTransactionJpaRepository;
+     private final PointTransactionMapper pointTransactionMapper;
+     private final EntityManager entityManager;
++
++    @Override
++    public List<PointTransaction> findAllByUserIdsAndSemesterId(List<Long> userIds, Long semesterId) {
++        if (userIds == null || userIds.isEmpty()) return List.of();
++        return pointTransactionJpaRepository.findByUserIdInAndSemesterId(userIds, semesterId).stream()
++                .map(pointTransactionMapper::toDomain).toList();
++    }
+ 
+     @Override
+     public Optional<PointTransaction> findById(Long id) {
+diff --git a/ddd-infrastructure/src/main/java/com/ddd/infrastructure/repository/jpaRepository/PointTransactionJpaRepository.java b/ddd-infrastructure/src/main/java/com/ddd/infrastructure/repository/jpaRepository/PointTransactionJpaRepository.java
+--- a/ddd-infrastructure/src/main/java/com/ddd/infrastructure/repository/jpaRepository/PointTransactionJpaRepository.java
++++ b/ddd-infrastructure/src/main/java/com/ddd/infrastructure/repository/jpaRepository/PointTransactionJpaRepository.java
+@@ -8,6 +8,9 @@
+ 
+ public interface PointTransactionJpaRepository extends JpaRepository<PointTransactionJpaEntity, Long> {
+ 
++    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"user", "semester", "pointCategory", "event"})
++    List<PointTransactionJpaEntity> findByUserIdInAndSemesterId(List<Long> userIds, Long semesterId);
++
+     List<PointTransactionJpaEntity> findByUserIdAndSemesterIdAndPointCategoryId(Long id,
+                                                                                 Long semesterId,
+                                                                                 Long pointCategoryId);

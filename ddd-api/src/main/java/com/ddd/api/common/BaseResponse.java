@@ -17,6 +17,10 @@ public record BaseResponse<T>(T data, String message, String exceptionCode) {
         return new BaseResponse<>(null, exceptionMessage, exceptionCode);
     }
 
+    public static <T> BaseResponse<T> error(String exceptionCode, String exceptionMessage, T data) {
+        return new BaseResponse<>(data, exceptionMessage, exceptionCode);
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> BaseResponse<T> empty() {
         return new BaseResponse<>((T) Collections.emptyList(), SUCCESS_REQUEST_MESSAGE, null);

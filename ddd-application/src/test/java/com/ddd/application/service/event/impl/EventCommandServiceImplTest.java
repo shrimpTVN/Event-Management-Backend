@@ -73,6 +73,9 @@ class EventCommandServiceImplTest {
     @Mock
     private FollowingRepository followingRepository;
 
+    @Mock
+    private RegistrationRepository registrationRepository;
+
     @InjectMocks
     private EventCommandServiceImpl eventCommandService;
 
@@ -356,6 +359,125 @@ class EventCommandServiceImplTest {
         doThrow(new BusinessException("non-effective award")).when(semesterPointCategoryPolicy).requireLeaves(9L,java.util.List.of(2L));
         assertThrows(BusinessException.class,()->eventCommandService.updateEvent(1L,buildUpdateDto(null),"student@example.com"));
         verify(eventRepository,never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should allow updateEvent when dateOpen is in the past and unchanged")
+    void updateEvent_allowsUnchangedPastDateOpen() {
+        Instant pastOpen = Instant.now().minus(2, ChronoUnit.DAYS);
+        Instant futureClose = Instant.now().plus(1, ChronoUnit.DAYS);
+        Instant futureHappen = Instant.now().plus(2, ChronoUnit.DAYS);
+        String email = "organizer@example.com";
+
+        Event existing = new Event();
+        existing.setId(60L);
+        existing.setFanpageId(10L);
+        existing.setStatus("PUBLISHED");
+        existing.setActive(true);
+        existing.setDateOpen(pastOpen);
+        existing.setDateClose(futureClose);
+        existing.setDateHappen(futureHappen);
+        existing.setCapacity(100);
+        existing.setMaleQuantity(50);
+        existing.setFemaleQuantity(50);
+
+        EventUpdateDto dto = new EventUpdateDto(
+                "Updated Name", "Updated Desc", "Hall B",
+                pastOpen.truncatedTo(ChronoUnit.MINUTES), futureClose, futureHappen,
+                100, 50, 50, false, "https://banner.url",
+                5L, null, 9L, null, true, Collections.emptyList()
+        );
+
+        User user = new User();
+        user.setId(99L);
+        user.setEmail(email);
+
+        when(eventRepository.findByIdForUpdate(60L)).thenReturn(existing);
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(fanpageMemberRepository.findById(10L, 99L)).thenReturn(Optional.of(testMember));
+        when(eventTypeRepository.findById(5L)).thenReturn(testEventType);
+        when(semesterRepository.findById(9L)).thenReturn(Optional.of(new com.ddd.domain.model.Semester()));
+        doAnswer(inv -> {
+            existing.setName(dto.name());
+            existing.setDateOpen(dto.dateOpen());
+            existing.setDateClose(dto.dateClose());
+            existing.setDateHappen(dto.dateHappen());
+            return null;
+        }).when(eventDtoMapper).updateEventFromDto(existing, dto);
+        when(registrationRepository.countActiveRegistrationsByEventId(60L)).thenReturn(10L);
+        when(eventRepository.save(existing)).thenReturn(existing);
+
+        assertDoesNotThrow(() -> eventCommandService.updateEvent(60L, dto, email));
+        verify(eventRepository).save(existing);
+    }
+
+    @Test
+    @DisplayName("Should throw BusinessException with dateOpen fieldError when dateOpen is moved to a new past time")
+    void updateEvent_rejectsChangingDateOpenToPast_withFieldError() {
+        Instant originalOpen = Instant.now().plus(1, ChronoUnit.DAYS);
+        Instant newPastOpen = Instant.now().minus(1, ChronoUnit.DAYS);
+        Instant futureClose = Instant.now().plus(2, ChronoUnit.DAYS);
+        Instant futureHappen = Instant.now().plus(3, ChronoUnit.DAYS);
+        String email = "organizer@example.com";
+
+        Event existing = new Event();
+        existing.setId(61L);
+        existing.setFanpageId(10L);
+        existing.setStatus("DRAFT");
+        existing.setActive(true);
+        existing.setDateOpen(originalOpen);
+
+        EventUpdateDto dto = new EventUpdateDto(
+                "Name", "Desc", "Hall A",
+                newPastOpen, futureClose, futureHappen,
+                100, 50, 50, false, "https://banner.url",
+                5L, null, null, null, true, Collections.emptyList()
+        );
+
+        User user = new User();
+        user.setId(99L);
+        user.setEmail(email);
+
+        when(eventRepository.findByIdForUpdate(61L)).thenReturn(existing);
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(fanpageMemberRepository.findById(10L, 99L)).thenReturn(Optional.of(testMember));
+        when(eventTypeRepository.findById(5L)).thenReturn(testEventType);
+        doAnswer(inv -> {
+            existing.setDateOpen(dto.dateOpen());
+            existing.setDateClose(dto.dateClose());
+            existing.setDateHappen(dto.dateHappen());
+            existing.setCapacity(dto.capacity());
+            existing.setMaleQuantity(dto.maleQuantity());
+            existing.setFemaleQuantity(dto.femaleQuantity());
+            return null;
+        }).when(eventDtoMapper).updateEventFromDto(existing, dto);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> eventCommandService.updateEvent(61L, dto, email));
+        assertEquals("Registration open date cannot be in the past", ex.getFieldErrors().get("dateOpen"));
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should reject updateEvent when event is COMPLETED")
+    void updateEvent_rejectsCompletedEvent() {
+        Event existing = new Event();
+        existing.setId(62L);
+        existing.setFanpageId(10L);
+        existing.setStatus("COMPLETED");
+        existing.setActive(true);
+
+        User user = new User();
+        user.setId(99L);
+
+        when(eventRepository.findByIdForUpdate(62L)).thenReturn(existing);
+        when(userRepository.findByEmail("org@example.com")).thenReturn(user);
+        when(fanpageMemberRepository.findById(10L, 99L)).thenReturn(Optional.of(testMember));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> eventCommandService.updateEvent(62L, buildUpdateDto(null), "org@example.com"));
+        assertTrue(ex.getMessage().contains("completed event"));
+        verify(eventRepository, never()).save(any());
     }
 
 }

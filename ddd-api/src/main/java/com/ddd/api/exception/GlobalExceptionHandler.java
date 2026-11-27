@@ -54,6 +54,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(BaseResponse.error(code, message));
     }
 
+    private <T> ResponseEntity<Object> wrapWithResponse(String code, String message, T data, HttpStatus status) {
+        return ResponseEntity.status(status).body(BaseResponse.error(code, message, data));
+    }
+
     // 400 Bad Request
     /**
      * Missing or malformed HTTP request body (e.g. invalid JSON, missing required body).
@@ -78,7 +82,10 @@ public class GlobalExceptionHandler {
         List<FieldError> fieldErrorList = exception.getBindingResult().getFieldErrors();
         fieldErrorList.forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
         log.warn("Method Argument Not Valid occurred: {}", errors, exception);
-        return wrapWithResponse(ErrorCodeEnum.VALIDATION_ERROR.getCode(), errors.toString(), ErrorCodeEnum.VALIDATION_ERROR.getStatus());
+        String summary = errors.isEmpty()
+                ? ErrorCodeEnum.VALIDATION_ERROR.getDefaultMessage()
+                : String.join("; ", errors.values());
+        return wrapWithResponse(ErrorCodeEnum.VALIDATION_ERROR.getCode(), summary, errors, ErrorCodeEnum.VALIDATION_ERROR.getStatus());
     }
 
     /**
@@ -99,8 +106,11 @@ public class GlobalExceptionHandler {
             errors.put(paramName, combinedMsg);
         });
         log.warn("Method Validation occurred: {}", errors, exception);
+        String summary = errors.isEmpty()
+                ? ErrorCodeEnum.VALIDATION_ERROR.getDefaultMessage()
+                : String.join("; ", errors.values());
         return wrapWithResponse(ErrorCodeEnum.VALIDATION_ERROR.getCode(),
-                errors.toString(), ErrorCodeEnum.VALIDATION_ERROR.getStatus());
+                summary, errors, ErrorCodeEnum.VALIDATION_ERROR.getStatus());
     }
 
     /**
@@ -137,9 +147,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Object> handleBusinessException(BusinessException exception, WebRequest webRequest){
         log.warn("Business exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        String message = exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getDefaultMessage();
+        Map<String, String> fieldErrors = exception.getFieldErrors();
+        if (fieldErrors != null && !fieldErrors.isEmpty()) {
+            return wrapWithResponse(
+                    ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getCode(),
+                    message,
+                    fieldErrors,
+                    ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getStatus());
+        }
         return wrapWithResponse(
                 ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getCode(),
-                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getDefaultMessage(),
+                message,
                 ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getStatus());
     }
 

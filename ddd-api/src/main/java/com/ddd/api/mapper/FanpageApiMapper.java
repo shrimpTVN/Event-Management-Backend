@@ -28,4 +28,6 @@ public interface FanpageApiMapper {
     FanpageFollowCountResponseDto toFollowCountResponseDto(FanpageFollowCountDto dto);
 
     FanpageMemberInvitationResponseDto toInvitationResponseDto(FanpageMemberInvitationInfoDto dto);
+
+    UpcomingEventReminderResponseDto toUpcomingReminderResponseDto(UpcomingEventReminderDto dto);
 }

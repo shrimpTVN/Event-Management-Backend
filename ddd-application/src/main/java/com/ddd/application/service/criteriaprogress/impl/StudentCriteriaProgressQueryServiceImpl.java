@@ -8,10 +8,8 @@ import com.ddd.application.service.criteriaprogress.StudentCriteriaProgressQuery
 import com.ddd.domain.enums.CriteriaScopeEnum;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.infrastructure.entity.AcademicYearJpaEntity;
-import com.ddd.infrastructure.entity.StudentCriteriaProgressJpaEntity;
 import com.ddd.infrastructure.entity.UserJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.AcademicYearJpaRepository;
-import com.ddd.infrastructure.repository.jpaRepository.StudentCriteriaProgressJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,9 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Query service for evaluating student criteria progress against the criteria hierarchy.

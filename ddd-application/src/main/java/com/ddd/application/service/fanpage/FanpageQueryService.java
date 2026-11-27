@@ -18,4 +18,6 @@ public interface FanpageQueryService {
     FanpageFollowCountDto getFollowerCount(Long fanpageId);
 
     Page<FanpageInfoDto> getFollowingFanpages(Pageable pageable);
+
+    UpcomingEventReminderDto getUpcomingReminder(Long fanpageId);
 }

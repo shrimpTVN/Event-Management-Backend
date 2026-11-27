@@ -1,11 +1,11 @@
 package com.ddd.application.service.event.impl;
 
 import com.ddd.application.dto.event.EventCreateDto;
-import com.ddd.application.dto.event.EventInfoDto;
 import com.ddd.application.dto.event.EventPointCreateDto;
 import com.ddd.application.dto.event.EventUpdateDto;
 import com.ddd.application.mapper.EventDtoMapper;
 import com.ddd.application.service.event.EventCommandService;
+import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.application.service.semesterpoint.impl.SemesterPointCategoryPolicy;
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.FollowingStatusEnum;
@@ -21,11 +21,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Isolation;
-import com.ddd.application.service.registration.RegistrationCommandService;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -99,25 +98,32 @@ public class EventCommandServiceImpl implements EventCommandService {
         Event event = eventRepository.findByIdForUpdate(id);
 
         verifyUserFanpageMembership(event.getFanpageId(), email);
+        if (!event.isActive()) {
+            throw new BusinessException("Cannot update an inactive event.");
+        }
+        if (EventStatusEnum.COMPLETED.name().equalsIgnoreCase(event.getStatus())) {
+            throw new BusinessException("A completed event cannot be updated.");
+        }
         validateUpdateReferences(dto);
 
+        Instant previousDateOpen = event.getDateOpen();
         eventDtoMapper.updateEventFromDto(event, dto);
         if (event.getEventPoints() != null && !event.getEventPoints().isEmpty()) {
             semesterPointCategoryPolicy.requireLeaves(event.getSemesterId(),
                     event.getEventPoints().stream().map(EventPoint::getPointCategoryId).toList());
         }
-        event.validateEventDates();
+        event.validateEventDatesForUpdate(previousDateOpen);
         event.validateCapacityAndQuantities();
 
         if (event.getCapacity() < registrationRepository.countActiveRegistrationsByEventId(id)) {
-            throw new BusinessException("Event capacity cannot be lower than current registrations.");
+            throw BusinessException.withField("capacity", "Event capacity cannot be lower than current registrations.");
         }
         if (event.isGenderConstraint()) {
             if (event.getMaleQuantity() < registrationRepository.countActiveRegistrationsByEventIdAndGender(id, "MALE")) {
-                throw new BusinessException("Male quantity cannot be lower than current male registrations.");
+                throw BusinessException.withField("maleQuantity", "Male quantity cannot be lower than current male registrations.");
             }
             if (event.getFemaleQuantity() < registrationRepository.countActiveRegistrationsByEventIdAndGender(id, "FEMALE")) {
-                throw new BusinessException("Female quantity cannot be lower than current female registrations.");
+                throw BusinessException.withField("femaleQuantity", "Female quantity cannot be lower than current female registrations.");
             }
         }
 
@@ -169,7 +175,7 @@ public class EventCommandServiceImpl implements EventCommandService {
         event.setActive(!hidden);
         event.setViolationReason(hidden ? reason : null);
         eventRepository.save(event);
-        log.info("Admin updated visibility for event id: {} (hidden={})", id, hidden);
+        log.info("Admin updated visibility for event id: {}", id);
     }
 
     private void verifyUserFanpageMembership(Long fanpageId, Long userId) {

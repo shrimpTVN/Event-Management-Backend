@@ -50,4 +50,10 @@ public interface EventJpaRepository extends JpaRepository<EventJpaEntity, Long>,
             @Param("status") EventStatusEnum status,
             @Param("today") Instant today
     );
+
+    Optional<EventJpaEntity> findFirstByFanpage_IdAndIsActiveTrueAndStatusAndDateHappenAfterOrderByDateHappenAsc(
+            Long fanpageId,
+            EventStatusEnum status,
+            Instant now
+    );
 }

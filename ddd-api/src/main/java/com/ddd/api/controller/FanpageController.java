@@ -10,11 +10,13 @@ import com.ddd.api.dto.fanpage.res.FanpageFollowCountResponseDto;
 import com.ddd.api.dto.fanpage.res.FanpageMemberResponseDto;
 import com.ddd.api.dto.fanpage.res.FanpageResponseDto;
 import com.ddd.api.dto.fanpage.res.ManagedFanpageResponseDto;
+import com.ddd.api.dto.fanpage.res.UpcomingEventReminderResponseDto;
 import com.ddd.api.mapper.FanpageApiMapper;
 import com.ddd.application.dto.fanpage.FanpageFollowCountDto;
 import com.ddd.application.dto.fanpage.FanpageInfoDto;
 import com.ddd.application.dto.fanpage.FanpageMemberDto;
 import com.ddd.application.dto.fanpage.ManagedFanpageInfoDto;
+import com.ddd.application.dto.fanpage.UpcomingEventReminderDto;
 import com.ddd.application.service.fanpage.FanpageQueryService;
 import com.ddd.application.utils.ServiceUtil;
 import org.springframework.data.domain.Pageable;
@@ -71,6 +73,12 @@ public class FanpageController {
     public BaseResponse<FanpageResponseDto> getFanpageDetail(@PathVariable Long fanpageId) {
         FanpageInfoDto fanpageInfo = fanpageQueryService.getFanpageById(fanpageId);
         return BaseResponse.of(fanpageApiMapper.toResponseDto(fanpageInfo));
+    }
+
+    @GetMapping("/{fanpageId}/upcoming-reminder")
+    public BaseResponse<UpcomingEventReminderResponseDto> getUpcomingReminder(@PathVariable Long fanpageId) {
+        UpcomingEventReminderDto reminder = fanpageQueryService.getUpcomingReminder(fanpageId);
+        return BaseResponse.of(reminder != null ? fanpageApiMapper.toUpcomingReminderResponseDto(reminder) : null);
     }
 
     @GetMapping({"/fanpage-admin/my-fanpages", "/my-fanpages"})

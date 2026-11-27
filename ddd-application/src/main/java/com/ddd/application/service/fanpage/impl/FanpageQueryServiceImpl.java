@@ -5,9 +5,12 @@ import com.ddd.application.mapper.FanpageDtoMapper;
 import com.ddd.application.mapper.FanpageMemberDtoMapper;
 import com.ddd.application.service.fanpage.FanpageQueryService;
 import com.ddd.application.utils.ServiceUtil;
+import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.FanpageRoleEnum;
 import com.ddd.domain.enums.FanpageStatusEnum;
 import com.ddd.domain.enums.FollowingStatusEnum;
+import com.ddd.domain.enums.RegistrationStatusEnum;
+import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.Fanpage;
@@ -15,11 +18,14 @@ import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.FanpageMemberRepository;
 import com.ddd.domain.repository.FanpageRepository;
 import com.ddd.domain.repository.FollowingRepository;
+import com.ddd.infrastructure.entity.EventJpaEntity;
 import com.ddd.infrastructure.entity.FanpageJpaEntity;
 import com.ddd.infrastructure.entity.FanpageMemberJpaEntity;
+import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.FanpageJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.FanpageMemberJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.FollowingJpaRepository;
+import com.ddd.infrastructure.repository.jpaRepository.RegistrationJpaRepository;
 import com.ddd.infrastructure.repository.specification.FanpageSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +34,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
@@ -44,6 +51,8 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
     private final FollowingRepository followingRepository;
     private final FollowingJpaRepository followingJpaRepository;
     private final SecurityContextPort securityContextPort;
+    private final EventJpaRepository eventJpaRepository;
+    private final RegistrationJpaRepository registrationJpaRepository;
 
     @Override
     public List<FanpageMemberDto> getMembersOfFanpage(Long fanpageId) {
@@ -145,5 +154,45 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
         );
 
         return fanpages.map(fanpageDtoMapper::toInfoDto);
+    }
+
+    @Override
+    public UpcomingEventReminderDto getUpcomingReminder(Long fanpageId) {
+        Long currentUserId = securityContextPort.getCurrentUserId();
+        if (currentUserId == null) {
+            throw new UnauthorizedException("User is not authenticated");
+        }
+
+        boolean isAdmin = securityContextPort.hasRole("ADMIN");
+        var fanpageOpt = isAdmin
+                ? fanpageRepository.findById(fanpageId)
+                : fanpageRepository.findByIdAndIsActive(fanpageId, true);
+        if (fanpageOpt.isEmpty()) {
+            throw new ResourceNotFoundException("Fanpage not found with id: " + fanpageId);
+        }
+
+        if (!isAdmin && !fanpageMemberRepository.isActiveMember(fanpageId, currentUserId)) {
+            throw new AuthException("User is not an active member of this fanpage");
+        }
+
+        return eventJpaRepository
+                .findFirstByFanpage_IdAndIsActiveTrueAndStatusAndDateHappenAfterOrderByDateHappenAsc(
+                        fanpageId,
+                        EventStatusEnum.PUBLISHED,
+                        Instant.now()
+                )
+                .map(event -> {
+                    long registrationsCount = registrationJpaRepository.countActiveRegistrationsByEventId(
+                            event.getId(),
+                            RegistrationStatusEnum.CANCELLED
+                    );
+                    return new UpcomingEventReminderDto(
+                            event.getId(),
+                            event.getName(),
+                            event.getDateHappen(),
+                            registrationsCount
+                    );
+                })
+                .orElse(null);
     }
 }
