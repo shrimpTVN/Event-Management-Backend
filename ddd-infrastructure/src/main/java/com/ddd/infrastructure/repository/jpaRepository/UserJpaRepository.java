@@ -22,6 +22,16 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, Long>, J
     @EntityGraph(attributePaths = {"roles"})
     UserJpaEntity findByEmail(String email);
 
+    @EntityGraph(attributePaths = {
+            "roles",
+            "studentProfile",
+            "studentProfile.major",
+            "studentProfile.major.school",
+            "fanpageAdminProfile"
+    })
+    @Query("SELECT u FROM UserJpaEntity u WHERE u.email = :email")
+    Optional<UserJpaEntity> findDetailedByEmail(@Param("email") String email);
+
     Boolean existsByEmail(String email);
 
     @EntityGraph(attributePaths = {"roles"})

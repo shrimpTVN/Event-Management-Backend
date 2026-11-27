@@ -63,7 +63,7 @@ public class FanpageController {
     @GetMapping({"/admin", "/admin/"})
     public BaseResponse<Page<FanpageResponseDto>> searchFanpagesForAdmin(
             @ModelAttribute FanpageFilterRequestDto request) {
-        Page<FanpageInfoDto> fanpages = fanpageQueryService.searchAndFilterFanpages(
+        Page<FanpageInfoDto> fanpages = fanpageQueryService.searchAndFilterFanpagesForAdmin(
                 fanpageApiMapper.toSearchCriteriaDto(request)
         );
         return BaseResponse.of(fanpages.map(fanpageApiMapper::toResponseDto));

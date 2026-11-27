@@ -14,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,4 +57,9 @@ public interface EventJpaRepository extends JpaRepository<EventJpaEntity, Long>,
             EventStatusEnum status,
             Instant now
     );
+
+    @Query("SELECT e.fanpage.id, COUNT(e) FROM EventJpaEntity e " +
+            "WHERE e.fanpage.id IN :fanpageIds AND e.isActive = true " +
+            "GROUP BY e.fanpage.id")
+    List<Object[]> countActiveEventsByFanpageIds(@Param("fanpageIds") Collection<Long> fanpageIds);
 }

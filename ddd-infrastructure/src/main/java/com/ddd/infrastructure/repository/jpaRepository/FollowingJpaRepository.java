@@ -53,4 +53,14 @@ public interface FollowingJpaRepository extends JpaRepository<FollowingJpaEntity
     );
 
     List<FollowingJpaEntity> findByFanpageIdAndFolStatusAndIsActive(Long id, FollowingStatusEnum followingStatusEnum, boolean b);
+
+    @Query("SELECT f.fanpage.id, COUNT(f) FROM FollowingJpaEntity f " +
+            "WHERE f.fanpage.id IN :fanpageIds " +
+            "AND f.folStatus = :folStatus " +
+            "AND f.isActive = true " +
+            "GROUP BY f.fanpage.id")
+    List<Object[]> countFollowersByFanpageIds(
+            @Param("fanpageIds") Collection<Long> fanpageIds,
+            @Param("folStatus") FollowingStatusEnum folStatus
+    );
 }

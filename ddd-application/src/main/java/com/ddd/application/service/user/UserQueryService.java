@@ -1,6 +1,7 @@
 package com.ddd.application.service.user;
 
 import com.ddd.application.dto.user.StudentProfileSummaryDto;
+import com.ddd.application.dto.user.UserInfoDto;
 import com.ddd.application.dto.user.UserSummaryDto;
 import org.springframework.data.domain.Page;
 
@@ -8,6 +9,8 @@ import java.util.List;
 
 public interface UserQueryService {
     List<UserSummaryDto> searchUsers(String keyword);
+
+    UserInfoDto getCurrentUserProfileByEmail(String email);
 
     StudentProfileSummaryDto getProfileStudentByEmail(String email);
 

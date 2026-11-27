@@ -1,6 +1,7 @@
 package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
+import com.ddd.api.dto.fanpage.res.ManagedFanpageResponseDto;
 import com.ddd.api.dto.user.req.StaffProfileCreateRequestDto;
 import com.ddd.api.dto.user.req.StaffProfileUpdateRequestDto;
 import com.ddd.api.dto.user.req.StudentProfileRequestDto;
@@ -11,15 +12,18 @@ import com.ddd.api.dto.user.res.StaffProfileResponseDto;
 import com.ddd.api.dto.user.res.StudentProfileResponseDto;
 import com.ddd.api.dto.user.res.UserInfoResponseDto;
 import com.ddd.api.dto.user.res.UserResponseDto;
+import com.ddd.api.mapper.FanpageApiMapper;
 import com.ddd.api.mapper.StaffProfileApiMapper;
 import com.ddd.api.mapper.StudentProfileApiMapper;
 import com.ddd.api.mapper.UserInfoApiMapper;
 import com.ddd.api.mapper.UserApiMapper;
 import com.ddd.application.dto.fanpage.FanpageRegistrationEligibilityDto;
+import com.ddd.application.dto.fanpage.ManagedFanpageInfoDto;
 import com.ddd.application.dto.user.StaffProfileSummaryDto;
 import com.ddd.application.dto.user.StudentProfileSummaryDto;
 import com.ddd.application.dto.user.UserInfoDto;
 import com.ddd.application.dto.user.UserSummaryDto;
+import com.ddd.application.service.fanpage.FanpageQueryService;
 import com.ddd.application.service.fanpage.FanpageRegistrationEligibilityService;
 import com.ddd.application.service.user.AccountSecurityQueryService;
 import com.ddd.application.service.user.AdminUserQueryService;
@@ -49,6 +53,8 @@ public class UserController {
     private final AccountSecurityQueryService accountSecurityQueryService;
     private final StaffProfileCreationService staffProfileCreationService;
     private final FanpageRegistrationEligibilityService fanpageRegistrationEligibilityService;
+    private final FanpageQueryService fanpageQueryService;
+    private final FanpageApiMapper fanpageApiMapper;
     private final StudentProfileApiMapper studentProfileApiMapper;
     private final StaffProfileApiMapper staffProfileApiMapper;
     private final UserInfoApiMapper userInfoApiMapper;
@@ -102,10 +108,10 @@ public class UserController {
     }
 
     @GetMapping("/me/profile")
-    public BaseResponse<StudentProfileResponseDto> getUserProfile(Authentication authentication) {
-        String email = authentication.getName();
-        StudentProfileSummaryDto profileSummaryDto = userQueryService.getProfileStudentByEmail(email);
-        return BaseResponse.of(studentProfileApiMapper.toStudentProfileResponseDto(profileSummaryDto));
+    public BaseResponse<UserInfoResponseDto> getUserProfile(Authentication authentication) {
+        String email = authentication != null ? authentication.getName() : null;
+        UserInfoDto userInfo = userQueryService.getCurrentUserProfileByEmail(email);
+        return BaseResponse.of(userInfoApiMapper.toUserInfoResponseDto(userInfo));
     }
 
     @GetMapping("/admin/profiles")
@@ -133,6 +139,12 @@ public class UserController {
     public BaseResponse<StaffProfileResponseDto> getAdminStaffProfileByUserId(@PathVariable Long userId) {
         StaffProfileSummaryDto summary = adminUserQueryService.getStaffProfileByUserId(userId);
         return BaseResponse.of(staffProfileApiMapper.toStaffProfileResponseDto(summary));
+    }
+
+    @GetMapping("/admin/{userId}/fanpages")
+    public BaseResponse<List<ManagedFanpageResponseDto>> getAdminUserFanpages(@PathVariable Long userId) {
+        List<ManagedFanpageInfoDto> fanpages = fanpageQueryService.getManagedFanpagesByUserId(userId);
+        return BaseResponse.of(fanpages.stream().map(fanpageApiMapper::toResponseDto).toList());
     }
 
     @GetMapping("/admin/{id}/profile")

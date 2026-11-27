@@ -21,6 +21,7 @@ import com.ddd.domain.repository.FollowingRepository;
 import com.ddd.infrastructure.entity.EventJpaEntity;
 import com.ddd.infrastructure.entity.FanpageJpaEntity;
 import com.ddd.infrastructure.entity.FanpageMemberJpaEntity;
+import com.ddd.infrastructure.entity.UserJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.EventJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.FanpageJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.FanpageMemberJpaRepository;
@@ -36,7 +37,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -83,6 +89,111 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
     }
 
     @Override
+    public Page<FanpageInfoDto> searchAndFilterFanpagesForAdmin(FanpageSearchCriteriaDto criteria) {
+        Pageable pageable = ServiceUtil.createPageable(criteria.page(), criteria.size(), criteria.sortBy(), criteria.sortDir());
+        Specification<FanpageJpaEntity> spec = FanpageSpecification.withFilter(
+                criteria.keyword(),
+                criteria.status(),
+                criteria.orgType(),
+                criteria.isActive()
+        );
+        Page<FanpageJpaEntity> page = fanpageJpaRepository.findAll(spec, pageable);
+        if (page.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<Long> fanpageIds = page.getContent().stream()
+                .map(FanpageJpaEntity::getId)
+                .toList();
+
+        Map<Long, Long> followerCounts = toCountsMap(
+                followingJpaRepository.countFollowersByFanpageIds(fanpageIds, FollowingStatusEnum.FOLLOWING));
+        Map<Long, Long> eventCounts = toCountsMap(
+                eventJpaRepository.countActiveEventsByFanpageIds(fanpageIds));
+        Map<Long, FanpageMemberJpaEntity> adminByFanpageId = fanpageMemberJpaRepository
+                .findActiveMembersByFanpageIdsAndRole(fanpageIds, FanpageRoleEnum.ADMIN.name())
+                .stream()
+                .collect(Collectors.toMap(
+                        member -> member.getId().getFanpageId(),
+                        member -> member,
+                        (existing, replacement) -> existing
+                ));
+
+        return page.map(entity -> enrichAdminFanpageInfo(
+                fanpageDtoMapper.toInfoDto(entity),
+                followerCounts.getOrDefault(entity.getId(), 0L),
+                eventCounts.getOrDefault(entity.getId(), 0L),
+                adminByFanpageId.get(entity.getId())
+        ));
+    }
+
+    private static Map<Long, Long> toCountsMap(List<Object[]> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, Long> result = new HashMap<>();
+        for (Object[] row : rows) {
+            if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
+                result.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
+            }
+        }
+        return result;
+    }
+
+    private static FanpageInfoDto enrichAdminFanpageInfo(
+            FanpageInfoDto base,
+            Long followerCount,
+            Long eventsCount,
+            FanpageMemberJpaEntity adminMember
+    ) {
+        UserJpaEntity adminUser = adminMember != null ? adminMember.getUser() : null;
+        Long repUserId = adminUser != null ? adminUser.getId() : null;
+        String repName = adminUser != null
+                ? Stream.of(adminUser.getFirstName(), adminUser.getLastName())
+                        .filter(Objects::nonNull)
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .collect(Collectors.joining(" "))
+                : null;
+        if (repName != null && repName.isEmpty()) {
+            repName = null;
+        }
+        String repEmail = adminUser != null ? adminUser.getEmail() : null;
+        String repCode = null;
+        String repPhone = null;
+        if (adminUser != null) {
+            if (adminUser.getFanpageAdminProfile() != null) {
+                repCode = adminUser.getFanpageAdminProfile().getStaffId();
+                repPhone = adminUser.getFanpageAdminProfile().getPhoneNumber();
+            } else if (adminUser.getStudentProfile() != null) {
+                repCode = adminUser.getStudentProfile().getStudentId();
+            }
+        }
+        return new FanpageInfoDto(
+                base.id(),
+                base.name(),
+                base.description(),
+                base.avatarUrl(),
+                base.orgType(),
+                base.orgName(),
+                base.parentOrg(),
+                base.evidenceUrl(),
+                base.helpContact(),
+                base.helpPhone(),
+                base.createdAt(),
+                base.status(),
+                base.isActive(),
+                followerCount,
+                eventsCount,
+                repUserId,
+                repName,
+                repEmail,
+                repCode,
+                repPhone
+        );
+    }
+
+    @Override
     public FanpageInfoDto getFanpageById(Long fanpageId) {
         Fanpage fanpage = fanpageRepository.findByIdAndIsActive(fanpageId, true)
                 .orElseThrow(() -> new ResourceNotFoundException("Fanpage not found with id: " + fanpageId));
@@ -110,8 +221,16 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
             throw new UnauthorizedException("User is not authenticated");
         }
 
+        return getManagedFanpagesByUserId(currentUserId);
+    }
+
+    @Override
+    public List<ManagedFanpageInfoDto> getManagedFanpagesByUserId(Long userId) {
+        if (userId == null) {
+            return Collections.emptyList();
+        }
         List<FanpageMemberJpaEntity> managedFanpages = fanpageMemberJpaRepository
-                .findAllByUserIdAndIsActive(currentUserId, true);
+                .findAllByUserIdAndIsActive(userId, true);
 
         return managedFanpages.stream().map(fanpageDtoMapper::toManagedInfoDto).toList();
     }

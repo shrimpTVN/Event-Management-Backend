@@ -11,9 +11,13 @@ public interface FanpageQueryService {
 
     Page<FanpageInfoDto> searchAndFilterFanpages(FanpageSearchCriteriaDto criteria);
 
+    Page<FanpageInfoDto> searchAndFilterFanpagesForAdmin(FanpageSearchCriteriaDto criteria);
+
     FanpageInfoDto getFanpageById(Long fanpageId);
 
     List<ManagedFanpageInfoDto> getMyManagedFanpages();
+
+    List<ManagedFanpageInfoDto> getManagedFanpagesByUserId(Long userId);
 
     FanpageFollowCountDto getFollowerCount(Long fanpageId);
 
