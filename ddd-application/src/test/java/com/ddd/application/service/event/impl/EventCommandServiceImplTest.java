@@ -62,7 +62,7 @@ class EventCommandServiceImplTest {
     private SchoolRepository schoolRepository;
 
     @Mock
-    private PointCategoryRepository pointCategoryRepository;
+    private com.ddd.application.service.semesterpoint.impl.SemesterPointCategoryPolicy semesterPointCategoryPolicy;
 
     @Mock
     private SecurityContextPort securityContextPort;
@@ -325,4 +325,37 @@ class EventCommandServiceImplTest {
                 () -> eventCommandService.updateEventVisibilityByAdmin(55L, true, "Spam"));
         verify(eventRepository, never()).save(any());
     }
+    @Test
+    void createEventRejectsInvalidAwardCategoryBeforePersistingEvent() {
+        when(fanpageRepository.findById(10L)).thenReturn(Optional.of(testFanpage));
+        var dto = buildCreateDto(null);
+        dto = new EventCreateDto(dto.name(), dto.description(), dto.location(), dto.dateOpen(), dto.dateClose(),
+                dto.dateHappen(), dto.capacity(), dto.maleQuantity(), dto.femaleQuantity(), dto.bannerUrl(),
+                dto.eventTypeId(), dto.criteriaId(), dto.fanpageId(), 9L, null, dto.allowSelfCheck(),
+                java.util.List.of(new com.ddd.application.dto.event.EventPointCreateDto(2L,5)));
+        when(securityContextPort.getCurrentUserId()).thenReturn(99L);
+        when(fanpageMemberRepository.findById(10L,99L)).thenReturn(Optional.of(testMember));
+        when(eventTypeRepository.findById(5L)).thenReturn(testEventType);
+        when(semesterRepository.findById(9L)).thenReturn(Optional.of(new com.ddd.domain.model.Semester()));
+        doThrow(new BusinessException("parent or non-effective category")).when(semesterPointCategoryPolicy).requireLeaves(9L,java.util.List.of(2L));
+        EventCreateDto invalid=dto;
+        assertThrows(BusinessException.class,()->eventCommandService.createEvent(invalid));
+        verify(eventRepository,never()).save(any());
+    }
+
+    @Test
+    void updateEventValidatesMappedAwardsAgainstResultingSemester() {
+        var testUser = new User(); testUser.setId(99L);
+        var event=new Event();event.setId(1L);event.setFanpageId(10L);event.setSemesterId(9L);
+        var point=new com.ddd.domain.model.EventPoint();point.setPointCategoryId(2L);point.setPoint(5);
+        event.setEventPoints(java.util.List.of(point));
+        when(eventRepository.findByIdForUpdate(1L)).thenReturn(event);
+        when(userRepository.findByEmail("student@example.com")).thenReturn(testUser);
+        when(fanpageMemberRepository.findById(10L,testUser.getId())).thenReturn(Optional.of(testMember));
+        when(eventTypeRepository.findById(5L)).thenReturn(testEventType);
+        doThrow(new BusinessException("non-effective award")).when(semesterPointCategoryPolicy).requireLeaves(9L,java.util.List.of(2L));
+        assertThrows(BusinessException.class,()->eventCommandService.updateEvent(1L,buildUpdateDto(null),"student@example.com"));
+        verify(eventRepository,never()).save(any());
+    }
+
 }

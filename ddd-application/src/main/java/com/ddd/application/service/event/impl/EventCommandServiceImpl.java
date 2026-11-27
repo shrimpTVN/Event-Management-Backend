@@ -6,6 +6,7 @@ import com.ddd.application.dto.event.EventPointCreateDto;
 import com.ddd.application.dto.event.EventUpdateDto;
 import com.ddd.application.mapper.EventDtoMapper;
 import com.ddd.application.service.event.EventCommandService;
+import com.ddd.application.service.semesterpoint.impl.SemesterPointCategoryPolicy;
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.FollowingStatusEnum;
 import com.ddd.domain.event.EventCreatedEvent;
@@ -43,7 +44,7 @@ public class EventCommandServiceImpl implements EventCommandService {
     private final EventDtoMapper eventDtoMapper;
     private final SemesterRepository semesterRepository;
     private final SchoolRepository schoolRepository;
-    private final PointCategoryRepository pointCategoryRepository;
+    private final SemesterPointCategoryPolicy semesterPointCategoryPolicy;
     private final SecurityContextPort securityContextPort;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final FollowingRepository followingRepository;
@@ -101,6 +102,10 @@ public class EventCommandServiceImpl implements EventCommandService {
         validateUpdateReferences(dto);
 
         eventDtoMapper.updateEventFromDto(event, dto);
+        if (event.getEventPoints() != null && !event.getEventPoints().isEmpty()) {
+            semesterPointCategoryPolicy.requireLeaves(event.getSemesterId(),
+                    event.getEventPoints().stream().map(EventPoint::getPointCategoryId).toList());
+        }
         event.validateEventDates();
         event.validateCapacityAndQuantities();
 
@@ -211,12 +216,8 @@ public class EventCommandServiceImpl implements EventCommandService {
         }
 
         if (dto.eventPoints() != null && !dto.eventPoints().isEmpty()) {
-            for (EventPointCreateDto ep : dto.eventPoints()) {
-                if (ep.pointCategoryId() != null) {
-                    pointCategoryRepository.findById(ep.pointCategoryId())
-                            .orElseThrow(() -> new ResourceNotFoundException("PointCategory not found with id: " + ep.pointCategoryId()));
-                }
-            }
+            semesterPointCategoryPolicy.requireLeaves(dto.semesterId(),
+                    dto.eventPoints().stream().map(EventPointCreateDto::pointCategoryId).toList());
         }
     }
 

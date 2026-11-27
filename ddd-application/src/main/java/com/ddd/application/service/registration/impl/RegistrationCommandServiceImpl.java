@@ -5,6 +5,7 @@ import com.ddd.application.service.criteriaprogress.StudentCriteriaTransactionCo
 import com.ddd.application.service.registration.RegistrationCommandService;
 import com.ddd.application.service.event.cache.RecommendationCacheService;
 import com.ddd.application.service.semesterpoint.StudentSemesterPointCommandService;
+import com.ddd.application.service.semesterpoint.impl.SemesterPointCategoryPolicy;
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.PointTransactionStatusEnum;
 import com.ddd.domain.enums.PointTransactionTypeEnum;
@@ -46,6 +47,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private final FanpageMemberRepository fanpageMemberRepository;
     private final EventPointRepository eventPointRepository;
     private final PointTransactionRepository pointTransactionRepository;
+    private final SemesterPointCategoryPolicy semesterPointCategoryPolicy;
     private final StudentSemesterPointCommandService studentSemesterPointCommandService;
     private final StudentCriteriaTransactionCommandService studentCriteriaTransactionCommandService;
     private final SecurityContextPort securityContextPort;
@@ -441,6 +443,8 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
             throw new BusinessException("Event is not assigned to any semester");
         }
 
+        semesterPointCategoryPolicy.requireLeaves(event.getSemesterId(),
+                eventPoints.stream().map(EventPoint::getPointCategoryId).toList());
         List<PointTransaction> pointTransactions = new ArrayList<>();
 
         for (Long studentUserId : studentUserIds) {
@@ -451,20 +455,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
 
         pointTransactionRepository.saveAll(pointTransactions);
 
-        // Batch propagate leaf points and all ancestors up to roots
-        Map<Long, Integer> categoryPointsMap = eventPoints.stream()
-                .collect(Collectors.toMap(
-                        EventPoint::getPointCategoryId,
-                        EventPoint::getPoint,
-                        Integer::sum
-                ));
-
-        studentSemesterPointCommandService.bulkRecordPointsAndPropagate(
-                studentUserIds,
-                event.getSemesterId(),
-                categoryPointsMap,
-                PointTransactionTypeEnum.CHECKOUT_REWARD
-        );
+        studentSemesterPointCommandService.rebuildSemesterPoints(studentUserIds, event.getSemesterId());
     }
 
     private PointTransaction createPointTransaction(Event event, Long studentUserId, EventPoint eventPoint) {

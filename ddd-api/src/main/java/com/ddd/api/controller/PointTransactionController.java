@@ -2,6 +2,7 @@ package com.ddd.api.controller;
 
 import com.ddd.api.common.BaseResponse;
 import com.ddd.api.dto.semesterpoint.req.PointTransactionRequestDto;
+import com.ddd.api.dto.semesterpoint.req.UpdatePointTransactionRequestDto;
 import com.ddd.api.dto.semesterpoint.res.PointTransactionResponseDto;
 import com.ddd.api.mapper.PointTransactionApiMapper;
 import com.ddd.application.dto.semesterpoint.PointTransactionInfoDto;
@@ -39,6 +40,13 @@ public class PointTransactionController {
         PointTransactionRequestInfoDto requestInfoDto = pointTransactionApiMapper.toRequestInfoDto(requestDto);
         pointTransactionCommandService
                 .createPointTransactionForStudent(requestInfoDto);
+        return BaseResponse.ok();
+    }
+
+    @PatchMapping("/me/{pointTransactionId}")
+    public BaseResponse<Void> updatePointTransactionForStudent(@PathVariable Long pointTransactionId,
+            @RequestBody @Valid UpdatePointTransactionRequestDto requestDto) {
+        pointTransactionCommandService.updatePointTransactionForStudent(pointTransactionId, requestDto.points(), requestDto.description());
         return BaseResponse.ok();
     }
 

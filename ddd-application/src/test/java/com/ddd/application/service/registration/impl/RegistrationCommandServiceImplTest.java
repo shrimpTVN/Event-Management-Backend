@@ -66,6 +66,9 @@ class RegistrationCommandServiceImplTest {
     private EventPointRepository eventPointRepository;
 
     @Mock
+    private com.ddd.application.service.semesterpoint.impl.SemesterPointCategoryPolicy semesterPointCategoryPolicy;
+
+    @Mock
     private PointTransactionRepository pointTransactionRepository;
 
     @Mock
