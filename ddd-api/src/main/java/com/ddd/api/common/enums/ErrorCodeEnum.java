@@ -52,8 +52,8 @@ public enum ErrorCodeEnum {
     // AUTH
     AUTH_LOGIN_FAILED("AUTH.001", HttpStatus.UNAUTHORIZED, "Login failed"),
     AUTH_EMAIL_EXISTS("AUTH.003", HttpStatus.BAD_REQUEST, "Email already exists"),
-    AUTH_INVALID_TOKEN("AUTH.004", HttpStatus.BAD_REQUEST, "Invalid token"),
-    AUTH_INVALID_CREDENTIALS("AUTH.005", HttpStatus.BAD_REQUEST, "Invalid username or password"),
+    AUTH_INVALID_TOKEN("AUTH.004", HttpStatus.UNAUTHORIZED, "Invalid token"),
+    AUTH_INVALID_CREDENTIALS("AUTH.005", HttpStatus.UNAUTHORIZED, "Invalid username or password"),
     AUTH_ACCOUNT_EXISTS_BY_USERNAME(
             "AUTH.006", HttpStatus.BAD_REQUEST, "Account already exists with the given username"),
     AUTH_EXPIRED_REVOKED_TOKEN(

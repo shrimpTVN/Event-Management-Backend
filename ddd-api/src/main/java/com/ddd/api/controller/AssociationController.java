@@ -8,6 +8,7 @@ import com.ddd.application.dto.association.AssociationDto;
 import com.ddd.application.service.association.AssociationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,18 +34,21 @@ public class AssociationController {
     }
 
     @PostMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<AssociationResponseDto> create(@Valid @RequestBody CreateAssociationRequestDto req) {
         AssociationDto created = service.createAssociation(mapper.toDto(req));
         return BaseResponse.of(mapper.toResponseDto(created));
     }
 
     @PutMapping("/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<AssociationResponseDto> update(@PathVariable Long id, @Valid @RequestBody UpdateAssociationRequestDto req) {
         AssociationDto updated = service.updateAssociation(id, mapper.toDto(req));
         return BaseResponse.of(mapper.toResponseDto(updated));
     }
 
     @DeleteMapping("/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Long id) {
         service.deleteAssociation(id);
     }

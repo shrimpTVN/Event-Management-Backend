@@ -15,14 +15,21 @@ public class UserDetailsCustom implements UserDetails {
     private final String password;
     private final Set<String> roles;
     private final Collection<? extends GrantedAuthority> authorities;
+    private final boolean active;
 
     public UserDetailsCustom(Long userId, String email, String password, Set<String> roles,
                              Collection<? extends GrantedAuthority> authorities) {
+        this(userId, email, password, roles, authorities, true);
+    }
+
+    public UserDetailsCustom(Long userId, String email, String password, Set<String> roles,
+                             Collection<? extends GrantedAuthority> authorities, boolean active) {
         this.userId = userId;
         this.password = password;
         this.username = email;
         this.roles = roles != null ? roles : Collections.emptySet();
         this.authorities = authorities;
+        this.active = active;
     }
 
     /**
@@ -30,7 +37,7 @@ public class UserDetailsCustom implements UserDetails {
      */
     public UserDetailsCustom(Long userId, String email, String password, String role,
                              Collection<? extends GrantedAuthority> authorities) {
-        this(userId, email, password, role != null ? Collections.singleton(role) : Collections.emptySet(), authorities);
+        this(userId, email, password, role != null ? Collections.singleton(role) : Collections.emptySet(), authorities, true);
     }
 
     /**
@@ -38,7 +45,7 @@ public class UserDetailsCustom implements UserDetails {
      */
     public UserDetailsCustom(Long userId, String email, Set<String> roles,
                              Collection<? extends GrantedAuthority> authorities) {
-        this(userId, email, "", roles, authorities);
+        this(userId, email, "", roles, authorities, true);
     }
 
     /**
@@ -46,7 +53,7 @@ public class UserDetailsCustom implements UserDetails {
      */
     public UserDetailsCustom(Long userId, String email, String role,
                              Collection<? extends GrantedAuthority> authorities) {
-        this(userId, email, "", role != null ? Collections.singleton(role) : Collections.emptySet(), authorities);
+        this(userId, email, "", role != null ? Collections.singleton(role) : Collections.emptySet(), authorities, true);
     }
 
     /**
@@ -73,6 +80,6 @@ public class UserDetailsCustom implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return UserDetails.super.isEnabled();
+        return active;
     }
 }

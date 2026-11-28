@@ -1,5 +1,6 @@
 package com.ddd.infrastructure.service.impl;
 
+import com.ddd.domain.exception.BusinessException;
 import com.ddd.infrastructure.service.EmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -53,7 +54,7 @@ public class EmailServiceImpl implements EmailService {
             log.info("Sent OTP email successfully to {}", toEmail);
         } catch (MessagingException e) {
             log.error("Failed to send OTP email to {}: {}", toEmail, e.getMessage(), e);
-            throw new RuntimeException("Can't send OTP email, please try again later.", e);  
+            throw BusinessException.withCode("AUTH.018", "Can't send OTP email, please try again later.");
         }
     }
 }

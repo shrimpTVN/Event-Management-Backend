@@ -22,6 +22,6 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.getWriter().write(
-                "{\"exceptionCode\":\"002\",\"message\":\"You do not have permission to perform this action\"}");
+                "{\"data\":null,\"message\":\"You do not have permission to perform this action\",\"exceptionCode\":\"002\"}");
     }
 }

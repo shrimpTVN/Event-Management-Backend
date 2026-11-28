@@ -151,6 +151,22 @@ class GlobalExceptionHandlerEventTest {
                 new HttpRequestMethodNotSupportedException("GET"), webRequest);
         assertEquals(HttpStatus.METHOD_NOT_ALLOWED, methodNotAllowed.getStatusCode());
         assertEquals("008", assertInstanceOf(BaseResponse.class, methodNotAllowed.getBody()).exceptionCode());
+
+        var mockRequest = new org.springframework.mock.web.MockHttpServletRequest("POST", "/api/auth/refresh-token");
+        ResponseEntity<Object> lockConflict = handler.handleLockFailure(mockRequest);
+        assertEquals(HttpStatus.CONFLICT, lockConflict.getStatusCode());
+        assertEquals(ErrorCodeEnum.CONCURRENT_MODIFICATION.getCode(),
+                assertInstanceOf(BaseResponse.class, lockConflict.getBody()).exceptionCode());
+
+        ResponseEntity<Object> badCreds = handler.handleBadCredentialsException(
+                new org.springframework.security.authentication.BadCredentialsException("bad"), webRequest);
+        assertEquals(HttpStatus.UNAUTHORIZED, badCreds.getStatusCode());
+        assertEquals("AUTH.005", assertInstanceOf(BaseResponse.class, badCreds.getBody()).exceptionCode());
+
+        ResponseEntity<Object> unauth = handler.handleUnauthorized(
+                new com.ddd.domain.exception.UnauthorizedException("Custom unauth message"), webRequest);
+        assertEquals(HttpStatus.UNAUTHORIZED, unauth.getStatusCode());
+        assertEquals("Custom unauth message", assertInstanceOf(BaseResponse.class, unauth.getBody()).message());
     }
 
     @SuppressWarnings("unused")

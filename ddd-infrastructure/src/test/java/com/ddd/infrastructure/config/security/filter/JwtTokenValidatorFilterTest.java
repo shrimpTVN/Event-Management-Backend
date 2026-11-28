@@ -93,7 +93,7 @@ class JwtTokenValidatorFilterTest {
 
         verifyNoInteractions(filterChain);
         assertEquals(401, response.getStatus());
-        assertEquals("{\"exceptionCode\":\"AUTH.004\",\"message\":\"Token expired\"}", response.getContentAsString());
+        assertEquals("{\"data\":null,\"message\":\"Token expired\",\"exceptionCode\":\"AUTH.004\"}", response.getContentAsString());
     }
 
     @Test
@@ -108,5 +108,99 @@ class JwtTokenValidatorFilterTest {
         verify(filterChain).doFilter(request, response);
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
         assertEquals("student@student.ctu.edu.vn", SecurityContextHolder.getContext().getAuthentication().getName());
+    }
+
+    @Test
+    void expiredAccessCookieOnPublicGetEndpointPassesAnonymouslyWithout401() throws Exception {
+        for (String uri : new String[]{"/api/events", "/api/fanpages"}) {
+            MockHttpServletRequest request = new MockHttpServletRequest("GET", uri);
+            request.setCookies(new Cookie("ddd_jwt", buildToken(-10_000L)));
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            FilterChain filterChain = mock(FilterChain.class);
+
+            filter.doFilter(request, response, filterChain);
+
+            verify(filterChain).doFilter(request, response);
+            assertEquals(200, response.getStatus());
+            assertNull(SecurityContextHolder.getContext().getAuthentication());
+        }
+    }
+
+    @Test
+    void expiredAccessCookieOnProtectedSubPathsUnderPublicPrefixStillReturns401() throws Exception {
+        for (String uri : new String[]{"/api/events/me/stored", "/api/events/stored", "/api/fanpages/following", "/api/fanpages/my-fanpages"}) {
+            MockHttpServletRequest request = new MockHttpServletRequest("GET", uri);
+            request.setCookies(new Cookie("ddd_jwt", buildToken(-10_000L)));
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            FilterChain filterChain = mock(FilterChain.class);
+
+            filter.doFilter(request, response, filterChain);
+
+            verifyNoInteractions(filterChain);
+            assertEquals(401, response.getStatus());
+            assertEquals("{\"data\":null,\"message\":\"Token expired\",\"exceptionCode\":\"AUTH.004\"}", response.getContentAsString());
+        }
+    }
+
+    @Test
+    void blankAccessCookieDoesNotFailFilter() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/users/me/profile");
+        request.setCookies(new Cookie("ddd_jwt", "   "));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain filterChain = mock(FilterChain.class);
+
+        filter.doFilter(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+    }
+
+    @Test
+    void malformedAccessCookieOnProtectedEndpointDelegatesToEntryPointWith401Json() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/users/me/profile");
+        request.setCookies(new Cookie("ddd_jwt", "not.a.valid.jwt"));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain filterChain = mock(FilterChain.class);
+
+        filter.doFilter(request, response, filterChain);
+
+        verifyNoInteractions(filterChain);
+        assertEquals(401, response.getStatus());
+        assertEquals("{\"data\":null,\"message\":\"Authentication required\",\"exceptionCode\":\"001\"}", response.getContentAsString());
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+    }
+
+    @Test
+    void adminEndpointsIncludeCatalogAndRoleEndpoints() {
+        var matcher = new org.springframework.util.AntPathMatcher();
+        String[] adminPaths = {
+                "/api/schools/admin",
+                "/api/schools/admin/1",
+                "/api/majors/admin",
+                "/api/majors/admin/2",
+                "/api/event-types/admin",
+                "/api/event-types/admin/3",
+                "/api/associations/admin",
+                "/api/associations/admin/4",
+                "/api/roles",
+                "/api/roles/5"
+        };
+        for (String path : adminPaths) {
+            boolean matched = false;
+            for (String pattern : com.ddd.infrastructure.constant.SecurityConstant.ADMIN_ENDPOINTS) {
+                if (matcher.match(pattern, path)) {
+                    matched = true;
+                    break;
+                }
+            }
+            assertTrue(matched, () -> "ADMIN_ENDPOINTS missing pattern for " + path);
+        }
+    }
+
+    @Test
+    void corsAllowedOriginsDoesNotContainNullOrigin() {
+        for (String origin : com.ddd.infrastructure.constant.SecurityConstant.CORS_ALLOW_ORIGINS) {
+            assertNotEquals("null", origin);
+        }
     }
 }

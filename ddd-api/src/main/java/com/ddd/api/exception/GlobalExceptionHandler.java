@@ -5,6 +5,7 @@ import com.ddd.api.common.BaseResponse;
 import com.ddd.api.common.enums.ErrorCodeEnum;
 import com.ddd.domain.exception.*;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.dao.PessimisticLockingFailureException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
@@ -201,8 +202,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleUnauthorized(
             UnauthorizedException exception, WebRequest webRequest) {
         log.warn("Unauthorized [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        String message = (exception.getMessage() != null && !exception.getMessage().isBlank())
+                ? exception.getMessage()
+                : ErrorCodeEnum.UNAUTHORIZED_ERROR.getDefaultMessage();
         return wrapWithResponse(ErrorCodeEnum.UNAUTHORIZED_ERROR.getCode(),
-                ErrorCodeEnum.UNAUTHORIZED_ERROR.getDefaultMessage(),
+                message,
                 ErrorCodeEnum.UNAUTHORIZED_ERROR.getStatus());
     }
 
@@ -310,7 +314,7 @@ public class GlobalExceptionHandler {
         return wrapWithResponse(error.getCode(), message, error.getStatus());
     }
 
-    @ExceptionHandler(PessimisticLockingFailureException.class)
+    @ExceptionHandler({PessimisticLockingFailureException.class, OptimisticLockingFailureException.class})
     public ResponseEntity<Object> handleLockFailure(HttpServletRequest request) {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         log.warn("Database lock contention [{}]", path);

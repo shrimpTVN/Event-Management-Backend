@@ -54,15 +54,22 @@ public class JwtUtil {
             String cookieName = getCookieName();
             for (Cookie cookie : request.getCookies()) {
                 if (cookie.getName().equals(cookieName)) {
-                    return cookie.getValue();
+                    String value = cookie.getValue();
+                    if (value != null && !value.isBlank()) {
+                        return value.trim();
+                    }
                 }
             }
         }
 
-        // 3. Fallback to query parameter (e.g., EventSource / SSE connections)
-        String queryToken = request.getParameter("token");
-        if (queryToken != null && !queryToken.isBlank()) {
-            return queryToken.trim();
+        // 3. Fallback to query parameter strictly for SSE notifications stream
+        String servletPath = request.getServletPath();
+        String path = (servletPath != null && !servletPath.isEmpty()) ? servletPath : request.getRequestURI();
+        if ("/notifications/stream".equals(path) || "/api/notifications/stream".equals(path)) {
+            String queryToken = request.getParameter("token");
+            if (queryToken != null && !queryToken.isBlank()) {
+                return queryToken.trim();
+            }
         }
         return null;
     }

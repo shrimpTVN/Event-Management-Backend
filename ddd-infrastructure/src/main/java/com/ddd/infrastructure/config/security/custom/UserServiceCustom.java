@@ -47,7 +47,8 @@ public class UserServiceCustom implements UserDetailsService {
                 user.getEmail(),
                 user.getPassword(),
                 roleNames,
-                authorities);
+                authorities,
+                user.isActive());
     }
 
 }

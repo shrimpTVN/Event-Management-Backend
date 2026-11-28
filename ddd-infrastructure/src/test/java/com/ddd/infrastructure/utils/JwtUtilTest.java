@@ -3,6 +3,7 @@ package com.ddd.infrastructure.utils;
 import com.ddd.infrastructure.config.properties.JwtProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseCookie;
+import org.springframework.mock.web.MockHttpServletRequest;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -25,5 +26,16 @@ class JwtUtilTest {
         assertTrue(cleared.isSecure());
         assertEquals(0L, cleared.getMaxAge().getSeconds());
         assertEquals("", cleared.getValue());
+    }
+
+    @Test
+    void extractTokenAllowsQueryParamOnlyForSseStreamEndpoint() {
+        MockHttpServletRequest sseRequest = new MockHttpServletRequest("GET", "/api/notifications/stream");
+        sseRequest.setParameter("token", "sse-jwt-token");
+        assertEquals("sse-jwt-token", jwtUtil.extractToken(sseRequest));
+
+        MockHttpServletRequest regularRequest = new MockHttpServletRequest("GET", "/api/users/me/profile");
+        regularRequest.setParameter("token", "leaked-jwt-token");
+        assertNull(jwtUtil.extractToken(regularRequest));
     }
 }

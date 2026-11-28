@@ -10,7 +10,6 @@ import com.ddd.infrastructure.repository.jpaRepository.RoleJpaRepository;
 import com.ddd.infrastructure.repository.jpaRepository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.ResourceAccessException;
 
 import java.util.*;
 
@@ -51,7 +50,7 @@ public class UserRepositoryImpl implements UserRepository {
         }
         Set<RoleJpaEntity> roleJpaEntities = roleJpaRepository.findByNameIn(searchNames);
         if (roleJpaEntities.isEmpty()) {
-            throw new ResourceAccessException("Roles not found: " + roleNames);
+            throw new ResourceNotFoundException("Roles not found: " + roleNames);
         }
         UserJpaEntity userJpaEntity = userMapper.toEntity(user);
         userJpaEntity.setRoles(roleJpaEntities);
@@ -92,7 +91,7 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public User update(User user) {
         UserJpaEntity existing = userJpaRepository.findById(user.getId())
-                .orElseThrow(() -> new ResourceAccessException("User not found with id: " + user.getId()));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + user.getId()));
         existing.setProviderId(user.getProviderId());
         existing.setPassword(user.getPassword() != null ? user.getPassword() : existing.getPassword());
         return userMapper.toDomain(userJpaRepository.save(existing));

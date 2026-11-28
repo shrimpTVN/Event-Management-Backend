@@ -10,4 +10,8 @@ public interface OtpRepository {
 
     Optional<Otp> findLatestValidOtp(String email);
 
+    Optional<Otp> findLatestOtp(String email);
+
+    void markOtpUsed(Long otpId);
+
 }

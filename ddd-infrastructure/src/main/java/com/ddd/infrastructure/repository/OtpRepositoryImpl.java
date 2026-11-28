@@ -7,6 +7,8 @@ import com.ddd.infrastructure.mapper.OtpMapper;
 import com.ddd.infrastructure.repository.jpaRepository.OtpJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -28,6 +30,20 @@ public class OtpRepositoryImpl implements OtpRepository {
     public Optional<Otp> findLatestValidOtp(String email) {
         return otpJpaRepository.findTopByEmailAndIsUsedFalseOrderByCreatedAtDesc(email)
                 .map(otpMapper::toDomain);
+    }
+
+    @Override
+    public Optional<Otp> findLatestOtp(String email) {
+        return otpJpaRepository.findTopByEmailOrderByCreatedAtDesc(email)
+                .map(otpMapper::toDomain);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markOtpUsed(Long otpId) {
+        if (otpId != null) {
+            otpJpaRepository.markOtpUsed(otpId);
+        }
     }
 
 }

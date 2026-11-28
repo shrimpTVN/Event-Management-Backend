@@ -7,7 +7,9 @@ import com.ddd.infrastructure.config.security.handler.JwtAccessDeniedHandler;
 import com.ddd.infrastructure.config.security.handler.JwtAuthenticationEntryPoint;
 import com.ddd.infrastructure.constant.SecurityConstant;
 import com.ddd.infrastructure.utils.JwtUtil;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,6 +19,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -38,6 +41,9 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
+    @Value("${app.cors.allowed-origin-patterns:http://localhost:*,https://localhost:*}")
+    private String[] corsAllowedOriginPatterns;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(10);
@@ -47,8 +53,10 @@ public class SecurityConfig {
     public SecurityFilterChain customSecurityFilterChain(HttpSecurity http) {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .cors(corsConfig -> corsConfig.configurationSource(corsConfigurationSource()))
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests( request ->
                     request
+                            .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                             .requestMatchers(SecurityConstant.ADMIN_ENDPOINTS).hasRole(RoleEnum.ADMIN.name())
                             .requestMatchers(SecurityConstant.FANPAGE_ADMIN_ENDPOINTS).hasRole(RoleEnum.FANPAGE_ADMIN.name())
                             .requestMatchers(SecurityConstant.SECURE_ENDPOINTS).authenticated()
@@ -57,7 +65,7 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                         .accessDeniedHandler(jwtAccessDeniedHandler))
-                .addFilterBefore(new JwtTokenValidatorFilter(jwtUtil), BasicAuthenticationFilter.class)
+                .addFilterBefore(new JwtTokenValidatorFilter(jwtUtil, jwtAuthenticationEntryPoint), BasicAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .build();
@@ -67,7 +75,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList(SecurityConstant.CORS_ALLOW_ORIGINS));
+        String[] allowedPatterns = (corsAllowedOriginPatterns != null && corsAllowedOriginPatterns.length > 0)
+                ? corsAllowedOriginPatterns
+                : SecurityConstant.CORS_ALLOW_ORIGINS;
+        configuration.setAllowedOriginPatterns(Arrays.asList(allowedPatterns));
         configuration.setAllowedMethods(Arrays.asList(SecurityConstant.CORS_ALLOW_METHODS));
         configuration.setAllowedHeaders(Arrays.asList(SecurityConstant.CORS_ALLOWED_HEADERS));
         configuration.setAllowCredentials(true);
