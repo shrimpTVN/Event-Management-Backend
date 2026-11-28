@@ -4,7 +4,7 @@ import com.ddd.application.dto.notification.CreateNotificationDto;
 import com.ddd.application.dto.statistic.AlertAbsentStudentsDto;
 import com.ddd.application.service.notification.NotificationCommandService;
 import com.ddd.domain.enums.NotificationTypeEnum;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.Fanpage;
 import com.ddd.domain.model.port.security.SecurityContextPort;
@@ -68,13 +68,13 @@ class FanpageStatisticCommandServiceImplTest {
 
         AlertAbsentStudentsDto dto = new AlertAbsentStudentsDto(5L, List.of(42L), "Warning message");
 
-        assertThrows(AuthException.class, () ->
+        assertThrows(ForbiddenException.class, () ->
                 commandService.alertAbsentStudents(fanpageId, dto));
         verifyNoInteractions(notificationCommandService);
     }
 
     @Test
-    @DisplayName("Should throw AuthException even if caller is system ADMIN when not an admin of target fanpage")
+    @DisplayName("Should throw ForbiddenException even if caller is system ADMIN when not an admin of target fanpage")
     void shouldThrowWhenSuperadminNotAdminOfTargetFanpage() {
         Fanpage fanpage = new Fanpage();
         fanpage.setId(fanpageId);
@@ -84,7 +84,7 @@ class FanpageStatisticCommandServiceImplTest {
 
         AlertAbsentStudentsDto dto = new AlertAbsentStudentsDto(5L, List.of(42L), "Warning message");
 
-        assertThrows(AuthException.class, () ->
+        assertThrows(ForbiddenException.class, () ->
                 commandService.alertAbsentStudents(fanpageId, dto));
         verifyNoInteractions(notificationCommandService);
     }

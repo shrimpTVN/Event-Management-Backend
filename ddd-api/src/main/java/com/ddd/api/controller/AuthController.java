@@ -33,7 +33,7 @@ public class AuthController {
     private final OtpCommandService otpCommandService;
 
     @PostMapping("/login")
-    public ResponseEntity<BaseResponse<LoginResponseDto>> login(@RequestBody LoginRequestDto loginRequestDto) {
+    public ResponseEntity<BaseResponse<LoginResponseDto>> login(@RequestBody @Valid LoginRequestDto loginRequestDto) {
         LoginResult loginResult = authService.login(loginRequestDto.email(), loginRequestDto.password());
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -93,12 +93,19 @@ public class AuthController {
     }
 
     @PostMapping("/change-password")
-    public BaseResponse<Void> changePassword(@RequestBody ChangePasswordRequestDto changePasswordRequestDto,
-                                             Authentication authentication) {
+    public ResponseEntity<BaseResponse<Void>> changePassword(@RequestBody @Valid ChangePasswordRequestDto changePasswordRequestDto,
+                                                             Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new com.ddd.domain.exception.UnauthorizedException("Authentication required to change password");
+        }
         String email = authentication.getName();
         authService.changePassword(changePasswordRequestDto.oldPassword(), changePasswordRequestDto.newPassword(), email);
 
-        return BaseResponse.ok();
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .header(HttpHeaders.SET_COOKIE, authService.getLogoutCookie().toString())
+                .header(HttpHeaders.SET_COOKIE, authService.getClearRefreshCookie().toString())
+                .body(BaseResponse.ok());
     }
 
     @PostMapping("/create-password")

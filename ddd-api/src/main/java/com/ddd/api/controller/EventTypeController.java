@@ -9,6 +9,7 @@ import com.ddd.application.dto.eventtype.EventTypeDto;
 import com.ddd.application.service.eventtype.EventTypeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,6 +35,7 @@ public class EventTypeController {
     }
 
     @PostMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<EventTypeResponseDto> create(@RequestBody @Valid CreateEventTypeRequestDto req) {
         EventTypeDto dto = mapper.toDto(req);
         EventTypeDto created = service.createEventType(dto);
@@ -41,6 +43,7 @@ public class EventTypeController {
     }
 
     @PutMapping("/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<EventTypeResponseDto> update(@PathVariable Long id, @RequestBody @Valid UpdateEventTypeRequestDto req) {
         EventTypeDto dto = mapper.toDto(req);
         EventTypeDto updated = service.updateEventType(id, dto);
@@ -48,6 +51,7 @@ public class EventTypeController {
     }
 
     @DeleteMapping("/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<Void> delete(@PathVariable Long id) {
         service.deleteEventType(id);
         return BaseResponse.ok();

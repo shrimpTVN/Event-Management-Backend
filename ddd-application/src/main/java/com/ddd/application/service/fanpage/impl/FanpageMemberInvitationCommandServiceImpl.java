@@ -4,7 +4,7 @@ import com.ddd.application.service.fanpage.FanpageMemberInvitationCommandService
 import com.ddd.domain.enums.InvatitationStatusEnum;
 import com.ddd.domain.event.FanpageInvitationAcceptedEvent;
 import com.ddd.domain.event.FanpageInvitationRejectedEvent;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.FanpageMember;
@@ -39,7 +39,7 @@ public class FanpageMemberInvitationCommandServiceImpl implements FanpageMemberI
         Long userId = securityContextPort.getCurrentUserId();
 
         if (!invitation.getUserId().equals(userId)) {
-            throw new AuthException("You are not the recipient of this invitation");
+            throw new ForbiddenException("You are not the recipient of this invitation");
         }
 
         invitation.setStatus(InvatitationStatusEnum.ACCEPTED);
@@ -75,7 +75,7 @@ public class FanpageMemberInvitationCommandServiceImpl implements FanpageMemberI
         }
 
         if (!invitation.getUserId().equals(user.getId())) {
-            throw new AuthException("You are not the recipient of this invitation");
+            throw new ForbiddenException("You are not the recipient of this invitation");
         }
 
         invitation.setStatus(InvatitationStatusEnum.REJECTED);
@@ -98,7 +98,7 @@ public class FanpageMemberInvitationCommandServiceImpl implements FanpageMemberI
         FanpageMemberInvitation invitation = getValidPendingInvitation(invitationId);
         Long fanpageId = invitation.getFanpageId();
         if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, adminId)) {
-            throw new AuthException("You are not an admin of this fanpage");
+            throw new ForbiddenException("You are not an admin of this fanpage");
         }
 
         invitation.setStatus(InvatitationStatusEnum.CANCELED);

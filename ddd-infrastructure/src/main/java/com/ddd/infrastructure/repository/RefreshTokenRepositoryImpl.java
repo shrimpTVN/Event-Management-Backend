@@ -6,6 +6,7 @@ import com.ddd.infrastructure.mapper.RefreshTokenMapper;
 import com.ddd.infrastructure.repository.jpaRepository.RefreshTokenJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -31,7 +32,19 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
     }
 
     @Override
+    public Optional<RefreshToken> findByTokenForUpdate(String hashedToken) {
+        return jpaRepository.findByTokenForUpdate(hashedToken)
+                .map(refreshTokenMapper::toDomain);
+    }
+
+    @Override
     @Transactional
+    public boolean revokeTokenIfActive(String hashedToken) {
+        return jpaRepository.revokeTokenIfActive(hashedToken) > 0;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void revokeAllByUserId(Long userId) {
         jpaRepository.revokeAllByUserId(userId);
     }
@@ -46,5 +59,13 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
     @Transactional
     public void deleteExpiredTokens() {
         jpaRepository.deleteAllExpiredBefore(Instant.now());
+    }
+
+    @Override
+    @Transactional
+    public void deleteExpiredByUserId(Long userId) {
+        if (userId != null) {
+            jpaRepository.deleteExpiredByUserIdBefore(userId, Instant.now());
+        }
     }
 }

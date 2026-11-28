@@ -2,6 +2,7 @@ package com.ddd.domain.repository;
 
 import com.ddd.domain.model.PointCategory;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,6 +12,8 @@ public interface PointCategoryRepository {
     PointCategory save(PointCategory pointCategory);
 
     List<PointCategory> findAllActive();
+
+    List<PointCategory> findActiveEffectiveAsOf(LocalDate targetDate);
 
     List<PointCategory> findByLevel(Integer level);
 

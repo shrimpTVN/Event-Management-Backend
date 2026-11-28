@@ -43,6 +43,13 @@ public class CriteriaTransactionController {
         return BaseResponse.of(transactions.stream().map(criteriaApiMapper::toCriteriaTransactionResponseDto).toList());
     }
 
+    @PatchMapping("/me/{criteriaTransactionId}")
+    public BaseResponse<Void> updateTransactionNote(@PathVariable Long criteriaTransactionId,
+            @RequestBody @Valid com.ddd.api.dto.criteria.req.CriteriaTransactionNoteRequestDto requestDto) {
+        studentCriteriaTransactionCommandService.updateTransactionNote(criteriaTransactionId, requestDto.note());
+        return BaseResponse.ok();
+    }
+
     @DeleteMapping("/me/{criteriaTransactionId}")
     public BaseResponse<Void> deleteTransaction(@PathVariable Long criteriaTransactionId) {
         studentCriteriaTransactionCommandService.deleteTransaction(criteriaTransactionId);

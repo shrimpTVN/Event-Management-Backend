@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -48,4 +49,14 @@ public interface FanpageMemberJpaRepository extends JpaRepository<FanpageMemberJ
 
     @EntityGraph(attributePaths = {"fanpage", "fanpage.name", "fanpage.description", "fanpage.avatarUrl", "fanpage.orgName"})
     List<FanpageMemberJpaEntity> findAllByUserIdAndIsActive(Long currentUserId, boolean b);
+
+    @EntityGraph(attributePaths = {"user", "user.studentProfile", "user.fanpageAdminProfile"})
+    @Query("SELECT fm FROM FanpageMemberJpaEntity fm " +
+            "WHERE fm.id.fanpageId IN :fanpageIds " +
+            "AND fm.role = :role " +
+            "AND fm.isActive = true")
+    List<FanpageMemberJpaEntity> findActiveMembersByFanpageIdsAndRole(
+            @Param("fanpageIds") Collection<Long> fanpageIds,
+            @Param("role") String role
+    );
 }

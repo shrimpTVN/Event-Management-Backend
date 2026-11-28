@@ -154,9 +154,10 @@ CREATE TABLE fanpages
     org_type     VARCHAR(100) NOT NULL,
     org_name     VARCHAR(200) NOT NULL,
     parent_org   VARCHAR(255) NOT NULL,
-    help_contact VARCHAR(255),
-    help_phone   VARCHAR(20),
-    evidence_url TEXT,
+    help_contact     VARCHAR(255),
+    help_phone       VARCHAR(20),
+    rejection_reason TEXT,
+    evidence_url     TEXT,
     is_active    BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_by   BIGINT,
@@ -179,6 +180,25 @@ CREATE TABLE fanpage_members
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by BIGINT,
     CONSTRAINT pk_fanpage_members PRIMARY KEY (fanpage_id, user_id)
+);
+
+-- ============================================================
+--  10.0.1 FANPAGE_MEMBER_INVITATION
+-- ============================================================
+CREATE TABLE fanpage_member_invitations
+(
+    id           BIGINT       NOT NULL GENERATED ALWAYS AS IDENTITY,
+    fanpage_id   BIGINT       NOT NULL,
+    user_id      BIGINT       NOT NULL,
+    status       VARCHAR(20)  NOT NULL,
+    inviter_name VARCHAR(255) NOT NULL,
+    created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by   BIGINT,
+    updated_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by   BIGINT,
+    CONSTRAINT pk_fanpage_member_invitation PRIMARY KEY (id),
+    CONSTRAINT fk_invitation_fanpage FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE CASCADE,
+    CONSTRAINT fk_invitation_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 -- ============================================================
@@ -228,8 +248,9 @@ CREATE TABLE criterias
     scope             TEXT,
     level             INTEGER      NOT NULL DEFAULT 0,
     children_order    INTEGER      NOT NULL DEFAULT 1,
-    required_children INTEGER,
-    parent_id         BIGINT,
+    required_children    INTEGER,
+    required_occurrences INTEGER      NOT NULL DEFAULT 1,
+    parent_id            BIGINT,
     is_active         BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_by        BIGINT,
@@ -318,7 +339,7 @@ CREATE TABLE events
     gender_constraint BOOLEAN    NOT NULL DEFAULT FALSE,
     banner_url      TEXT         NOT NULL,
     status          VARCHAR(50)  NOT NULL DEFAULT 'DRAFT',
-    allow_self_check BOOLEAN      NOT NULL DEFAULT TRUE,
+    allow_self_check BOOLEAN      NOT NULL DEFAULT FALSE,
     event_type_id   BIGINT,
     criteria_id     BIGINT,
     fanpage_id      BIGINT,
@@ -390,31 +411,45 @@ CREATE TABLE stored_events
 );
 
 -- ============================================================
---  19. STUDENT_CRITERIA_PROGRESS
+--  19. STUDENT_CRITERIA_PROGRESS & STUDENT_CRITERIA_TRANSACTIONS
 -- ============================================================
 CREATE TABLE student_criteria_progress
+(
+    id                       BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    user_id                  BIGINT      NOT NULL,
+    criteria_id              BIGINT      NOT NULL,
+    academic_year_id         BIGINT      NOT NULL,
+    is_completed             BOOLEAN     NOT NULL DEFAULT FALSE,
+    completed_at             TIMESTAMPTZ,
+    completed_children_count INT         NOT NULL DEFAULT 0,
+    completed_occurrences    INTEGER     NOT NULL DEFAULT 0,
+    is_active                BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by               BIGINT,
+    updated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by               BIGINT,
+    CONSTRAINT pk_student_criteria_progress PRIMARY KEY (id),
+    CONSTRAINT uq_student_criteria_progress UNIQUE (user_id, criteria_id, academic_year_id)
+);
+
+CREATE TABLE student_criteria_transactions
 (
     id                BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
     user_id           BIGINT      NOT NULL,
     criteria_id       BIGINT      NOT NULL,
     academic_year_id  BIGINT      NOT NULL,
     event_id          BIGINT,
-    is_completed      BOOLEAN     NOT NULL DEFAULT FALSE,
     completion_source VARCHAR(30) NOT NULL DEFAULT 'MANUAL',
-    completed_at      TIMESTAMPTZ,
+    note              TEXT,
     is_active         BOOLEAN     NOT NULL DEFAULT TRUE,
     created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by        BIGINT,
     updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by        BIGINT,
-    CONSTRAINT pk_student_criteria_progress PRIMARY KEY (id),
-    CONSTRAINT uq_student_criteria_progress UNIQUE (user_id, criteria_id, academic_year_id)
+    CONSTRAINT pk_student_criteria_transaction PRIMARY KEY (id),
+    CONSTRAINT uq_student_criteria_transaction
+        UNIQUE (user_id, criteria_id, academic_year_id, event_id)
 );
-
-ALTER TABLE student_criteria_progress
-    DROP COLUMN completed_at,
-    DROP COLUMN is_completed,
-    ADD COLUMN note TEXT default '';
 
 -- ============================================================
 --  20. POINT_TRANSACTION
@@ -515,9 +550,16 @@ CREATE TABLE messages
 -- ============================================================
 --  25. NOTIFICATION
 -- ============================================================
+CREATE SEQUENCE notifications_id_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
 CREATE TABLE notifications
 (
-    id         BIGINT      NOT NULL GENERATED ALWAYS AS IDENTITY,
+    id         BIGINT      NOT NULL DEFAULT nextval('notifications_id_seq'::regclass),
     type       VARCHAR(50),
     message    TEXT,
     status     VARCHAR(50) NOT NULL DEFAULT 'UNREAD',
@@ -652,13 +694,21 @@ ALTER TABLE registrations
         FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE;
 
 ALTER TABLE student_criteria_progress
-    ADD CONSTRAINT fk_progress_event
-        FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE SET NULL,
     ADD CONSTRAINT fk_progress_users
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     ADD CONSTRAINT fk_progress_criteria
         FOREIGN KEY (criteria_id) REFERENCES criterias (id) ON DELETE CASCADE,
     ADD CONSTRAINT fk_progress_academic_year
+        FOREIGN KEY (academic_year_id) REFERENCES academic_years (id) ON DELETE RESTRICT;
+
+ALTER TABLE student_criteria_transactions
+    ADD CONSTRAINT fk_transaction_event
+        FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE SET NULL,
+    ADD CONSTRAINT fk_transaction_users
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    ADD CONSTRAINT fk_transaction_criteria
+        FOREIGN KEY (criteria_id) REFERENCES criterias (id) ON DELETE CASCADE,
+    ADD CONSTRAINT fk_transaction_academic_year
         FOREIGN KEY (academic_year_id) REFERENCES academic_years (id) ON DELETE RESTRICT;
 
 ALTER TABLE point_transactions
@@ -695,7 +745,9 @@ ALTER TABLE messages
 
 ALTER TABLE notifications
     ADD CONSTRAINT fk_notifications_users
-        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    ADD CONSTRAINT fk_notifications_fanpages
+        FOREIGN KEY (fanpage_id) REFERENCES fanpages (id) ON DELETE CASCADE;
 
 ALTER TABLE reports
     ADD CONSTRAINT fk_reports_users
@@ -769,6 +821,16 @@ EXECUTE FUNCTION fn_set_updated_at();
 CREATE TRIGGER trg_fanpage_members_updated_at
     BEFORE UPDATE
     ON fanpage_members
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_fanpage_member_invitation_updated_at
+    BEFORE UPDATE
+    ON fanpage_member_invitations
+    FOR EACH ROW
+EXECUTE FUNCTION fn_set_updated_at();
+CREATE TRIGGER trg_student_criteria_transaction_updated_at
+    BEFORE UPDATE
+    ON student_criteria_transactions
     FOR EACH ROW
 EXECUTE FUNCTION fn_set_updated_at();
 CREATE TRIGGER trg_event_types_updated_at
@@ -872,10 +934,15 @@ CREATE INDEX idx_student_profiles_major_id ON student_profiles (major_id);
 CREATE INDEX idx_events_status ON events (status);
 CREATE INDEX idx_events_date_happen ON events (date_happen);
 CREATE INDEX idx_events_type_id ON events (event_type_id);
+CREATE INDEX idx_events_school_id ON events (school_id);
 CREATE INDEX idx_registrations_event_id ON registrations (event_id);
 CREATE INDEX idx_registrations_status ON registrations (status);
 CREATE INDEX idx_notifications_user_id ON notifications (user_id);
 CREATE INDEX idx_notifications_status ON notifications (status);
+CREATE INDEX idx_notifications_type ON notifications (type);
+CREATE INDEX idx_notifications_fanpage_id ON notifications (fanpage_id);
+CREATE INDEX idx_notifications_fanpage_status ON notifications (fanpage_id, status);
+CREATE INDEX idx_notifications_fanpage_created ON notifications (fanpage_id, created_at);
 CREATE INDEX idx_messages_conversation ON messages (conversation_id);
 CREATE INDEX idx_pct_parent ON point_categories (parent_category_id);
 CREATE INDEX idx_criterias_parent ON criterias (parent_id);
@@ -889,3 +956,126 @@ CREATE INDEX idx_followings_user ON followings (user_id);
 CREATE INDEX idx_followings_status ON followings (fol_status);
 CREATE INDEX idx_stored_events_user ON stored_events (user_id);
 CREATE INDEX idx_stored_events_event ON stored_events (event_id);
+
+-- ============================================================
+--  27. AI EVENT RECOMMENDATIONS & BATCH VIEW TRACKING
+-- ============================================================
+CREATE TABLE student_event_recommendation
+(
+    student_id              BIGINT  NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    event_id                BIGINT  NOT NULL REFERENCES events (id) ON DELETE CASCADE,
+    read_penalty            INTEGER NOT NULL DEFAULT 0 CHECK (read_penalty BETWEEN 0 AND 20),
+    last_read_at            TIMESTAMPTZ,
+    score_day               DATE,
+    evaluated_event_version BIGINT,
+    score                   JSONB,
+    PRIMARY KEY (student_id, event_id)
+);
+
+CREATE TABLE recommendation_view_receipt
+(
+    student_id BIGINT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    event_id   BIGINT NOT NULL REFERENCES events (id) ON DELETE CASCADE,
+    batch_id   UUID   NOT NULL,
+    PRIMARY KEY (student_id, event_id, batch_id)
+);
+
+CREATE TABLE event_recommendation_summary
+(
+    event_id        BIGINT PRIMARY KEY REFERENCES events (id) ON DELETE CASCADE,
+    scoring_version BIGINT NOT NULL DEFAULT 1,
+    features        JSONB  NOT NULL
+);
+
+CREATE TABLE student_recommendation_summary
+(
+    student_id BIGINT PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+    snapshot   JSONB
+);
+
+CREATE INDEX student_event_recommendation_event_idx
+    ON student_event_recommendation (event_id);
+CREATE INDEX recommendation_view_receipt_event_idx
+    ON recommendation_view_receipt (event_id);
+CREATE INDEX recommendation_upcoming_events_idx ON events (date_happen)
+    WHERE is_active AND status = 'PUBLISHED';
+CREATE INDEX recommendation_active_registrations_idx ON registrations (event_id)
+    WHERE status <> 'CANCELLED';
+
+CREATE OR REPLACE FUNCTION sync_event_recommendation_summary(target BIGINT) RETURNS VOID
+    LANGUAGE sql AS
+$$
+INSERT INTO event_recommendation_summary AS summary (event_id, features)
+SELECT e.id,
+       jsonb_build_object(
+               'title', e.name, 'description', e.description,
+               'semesterId', e.semester_id, 'yearId', s.academic_year_id,
+               'criterionId', e.criteria_id, 'criterionName', c.name,
+               'fanpageId', e.fanpage_id, 'typeId', e.event_type_id,
+               'points', COALESCE((SELECT jsonb_object_agg(point_category_id, offered)
+                                   FROM (SELECT point_category_id, SUM(point) AS offered
+                                         FROM event_points
+                                         WHERE event_id = e.id
+                                           AND is_active
+                                         GROUP BY point_category_id) grouped), '{}'::jsonb)
+       )
+FROM events e
+         LEFT JOIN semesters s ON s.id = e.semester_id
+         LEFT JOIN criterias c ON c.id = e.criteria_id
+WHERE e.id = target
+ON CONFLICT (event_id) DO UPDATE SET features        = EXCLUDED.features,
+                                     scoring_version = summary.scoring_version + 1
+WHERE summary.features IS DISTINCT FROM EXCLUDED.features;
+$$;
+
+CREATE OR REPLACE FUNCTION refresh_event_recommendation_summary() RETURNS TRIGGER
+    LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF TG_TABLE_NAME = 'events' THEN
+        PERFORM sync_event_recommendation_summary(NEW.id);
+    ELSIF TG_TABLE_NAME = 'semesters' THEN
+        PERFORM sync_event_recommendation_summary(id) FROM events WHERE semester_id = NEW.id;
+    ELSIF TG_TABLE_NAME = 'criterias' THEN
+        PERFORM sync_event_recommendation_summary(id) FROM events WHERE criteria_id = NEW.id;
+    END IF;
+    RETURN NULL;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION refresh_event_point_recommendation_summary() RETURNS TRIGGER
+    LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        PERFORM sync_event_recommendation_summary(OLD.event_id);
+        RETURN NULL;
+    END IF;
+    IF TG_OP = 'UPDATE' AND OLD.event_id IS DISTINCT FROM NEW.event_id THEN
+        PERFORM sync_event_recommendation_summary(OLD.event_id);
+    END IF;
+    PERFORM sync_event_recommendation_summary(NEW.event_id);
+    RETURN NULL;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER recommendation_event_features
+    AFTER INSERT OR UPDATE OF name, description, semester_id, criteria_id, fanpage_id, event_type_id
+    ON events
+    FOR EACH ROW
+EXECUTE FUNCTION refresh_event_recommendation_summary();
+CREATE OR REPLACE TRIGGER recommendation_event_point_features
+    AFTER INSERT OR UPDATE OR DELETE
+    ON event_points
+    FOR EACH ROW
+EXECUTE FUNCTION refresh_event_point_recommendation_summary();
+CREATE OR REPLACE TRIGGER recommendation_semester_features
+    AFTER UPDATE OF academic_year_id
+    ON semesters
+    FOR EACH ROW
+EXECUTE FUNCTION refresh_event_recommendation_summary();
+CREATE OR REPLACE TRIGGER recommendation_criterion_features
+    AFTER UPDATE OF name
+    ON criterias
+    FOR EACH ROW
+EXECUTE FUNCTION refresh_event_recommendation_summary();

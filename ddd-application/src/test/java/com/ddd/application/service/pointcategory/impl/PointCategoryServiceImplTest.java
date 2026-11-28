@@ -5,7 +5,9 @@ import com.ddd.application.dto.pointcategory.PointCategoryInfoDto;
 import com.ddd.application.mapper.PointCategoryDtoMapper;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.PointCategory;
+import com.ddd.domain.model.Semester;
 import com.ddd.domain.repository.PointCategoryRepository;
+import com.ddd.domain.repository.SemesterRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +31,13 @@ import static org.mockito.Mockito.when;
 class PointCategoryServiceImplTest {
 
         @Mock
+    private com.ddd.application.service.semesterpoint.impl.PointConfigurationRefresh pointRefresh;
+
+    @Mock
         private PointCategoryRepository pointCategoryRepository;
+
+        @Mock
+        private SemesterRepository semesterRepository;
 
         @Mock
         private PointCategoryDtoMapper pointCategoryDtoMapper;
@@ -191,7 +199,7 @@ class PointCategoryServiceImplTest {
                 List<PointCategory> entities = List.of(entity);
                 List<PointCategoryInfoDto> expectedDtos = List.of(infoDto);
 
-                when(pointCategoryRepository.findAllActive()).thenReturn(entities);
+                when(pointCategoryRepository.findActiveEffectiveAsOf(any(LocalDate.class))).thenReturn(entities);
                 when(pointCategoryDtoMapper.toInfoDtoList(entities)).thenReturn(expectedDtos);
 
                 List<PointCategoryInfoDto> result = pointCategoryService.getAllPointCategories();
@@ -199,7 +207,57 @@ class PointCategoryServiceImplTest {
                 assertNotNull(result);
                 assertEquals(1, result.size());
                 assertEquals(expectedDtos, result);
-                verify(pointCategoryRepository).findAllActive();
+                verify(pointCategoryRepository).findActiveEffectiveAsOf(any(LocalDate.class));
                 verify(pointCategoryDtoMapper).toInfoDtoList(entities);
         }
+
+        @Test
+        @DisplayName("Should filter point categories by semester endDate when semesterId is provided")
+        void getAllPointCategories_whenSemesterIdProvided_shouldQueryBySemesterEndDate() {
+                Long semesterId = 101L;
+                LocalDate endDate = LocalDate.of(2026, 5, 31);
+                Semester semester = new Semester();
+                semester.setId(semesterId);
+                semester.setEndDate(endDate);
+
+                PointCategory entity = new PointCategory();
+                entity.setId(1L);
+                entity.setName("Academics 2008");
+                List<PointCategory> entities = List.of(entity);
+
+                PointCategoryInfoDto infoDto = new PointCategoryInfoDto(
+                                1L, "Academics 2008", null, 30, LocalDate.of(2008, 12, 5), 0, null, true, 1, false);
+                List<PointCategoryInfoDto> expectedDtos = List.of(infoDto);
+
+                when(semesterRepository.findById(semesterId)).thenReturn(Optional.of(semester));
+                when(pointCategoryRepository.findActiveEffectiveAsOf(endDate)).thenReturn(entities);
+                when(pointCategoryDtoMapper.toInfoDtoList(entities)).thenReturn(expectedDtos);
+
+                List<PointCategoryInfoDto> result = pointCategoryService.getAllPointCategories(semesterId);
+
+                assertEquals(expectedDtos, result);
+                verify(semesterRepository).findById(semesterId);
+                verify(pointCategoryRepository).findActiveEffectiveAsOf(endDate);
+        }
+    @Test void updatingRootAllowsNullParentAndRefreshesAfterSave() {
+        var root=new PointCategory();root.setId(1L);root.setLevel(0);
+        var dto=new com.ddd.application.dto.pointcategory.PointCategoryUpdateDto("Root",null,0,LocalDate.now(),null,1,true,false);
+        when(pointCategoryRepository.findById(1L)).thenReturn(Optional.of(root));
+        when(pointCategoryRepository.save(root)).thenReturn(root);
+        pointCategoryService.updatePointCategory(1L,dto);
+        assertEquals(null,root.getParentCategoryId());assertEquals(0,root.getLevel());
+        var order=org.mockito.Mockito.inOrder(pointRefresh,pointCategoryRepository);
+        order.verify(pointRefresh).capture();order.verify(pointCategoryRepository).findById(1L);
+        order.verify(pointCategoryRepository).save(root);order.verify(pointCategoryRepository).findByParentId(1L);
+        order.verify(pointRefresh).refresh(any());
+    }
+    @Test void descendantCannotBecomeParentAndNothingIsSaved() {
+        var root=new PointCategory();root.setId(1L);
+        var child=new PointCategory();child.setId(2L);child.setParentCategoryId(1L);
+        when(pointCategoryRepository.findById(1L)).thenReturn(Optional.of(root));
+        when(pointCategoryRepository.findById(2L)).thenReturn(Optional.of(child));
+        var dto=new com.ddd.application.dto.pointcategory.PointCategoryUpdateDto("Root",null,10,LocalDate.now(),2L,1,true,false);
+        assertThrows(IllegalArgumentException.class,()->pointCategoryService.updatePointCategory(1L,dto));
+        verify(pointCategoryRepository,never()).save(any());verify(pointRefresh,never()).refresh(any());
+    }
 }

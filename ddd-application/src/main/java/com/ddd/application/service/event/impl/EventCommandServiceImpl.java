@@ -1,18 +1,18 @@
 package com.ddd.application.service.event.impl;
 
 import com.ddd.application.dto.event.EventCreateDto;
-import com.ddd.application.dto.event.EventInfoDto;
 import com.ddd.application.dto.event.EventPointCreateDto;
 import com.ddd.application.dto.event.EventUpdateDto;
 import com.ddd.application.mapper.EventDtoMapper;
 import com.ddd.application.service.event.EventCommandService;
+import com.ddd.application.service.registration.RegistrationCommandService;
+import com.ddd.application.service.semesterpoint.impl.SemesterPointCategoryPolicy;
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.FollowingStatusEnum;
 import com.ddd.domain.event.EventCreatedEvent;
-import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.BusinessException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.ResourceNotFoundException;
-import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.*;
 import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
@@ -20,11 +20,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Isolation;
-import com.ddd.application.service.registration.RegistrationCommandService;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -43,7 +42,7 @@ public class EventCommandServiceImpl implements EventCommandService {
     private final EventDtoMapper eventDtoMapper;
     private final SemesterRepository semesterRepository;
     private final SchoolRepository schoolRepository;
-    private final PointCategoryRepository pointCategoryRepository;
+    private final SemesterPointCategoryPolicy semesterPointCategoryPolicy;
     private final SecurityContextPort securityContextPort;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final FollowingRepository followingRepository;
@@ -98,21 +97,32 @@ public class EventCommandServiceImpl implements EventCommandService {
         Event event = eventRepository.findByIdForUpdate(id);
 
         verifyUserFanpageMembership(event.getFanpageId(), email);
+        if (!event.isActive()) {
+            throw new BusinessException("Cannot update an inactive event.");
+        }
+        if (EventStatusEnum.COMPLETED.name().equalsIgnoreCase(event.getStatus())) {
+            throw new BusinessException("A completed event cannot be updated.");
+        }
         validateUpdateReferences(dto);
 
+        Instant previousDateOpen = event.getDateOpen();
         eventDtoMapper.updateEventFromDto(event, dto);
-        event.validateEventDates();
+        if (event.getEventPoints() != null && !event.getEventPoints().isEmpty()) {
+            semesterPointCategoryPolicy.requireLeaves(event.getSemesterId(),
+                    event.getEventPoints().stream().map(EventPoint::getPointCategoryId).toList());
+        }
+        event.validateEventDatesForUpdate(previousDateOpen);
         event.validateCapacityAndQuantities();
 
         if (event.getCapacity() < registrationRepository.countActiveRegistrationsByEventId(id)) {
-            throw new BusinessException("Event capacity cannot be lower than current registrations.");
+            throw BusinessException.withField("capacity", "Event capacity cannot be lower than current registrations.");
         }
         if (event.isGenderConstraint()) {
             if (event.getMaleQuantity() < registrationRepository.countActiveRegistrationsByEventIdAndGender(id, "MALE")) {
-                throw new BusinessException("Male quantity cannot be lower than current male registrations.");
+                throw BusinessException.withField("maleQuantity", "Male quantity cannot be lower than current male registrations.");
             }
             if (event.getFemaleQuantity() < registrationRepository.countActiveRegistrationsByEventIdAndGender(id, "FEMALE")) {
-                throw new BusinessException("Female quantity cannot be lower than current female registrations.");
+                throw BusinessException.withField("femaleQuantity", "Female quantity cannot be lower than current female registrations.");
             }
         }
 
@@ -158,20 +168,27 @@ public class EventCommandServiceImpl implements EventCommandService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void updateEventVisibilityByAdmin(Long id, boolean hidden, String reason) {
         if (!securityContextPort.hasRole("ADMIN")) {
-            throw new UnauthorizedException("Only Super Admin can change event visibility");
+            throw new ForbiddenException("Only Super Admin can change event visibility");
+        }
+        String normalizedReason = null;
+        if (hidden) {
+            if (reason == null || reason.trim().isEmpty()) {
+                throw BusinessException.withField("reason", "Hide reason is required");
+            }
+            normalizedReason = reason.trim();
         }
         Event event = eventRepository.findByIdForUpdate(id);
         event.setActive(!hidden);
-        event.setViolationReason(hidden ? reason : null);
+        event.setViolationReason(hidden ? normalizedReason : null);
         eventRepository.save(event);
-        log.info("Admin updated visibility for event id: {} (hidden={})", id, hidden);
+        log.info("Admin updated visibility for event id: {}", id);
     }
 
     private void verifyUserFanpageMembership(Long fanpageId, Long userId) {
         FanpageMember fanpageMember = fanpageMemberRepository.findById(fanpageId, userId)
-                .orElseThrow(() -> new AuthException("User is not a member of this fanpage"));
+                .orElseThrow(() -> new ForbiddenException("User is not a member of this fanpage"));
         if (!fanpageMember.isActive()) {
-            throw new AuthException("User no longer has active membership in this fanpage");
+            throw new ForbiddenException("User no longer has active membership in this fanpage");
         }
     }
 
@@ -211,12 +228,8 @@ public class EventCommandServiceImpl implements EventCommandService {
         }
 
         if (dto.eventPoints() != null && !dto.eventPoints().isEmpty()) {
-            for (EventPointCreateDto ep : dto.eventPoints()) {
-                if (ep.pointCategoryId() != null) {
-                    pointCategoryRepository.findById(ep.pointCategoryId())
-                            .orElseThrow(() -> new ResourceNotFoundException("PointCategory not found with id: " + ep.pointCategoryId()));
-                }
-            }
+            semesterPointCategoryPolicy.requireLeaves(dto.semesterId(),
+                    dto.eventPoints().stream().map(EventPointCreateDto::pointCategoryId).toList());
         }
     }
 

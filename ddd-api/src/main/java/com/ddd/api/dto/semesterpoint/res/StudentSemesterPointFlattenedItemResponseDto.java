@@ -19,6 +19,10 @@ public record StudentSemesterPointFlattenedItemResponseDto(
         Integer totalPoint,
         Integer systemPointRecord,
         Integer manualPointRecord,
-        Instant finalizedAt
+        Instant finalizedAt,
+        boolean isAtMaximum,
+        int completionPercentage,
+        Long selectedChildId,
+        boolean contributesToParent
 ) {
 }

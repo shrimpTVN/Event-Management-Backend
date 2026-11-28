@@ -5,7 +5,7 @@ import com.ddd.application.mapper.FanpageMemberInvitationDtoMapper;
 import com.ddd.application.service.fanpage.FanpageMemberInvitationQueryService;
 import com.ddd.application.utils.ServiceUtil;
 import com.ddd.domain.enums.InvatitationStatusEnum;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.User;
 import com.ddd.domain.model.port.security.SecurityContextPort;
@@ -55,7 +55,7 @@ public class FanpageMemberInvitationQueryServiceImpl implements FanpageMemberInv
         Long adminId = securityContextPort.getCurrentUserId();
 
         if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, adminId)) {
-            throw new AuthException("You are not an admin of this fanpage");
+            throw new ForbiddenException("You are not an admin of this fanpage");
         }
 
         Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);

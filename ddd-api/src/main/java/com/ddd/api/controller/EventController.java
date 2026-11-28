@@ -167,6 +167,9 @@ public class EventController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new UnauthorizedException("Authentication required");
+        }
         String email = authentication.getName();
         Pageable pageable = ServiceUtil.createPageable(page, size, sortBy, sortDir);
         Page<EventInfoDto> storedEvents = storedEventQueryService.getStoredEvents(email, pageable);

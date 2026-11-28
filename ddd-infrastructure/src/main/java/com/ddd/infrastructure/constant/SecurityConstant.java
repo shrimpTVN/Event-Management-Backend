@@ -11,6 +11,11 @@ public class SecurityConstant {
             "/api/point-categories/admin/**",
             "/api/events/admin/**",
             "/api/criterias/admin/**",
+            "/api/schools/admin/**",
+            "/api/majors/admin/**",
+            "/api/event-types/admin/**",
+            "/api/associations/admin/**",
+            "/api/roles/**",
             "/admin/statistics/**",
             "/api/admin/statistics/**"
     };
@@ -68,6 +73,10 @@ public class SecurityConstant {
             "/api/events/*/is-stored",
             "/events/me/stored",
             "/api/events/me/stored",
+            "/events/stored",
+            "/api/events/stored",
+            "/fanpages/my-fanpages",
+            "/api/fanpages/my-fanpages",
             "/events/views",
             "/api/events/views",
             "/events/recommendations",
@@ -77,8 +86,7 @@ public class SecurityConstant {
     public static final String CORS_PATH_PATTERN = "/**";
     public static final String[] CORS_ALLOW_ORIGINS = {
             "http://localhost:*",
-            "https://localhost:*",
-            "null"
+            "https://localhost:*"
     };
 
     public static final String[] CORS_ALLOWED_HEADERS = {"*"};

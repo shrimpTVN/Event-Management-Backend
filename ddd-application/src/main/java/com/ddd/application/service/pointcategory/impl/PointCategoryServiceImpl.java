@@ -5,11 +5,14 @@ import com.ddd.application.mapper.PointCategoryDtoMapper;
 import com.ddd.application.service.pointcategory.PointCategoryService;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.PointCategory;
+import com.ddd.domain.model.Semester;
 import com.ddd.domain.repository.PointCategoryRepository;
+import com.ddd.domain.repository.SemesterRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -26,10 +29,13 @@ public class PointCategoryServiceImpl implements PointCategoryService {
             .thenComparing(PointCategory::getId, Comparator.nullsLast(Comparator.naturalOrder()));
 
     private final PointCategoryRepository pointCategoryRepository;
+    private final SemesterRepository semesterRepository;
     private final PointCategoryDtoMapper pointCategoryDtoMapper;
+    private final com.ddd.application.service.semesterpoint.impl.PointConfigurationRefresh pointRefresh;
 
     @Override
     public PointCategoryInfoDto createPointCategory(PointCategoryCreateDto pointCategoryCreateDto) {
+        var before = pointRefresh.capture();
         PointCategory pointCategory = pointCategoryDtoMapper.toEntity(pointCategoryCreateDto);
         if (pointCategory.getIsMaxChild() == null) {
             pointCategory.setIsMaxChild(false);
@@ -42,19 +48,33 @@ public class PointCategoryServiceImpl implements PointCategoryService {
                     .orElseThrow(() -> new ResourceNotFoundException("Parent category not found"));
             pointCategory.setLevel(parentCategory.getLevel() + 1);
         }
-        return pointCategoryDtoMapper.toInfoDto(pointCategoryRepository.save(pointCategory));
+        var saved = pointCategoryRepository.save(pointCategory);
+        pointRefresh.refresh(before);
+        return pointCategoryDtoMapper.toInfoDto(saved);
     }
 
     @Transactional(readOnly = true)
     @Override
     public List<PointCategoryInfoDto> getAllPointCategories() {
-        return pointCategoryDtoMapper.toInfoDtoList(pointCategoryRepository.findAllActive());
+        return getAllPointCategories(null);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<PointCategoryInfoDto> getAllPointCategories(Long semesterId) {
+        return pointCategoryDtoMapper.toInfoDtoList(findEffectiveCategories(semesterId));
     }
 
     @Transactional(readOnly = true)
     @Override
     public List<PointCategoryTreeNodeDto> getPointCategoryTree() {
-        CategoryGroup categoryGroup = groupCategoryAndRetrieveRoots();
+        return getPointCategoryTree(null);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<PointCategoryTreeNodeDto> getPointCategoryTree(Long semesterId) {
+        CategoryGroup categoryGroup = groupCategoryAndRetrieveRoots(semesterId);
         Map<Long, List<PointCategory>> childrenByParent = categoryGroup.childrenByParent();
         List<PointCategory> roots = categoryGroup.roots();
 
@@ -107,10 +127,19 @@ public class PointCategoryServiceImpl implements PointCategoryService {
 
     @Override
     public PointCategoryInfoDto updatePointCategory(Long id, PointCategoryUpdateDto pointCategoryUpdateDto) {
+        var before = pointRefresh.capture();
         PointCategory existingCategory = pointCategoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Point category not found with id: " + id));
 
+        java.util.Set<Long> ancestors = new java.util.HashSet<>();
+        Long ancestor = pointCategoryUpdateDto.parentCategoryId();
+        while (ancestor != null && ancestor != 0L) {
+            if (ancestor.equals(id) || !ancestors.add(ancestor)) throw new IllegalArgumentException("Cycle in point categories");
+            ancestor = pointCategoryRepository.findById(ancestor)
+                    .orElseThrow(() -> new ResourceNotFoundException("Parent category not found")).getParentCategoryId();
+        }
         pointCategoryDtoMapper.updateEntityFromDto(pointCategoryUpdateDto, existingCategory);
+        existingCategory.setParentCategoryId(pointCategoryUpdateDto.parentCategoryId());
 
         if (pointCategoryUpdateDto.parentCategoryId() == null) {
             existingCategory.setLevel(0);
@@ -125,18 +154,38 @@ public class PointCategoryServiceImpl implements PointCategoryService {
             existingCategory.setLevel(parentCategory.getLevel() + 1);
         }
 
-        return pointCategoryDtoMapper.toInfoDto(pointCategoryRepository.save(existingCategory));
+        var saved = pointCategoryRepository.save(existingCategory);
+        updateDescendantLevels(saved, new java.util.HashSet<>());
+        pointRefresh.refresh(before);
+        return pointCategoryDtoMapper.toInfoDto(saved);
+    }
+
+    private void updateDescendantLevels(PointCategory parent, java.util.Set<Long> visited) {
+        if (!visited.add(parent.getId())) throw new IllegalArgumentException("Cycle in point categories");
+        for (var child : pointCategoryRepository.findByParentId(parent.getId())) {
+            child.setLevel(parent.getLevel() + 1);
+            pointCategoryRepository.save(child);
+            updateDescendantLevels(child, visited);
+        }
     }
 
     @Override
     public void deletePointCategory(Long id) {
+        var before = pointRefresh.capture();
         pointCategoryRepository.delete(id);
+        pointRefresh.refresh(before);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<PointCategoryGroupedTreeDto> getGroupedPointCategoryTree() {
-        CategoryGroup categoryGroup = groupCategoryAndRetrieveRoots();
+        return getGroupedPointCategoryTree(null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PointCategoryGroupedTreeDto> getGroupedPointCategoryTree(Long semesterId) {
+        CategoryGroup categoryGroup = groupCategoryAndRetrieveRoots(semesterId);
         Map<Long, List<PointCategory>> childrenByParent = categoryGroup.childrenByParent();
         List<PointCategory> roots = categoryGroup.roots();
 
@@ -188,8 +237,8 @@ public class PointCategoryServiceImpl implements PointCategoryService {
 
     }
 
-    private CategoryGroup groupCategoryAndRetrieveRoots() {
-        List<PointCategory> allCategories = pointCategoryRepository.findAllActive();
+    private CategoryGroup groupCategoryAndRetrieveRoots(Long semesterId) {
+        List<PointCategory> allCategories = findEffectiveCategories(semesterId);
         Map<Long, List<PointCategory>> childrenByParent = allCategories.stream()
                 .filter(c -> c.getParentCategoryId() != null && c.getParentCategoryId() != 0L)
                 .collect(Collectors.groupingBy(PointCategory::getParentCategoryId));
@@ -200,6 +249,18 @@ public class PointCategoryServiceImpl implements PointCategoryService {
                 .toList();
 
         return new CategoryGroup(childrenByParent, roots);
+    }
+
+    private List<PointCategory> findEffectiveCategories(Long semesterId) {
+        LocalDate targetDate = LocalDate.now();
+        if (semesterId != null) {
+            Semester semester = semesterRepository.findById(semesterId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Semester not found with id: " + semesterId));
+            targetDate = semester.getEndDate() != null
+                    ? semester.getEndDate()
+                    : (semester.getStartDate() != null ? semester.getStartDate() : LocalDate.now());
+        }
+        return pointCategoryRepository.findActiveEffectiveAsOf(targetDate);
     }
 }
 

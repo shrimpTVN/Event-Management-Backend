@@ -51,6 +51,12 @@ public class StudentSemesterPointRepositoryImpl implements StudentSemesterPointR
     }
 
     @Override
+    public List<com.ddd.domain.model.StudentSemesterPointScope> findAllScopes() {
+        return jpaRepository.findAllScopes().stream().map(row -> new com.ddd.domain.model.StudentSemesterPointScope(
+                ((Number) row[0]).longValue(), ((Number) row[1]).longValue())).toList();
+    }
+
+    @Override
     public void saveAll(List<StudentSemesterPoint> studentSemesterPoints) {
         if (studentSemesterPoints == null || studentSemesterPoints.isEmpty()) {
             return;

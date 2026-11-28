@@ -33,6 +33,8 @@ public class StudentCriteriaTransactionCommandServiceImpl implements StudentCrit
     private final SemesterRepository semesterRepository;
     private final StudentCriteriaProgressCommandService criteriaProgressCommandService;
     private final SecurityContextPort securityContextPort;
+    private final CriteriaProgressLock progressLock;
+    private final com.ddd.infrastructure.repository.jpaRepository.StudentCriteriaTransactionJpaRepository transactionJpaRepository;
 
     @Override
     public void createTransaction(Long criteriaId, Long academicYearId, String note) {
@@ -44,6 +46,7 @@ public class StudentCriteriaTransactionCommandServiceImpl implements StudentCrit
                 .orElseThrow(() -> new BusinessException("Academic year not found with id: " + academicYearId));
 
         validateManualCriteriaEligible(criteria);
+        progressLock.acquire(userId, academicYear.getId());
 
         var transaction = new StudentCriteriaTransaction(
                 userId,
@@ -100,8 +103,34 @@ public class StudentCriteriaTransactionCommandServiceImpl implements StudentCrit
     }
 
     @Override
+    public void updateTransactionNote(Long criteriaTransactionId, String note) {
+        Long userId = securityContextPort.getCurrentUserId();
+        var initial = criteriaTransactionRepository.findById(criteriaTransactionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Criteria transaction not found"));
+        requireOwnedManualTransaction(initial, userId);
+        progressLock.acquire(userId, initial.getAcademicYearId());
+        var transaction = criteriaTransactionRepository.findById(criteriaTransactionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Criteria transaction not found"));
+        requireOwnedManualTransaction(transaction, userId);
+        transaction.setNote(note);
+        criteriaTransactionRepository.save(transaction);
+        criteriaProgressCommandService.markCompleted(userId, transaction.getCriteriaId(), transaction.getAcademicYearId());
+    }
+
+    private void requireOwnedManualTransaction(StudentCriteriaTransaction transaction, Long userId) {
+        if (!Objects.equals(transaction.getUserId(), userId)
+                || !CriteriaCompletionSourceEnum.MANUAL.name().equals(transaction.getCompletionSource())) {
+            throw new IllegalArgumentException("Only your own manual records can be changed");
+        }
+    }
+
+    @Override
     public void deleteTransaction(Long criteriaTransactionId) {
         Long userId = securityContextPort.getCurrentUserId();
+        StudentCriteriaTransaction initial = criteriaTransactionRepository.findById(criteriaTransactionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Criteria transaction not found"));
+        if (!Objects.equals(initial.getUserId(), userId)) throw new IllegalArgumentException("Transaction is owned by another student");
+        progressLock.acquire(userId, initial.getAcademicYearId());
         StudentCriteriaTransaction transaction = criteriaTransactionRepository.findById(criteriaTransactionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Transaction not found with id: " + criteriaTransactionId));
 
@@ -112,26 +141,21 @@ public class StudentCriteriaTransactionCommandServiceImpl implements StudentCrit
         criteriaTransactionRepository.delete(transaction);
         log.info("Transaction deleted with id: {}", criteriaTransactionId);
 
-        try {
-            criteriaProgressCommandService.markUncompleted(userId, transaction.getCriteriaId(), transaction.getAcademicYearId());
-        } catch (Exception e) {
-            log.warn("Could not mark uncompleted for progress: {}", e.getMessage(), e);
-        }
+        criteriaProgressCommandService.markUncompleted(userId, transaction.getCriteriaId(), transaction.getAcademicYearId());
     }
 
     private void bulkCreateTransactions(List<Long> userIds, Long criteriaId, Long academicYearId, Long eventId) {
-        List<StudentCriteriaTransaction> toSave = userIds.stream()
-                .distinct()
-                .map(userId -> new StudentCriteriaTransaction(
-                        userId,
-                        criteriaId,
-                        academicYearId,
-                        eventId,
-                        CriteriaCompletionSourceEnum.EVENT_CHECKOUT.name(),
-                        "Event completion"))
+        List<Long> sortedUsers = userIds.stream().filter(Objects::nonNull).distinct().sorted().toList();
+        sortedUsers.forEach(userId -> progressLock.acquire(userId, academicYearId));
+        List<StudentCriteriaTransaction> toSave = sortedUsers.stream()
+                .filter(userId -> !transactionJpaRepository.existsByUserIdAndCriteriaIdAndAcademicYearIdAndEventIdAndCompletionSource(
+                        userId, criteriaId, academicYearId, eventId, CriteriaCompletionSourceEnum.EVENT_CHECKOUT.name()))
+                .map(userId -> new StudentCriteriaTransaction(userId, criteriaId, academicYearId, eventId,
+                        CriteriaCompletionSourceEnum.EVENT_CHECKOUT.name(), "Event completion"))
                 .collect(Collectors.toList());
 
         log.info("Bulk creating transactions for {} users", userIds.size());
         criteriaTransactionRepository.saveAll(toSave);
+        criteriaProgressCommandService.bulkMarkCompleted(sortedUsers, criteriaId, academicYearId);
     }
 }

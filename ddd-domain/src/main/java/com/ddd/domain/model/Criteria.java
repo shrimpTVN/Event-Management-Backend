@@ -12,6 +12,7 @@ public class Criteria extends BaseModel {
     private Integer level = 0;
     private Integer childrenOrder = 1;
     private Integer requiredChildren;
+    private Integer requiredOccurrences = 1;
     private Long parentId;
 
     public void setLevel(Integer level) {
@@ -33,6 +34,13 @@ public class Criteria extends BaseModel {
             throw new IllegalArgumentException("Required children must be positive");
         }
         this.requiredChildren = requiredChildren;
+    }
+
+    public void setRequiredOccurrences(Integer requiredOccurrences) {
+        if (requiredOccurrences != null && requiredOccurrences <= 0) {
+            throw new IllegalArgumentException("Required occurrences must be positive");
+        }
+        this.requiredOccurrences = requiredOccurrences;
     }
 
     // Deprecated alias for backwards-compatibility during refactoring

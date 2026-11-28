@@ -29,6 +29,7 @@ public class SemesterServiceImpl implements SemesterService {
     private final AcademicYearRepository academicYearRepository;
     private final AcademicYearService academicYearService;
     private final SemesterDtoMapper semesterDtoMapper;
+    private final com.ddd.application.service.semesterpoint.impl.PointConfigurationRefresh pointRefresh;
 
     @Override
     public List<SemesterDto> findAll() {
@@ -71,6 +72,7 @@ public class SemesterServiceImpl implements SemesterService {
     @Override
     @Transactional
     public SemesterDto updateSemester(Long id, SemesterDto semesterDto) {
+        var before = pointRefresh.capture();
         Semester existingSemester = semesterRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Semester not found with id: " + id));
 
@@ -81,7 +83,9 @@ public class SemesterServiceImpl implements SemesterService {
         existingSemester.setAcademicYearId(academicYear.getId());
         existingSemester.setStatus(resolveStatus(existingSemester.getStartDate(), existingSemester.getEndDate()));
 
-        return toDtoWithAcademicYear(semesterRepository.save(existingSemester), academicYear.getCode());
+        var saved = semesterRepository.save(existingSemester);
+        pointRefresh.refresh(before);
+        return toDtoWithAcademicYear(saved, academicYear.getCode());
     }
 
     @Override

@@ -5,6 +5,7 @@ import com.ddd.api.common.BaseResponse;
 import com.ddd.api.common.enums.ErrorCodeEnum;
 import com.ddd.domain.exception.*;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.dao.PessimisticLockingFailureException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -54,6 +57,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(BaseResponse.error(code, message));
     }
 
+    private <T> ResponseEntity<Object> wrapWithResponse(String code, String message, T data, HttpStatus status) {
+        return ResponseEntity.status(status).body(BaseResponse.error(code, message, data));
+    }
+
     // 400 Bad Request
     /**
      * Missing or malformed HTTP request body (e.g. invalid JSON, missing required body).
@@ -78,7 +85,10 @@ public class GlobalExceptionHandler {
         List<FieldError> fieldErrorList = exception.getBindingResult().getFieldErrors();
         fieldErrorList.forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
         log.warn("Method Argument Not Valid occurred: {}", errors, exception);
-        return wrapWithResponse(ErrorCodeEnum.VALIDATION_ERROR.getCode(), errors.toString(), ErrorCodeEnum.VALIDATION_ERROR.getStatus());
+        String summary = errors.isEmpty()
+                ? ErrorCodeEnum.VALIDATION_ERROR.getDefaultMessage()
+                : String.join("; ", errors.values());
+        return wrapWithResponse(ErrorCodeEnum.VALIDATION_ERROR.getCode(), summary, errors, ErrorCodeEnum.VALIDATION_ERROR.getStatus());
     }
 
     /**
@@ -99,8 +109,11 @@ public class GlobalExceptionHandler {
             errors.put(paramName, combinedMsg);
         });
         log.warn("Method Validation occurred: {}", errors, exception);
+        String summary = errors.isEmpty()
+                ? ErrorCodeEnum.VALIDATION_ERROR.getDefaultMessage()
+                : String.join("; ", errors.values());
         return wrapWithResponse(ErrorCodeEnum.VALIDATION_ERROR.getCode(),
-                errors.toString(), ErrorCodeEnum.VALIDATION_ERROR.getStatus());
+                summary, errors, ErrorCodeEnum.VALIDATION_ERROR.getStatus());
     }
 
     /**
@@ -124,12 +137,43 @@ public class GlobalExceptionHandler {
                 ErrorCodeEnum.AUTH_INVALID_CREDENTIALS.getStatus());
     }
 
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<Object> handleDisabledException(
+            DisabledException exception, WebRequest webRequest){
+        log.warn("Disabled account login [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.AUTH_INACTIVE_USER.getCode(),
+                ErrorCodeEnum.AUTH_INACTIVE_USER.getDefaultMessage(),
+                ErrorCodeEnum.AUTH_INACTIVE_USER.getStatus());
+    }
+
+    @ExceptionHandler(InvalidOldPasswordException.class)
+    public ResponseEntity<Object> handleInvalidOldPasswordException(
+            InvalidOldPasswordException exception, WebRequest webRequest){
+        log.warn("Invalid old password [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.AUTH_INVALID_OLD_PASSWORD.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.AUTH_INVALID_OLD_PASSWORD.getDefaultMessage(),
+                ErrorCodeEnum.AUTH_INVALID_OLD_PASSWORD.getStatus());
+    }
+
+    @ExceptionHandler(StudentIdAlreadyExistsException.class)
+    public ResponseEntity<Object> handleStudentIdAlreadyExistsException(
+            StudentIdAlreadyExistsException exception, WebRequest webRequest){
+        log.warn("Student ID already exists [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.STUDENT_ID_DUPLICATE.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.STUDENT_ID_DUPLICATE.getDefaultMessage(),
+                ErrorCodeEnum.STUDENT_ID_DUPLICATE.getStatus());
+    }
+
     @ExceptionHandler(EventAttendanceException.class)
     public ResponseEntity<Object> handleEventAttendanceException(
             EventAttendanceException exception, WebRequest webRequest){
         log.warn("Event attendance exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        String code = exception.getErrorCode() != null ? exception.getErrorCode() : ErrorCodeEnum.EVENT_ATTENDANCE_ERROR.getCode();
         return wrapWithResponse(
-                ErrorCodeEnum.EVENT_ATTENDANCE_ERROR.getCode(),
+                code,
                 exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.EVENT_ATTENDANCE_ERROR.getDefaultMessage(),
                 ErrorCodeEnum.EVENT_ATTENDANCE_ERROR.getStatus());
     }
@@ -137,9 +181,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Object> handleBusinessException(BusinessException exception, WebRequest webRequest){
         log.warn("Business exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        String code = exception.getErrorCode() != null ? exception.getErrorCode() : ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getCode();
+        String message = exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getDefaultMessage();
+        Map<String, String> fieldErrors = exception.getFieldErrors();
+        if (fieldErrors != null && !fieldErrors.isEmpty()) {
+            return wrapWithResponse(
+                    code,
+                    message,
+                    fieldErrors,
+                    ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getStatus());
+        }
         return wrapWithResponse(
-                ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getCode(),
-                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getDefaultMessage(),
+                code,
+                message,
                 ErrorCodeEnum.BUSINESS_RULE_VIOLATION.getStatus());
     }
 
@@ -148,8 +202,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleUnauthorized(
             UnauthorizedException exception, WebRequest webRequest) {
         log.warn("Unauthorized [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        String message = (exception.getMessage() != null && !exception.getMessage().isBlank())
+                ? exception.getMessage()
+                : ErrorCodeEnum.UNAUTHORIZED_ERROR.getDefaultMessage();
         return wrapWithResponse(ErrorCodeEnum.UNAUTHORIZED_ERROR.getCode(),
-                ErrorCodeEnum.UNAUTHORIZED_ERROR.getDefaultMessage(),
+                message,
                 ErrorCodeEnum.UNAUTHORIZED_ERROR.getStatus());
     }
 
@@ -175,6 +232,16 @@ public class GlobalExceptionHandler {
                 );
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Object> handleForbiddenException(
+            ForbiddenException exception, WebRequest webRequest) {
+        log.warn("Forbidden [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.ACCESS_DENIED_ERROR.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.ACCESS_DENIED_ERROR.getDefaultMessage(),
+                ErrorCodeEnum.ACCESS_DENIED_ERROR.getStatus());
+    }
+
     @ExceptionHandler(StudentProfileRequiredException.class)
     public ResponseEntity<Object> handleStudentProfileRequiredException(
             StudentProfileRequiredException exception, WebRequest webRequest) {
@@ -193,6 +260,17 @@ public class GlobalExceptionHandler {
                 ErrorCodeEnum.FANPAGE_ADMIN_PROFILE_REQUIRED.getCode(),
                 exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.FANPAGE_ADMIN_PROFILE_REQUIRED.getDefaultMessage(),
                 ErrorCodeEnum.FANPAGE_ADMIN_PROFILE_REQUIRED.getStatus());
+    }
+
+    // 405 Method Not Allowed
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Object> handleMethodNotSupported(
+            HttpRequestMethodNotSupportedException exception, WebRequest webRequest) {
+        log.warn("Method not allowed [{}]: {}", webRequest.getDescription(false), exception.getMessage());
+        return wrapWithResponse(
+                ErrorCodeEnum.METHOD_NOT_ALLOWED.getCode(),
+                exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.METHOD_NOT_ALLOWED.getDefaultMessage(),
+                ErrorCodeEnum.METHOD_NOT_ALLOWED.getStatus());
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -236,7 +314,7 @@ public class GlobalExceptionHandler {
         return wrapWithResponse(error.getCode(), message, error.getStatus());
     }
 
-    @ExceptionHandler(PessimisticLockingFailureException.class)
+    @ExceptionHandler({PessimisticLockingFailureException.class, OptimisticLockingFailureException.class})
     public ResponseEntity<Object> handleLockFailure(HttpServletRequest request) {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         log.warn("Database lock contention [{}]", path);
@@ -249,7 +327,8 @@ public class GlobalExceptionHandler {
     public  ResponseEntity<Object> handleEventRegistrationException(EventRegistrationException exception,
                                                                    WebRequest webRequest){
         log.warn("Event registration exception [{}]: {}", webRequest.getDescription(false), exception.getMessage());
-        return wrapWithResponse(ErrorCodeEnum.EVENT_REGISTRATION_ERROR.getCode(),
+        String code = exception.getErrorCode() != null ? exception.getErrorCode() : ErrorCodeEnum.EVENT_REGISTRATION_ERROR.getCode();
+        return wrapWithResponse(code,
                 exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.EVENT_REGISTRATION_ERROR.getDefaultMessage(),
                 ErrorCodeEnum.EVENT_REGISTRATION_ERROR.getStatus());
     }
@@ -258,7 +337,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleDuplicateResource(
             DuplicateResourceException exception, WebRequest webRequest) {
         log.warn("Duplicate resource [{}]: {}", webRequest.getDescription(false), exception.getMessage());
-        return wrapWithResponse(ErrorCodeEnum.DUPLICATE_RESOURCE.getCode(),
+        String code = exception.getErrorCode() != null ? exception.getErrorCode() : ErrorCodeEnum.DUPLICATE_RESOURCE.getCode();
+        return wrapWithResponse(code,
                 exception.getMessage() != null ? exception.getMessage() : ErrorCodeEnum.DUPLICATE_RESOURCE.getDefaultMessage(),
                 ErrorCodeEnum.DUPLICATE_RESOURCE.getStatus());
     }

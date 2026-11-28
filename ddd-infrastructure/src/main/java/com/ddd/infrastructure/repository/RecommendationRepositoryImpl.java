@@ -54,8 +54,9 @@ public class RecommendationRepositoryImpl implements RecommendationRepository {
                   'day', CAST(:day AS date),
                   'pointsBySemester', COALESCE((
                     SELECT jsonb_object_agg(semester_id, points) FROM (
-                      SELECT semester_id, jsonb_object_agg(point_category_id, total_point) AS points
-                      FROM student_semester_points WHERE user_id = :student GROUP BY semester_id
+                      SELECT sp.semester_id, jsonb_object_agg(sp.point_category_id, LEAST(pc.maximum, sp.total_point)) AS points
+                      FROM student_semester_points sp JOIN point_categories pc ON pc.id = sp.point_category_id
+                      WHERE sp.user_id = :student GROUP BY sp.semester_id
                     ) p
                   ), '{}'::jsonb),
                   'completedByYear', COALESCE((

@@ -277,6 +277,159 @@ class AuthServiceImplTest {
             verify(userRepository).update(existingUser);
             verifyNoInteractions(userCommandService);
         }
+
+        @Test
+        @DisplayName("shouldRejectDisabledUserOnGoogleLogin: throws DisabledException when user is inactive")
+        void shouldRejectDisabledUserOnGoogleLogin() {
+            String idToken = "valid-google-id-token";
+            GoogleUserInfo googleUserInfo = GoogleUserInfo.builder()
+                    .email("disabled@student.ctu.edu.vn")
+                    .googleId("google-sub-disabled")
+                    .firstName("Disabled")
+                    .lastName("User")
+                    .build();
+
+            User disabledUser = new User();
+            disabledUser.setId(77L);
+            disabledUser.setEmail("disabled@student.ctu.edu.vn");
+            disabledUser.setActive(false);
+
+            when(googleTokenVerifier.verifyToken(idToken)).thenReturn(googleUserInfo);
+            when(userRepository.findByEmail("disabled@student.ctu.edu.vn")).thenReturn(disabledUser);
+
+            assertThrows(
+                    org.springframework.security.authentication.DisabledException.class,
+                    () -> authService.loginWithGoogle(idToken));
+
+            verifyNoInteractions(jwtUtil);
+            verifyNoInteractions(refreshTokenRepository);
+        }
+
+        @Test
+        @DisplayName("shouldRejectDisabledUserOnRefreshToken: throws DisabledException when user is inactive")
+        void shouldRejectDisabledUserOnRefreshToken() {
+            String rawRefresh = "raw-refresh-token";
+            String hashedRefresh = "hashed-refresh-token";
+            RefreshToken stored = RefreshToken.builder()
+                    .token(hashedRefresh)
+                    .userId(77L)
+                    .expiresAt(java.time.Instant.now().plusSeconds(3600))
+                    .revoked(false)
+                    .build();
+
+            User disabledUser = new User();
+            disabledUser.setId(77L);
+            disabledUser.setEmail("disabled@student.ctu.edu.vn");
+            disabledUser.setActive(false);
+
+            when(tokenHashUtil.hash(rawRefresh)).thenReturn(hashedRefresh);
+            when(refreshTokenRepository.findByTokenForUpdate(hashedRefresh)).thenReturn(Optional.of(stored));
+            when(userRepository.findById(77L)).thenReturn(Optional.of(disabledUser));
+
+            assertThrows(
+                    org.springframework.security.authentication.DisabledException.class,
+                    () -> authService.refreshToken(rawRefresh));
+
+            verify(jwtUtil, never()).generateJwtTokenFromUser(any());
+            verify(refreshTokenRepository, never()).revokeTokenIfActive(any());
+        }
+
+        @Test
+        @DisplayName("shouldRevokeAllSessionsWhenRevokedRefreshTokenIsReused")
+        void shouldRevokeAllSessionsWhenRevokedRefreshTokenIsReused() {
+            String rawRefresh = "replayed-refresh-token";
+            String hashedRefresh = "hashed-replayed-token";
+            RefreshToken stored = RefreshToken.builder()
+                    .token(hashedRefresh)
+                    .userId(77L)
+                    .expiresAt(java.time.Instant.now().plusSeconds(3600))
+                    .revoked(true)
+                    .build();
+
+            when(tokenHashUtil.hash(rawRefresh)).thenReturn(hashedRefresh);
+            when(refreshTokenRepository.findByTokenForUpdate(hashedRefresh)).thenReturn(Optional.of(stored));
+
+            assertThrows(
+                    com.ddd.domain.exception.AuthException.class,
+                    () -> authService.refreshToken(rawRefresh));
+
+            verify(refreshTokenRepository).revokeAllByUserId(77L);
+            verify(jwtUtil, never()).generateJwtTokenFromUser(any());
+        }
+
+        @Test
+        @DisplayName("shouldFailFastWhenConcurrentRequestAlreadyRevokedRefreshToken")
+        void shouldFailFastWhenConcurrentRequestAlreadyRevokedRefreshToken() {
+            String rawRefresh = "concurrent-refresh-token";
+            String hashedRefresh = "hashed-concurrent-token";
+            RefreshToken stored = RefreshToken.builder()
+                    .token(hashedRefresh)
+                    .userId(77L)
+                    .expiresAt(java.time.Instant.now().plusSeconds(3600))
+                    .revoked(false)
+                    .build();
+
+            User activeUser = new User();
+            activeUser.setId(77L);
+            activeUser.setEmail("active@student.ctu.edu.vn");
+            activeUser.setActive(true);
+
+            when(tokenHashUtil.hash(rawRefresh)).thenReturn(hashedRefresh);
+            when(refreshTokenRepository.findByTokenForUpdate(hashedRefresh)).thenReturn(Optional.of(stored));
+            when(userRepository.findById(77L)).thenReturn(Optional.of(activeUser));
+            when(refreshTokenRepository.revokeTokenIfActive(hashedRefresh)).thenReturn(false);
+
+            assertThrows(
+                    com.ddd.domain.exception.AuthException.class,
+                    () -> authService.refreshToken(rawRefresh));
+
+            verify(jwtUtil, never()).generateJwtTokenFromUser(any());
+            verify(refreshTokenRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("shouldRotateRefreshTokenAtomicallyAndPruneExpiredUserTokens")
+        void shouldRotateRefreshTokenAtomicallyAndPruneExpiredUserTokens() {
+            String rawRefresh = "valid-refresh-token";
+            String hashedRefresh = "hashed-valid-token";
+            RefreshToken stored = RefreshToken.builder()
+                    .token(hashedRefresh)
+                    .userId(77L)
+                    .expiresAt(java.time.Instant.now().plusSeconds(3600))
+                    .revoked(false)
+                    .build();
+
+            User activeUser = new User();
+            activeUser.setId(77L);
+            activeUser.setEmail("active@student.ctu.edu.vn");
+            activeUser.setActive(true);
+
+            when(tokenHashUtil.hash(rawRefresh)).thenReturn(hashedRefresh);
+            when(refreshTokenRepository.findByTokenForUpdate(hashedRefresh)).thenReturn(Optional.of(stored));
+            when(userRepository.findById(77L)).thenReturn(Optional.of(activeUser));
+            when(refreshTokenRepository.revokeTokenIfActive(hashedRefresh)).thenReturn(true);
+            when(tokenHashUtil.hash(argThat(s -> !s.equals(rawRefresh)))).thenReturn("new-hashed-token");
+            when(jwtUtil.getRefreshExpirationMs()).thenReturn(604800000L);
+            when(jwtUtil.generateJwtTokenFromUser(activeUser)).thenReturn("new-access-jwt");
+
+            var result = authService.refreshToken(rawRefresh);
+
+            assertEquals("new-access-jwt", result.newAccessToken());
+            assertNotNull(result.newRawRefreshToken());
+            verify(refreshTokenRepository).deleteExpiredByUserId(77L);
+            verify(refreshTokenRepository).save(any(RefreshToken.class));
+        }
+
+        @Test
+        @DisplayName("shouldSoftRevokeRefreshTokenOnLogout")
+        void shouldSoftRevokeRefreshTokenOnLogout() {
+            when(tokenHashUtil.hash("raw-logout")).thenReturn("hashed-logout");
+
+            authService.logout("raw-logout");
+
+            verify(refreshTokenRepository).revokeTokenIfActive("hashed-logout");
+            verify(refreshTokenRepository, never()).deleteByToken(any());
+        }
     }
 
     @Nested

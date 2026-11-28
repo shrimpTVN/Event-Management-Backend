@@ -9,6 +9,7 @@ import com.ddd.application.dto.school.MajorDto;
 import com.ddd.application.service.major.MajorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,6 +37,7 @@ public class MajorController {
     }
 
     @PostMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<MajorResponseDto> createMajor(@Valid @RequestBody CreateMajorRequestDto req) {
         MajorDto dto = majorApiMapper.toMajorDto(req);
         MajorDto created = majorService.createMajor(dto);
@@ -43,6 +45,7 @@ public class MajorController {
     }
 
     @PutMapping("/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<MajorResponseDto> updateMajor(@PathVariable Long id, @Valid @RequestBody UpdateMajorRequestDto req) {
         MajorDto dto = majorApiMapper.toMajorDto(req);
         MajorDto updated = majorService.updateMajor(id, dto);
@@ -50,6 +53,7 @@ public class MajorController {
     }
 
     @DeleteMapping("/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteMajor(@PathVariable Long id) {
         majorService.deleteMajor(id);
     }

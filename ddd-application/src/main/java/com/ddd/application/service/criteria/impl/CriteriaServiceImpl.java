@@ -31,6 +31,9 @@ public class CriteriaServiceImpl implements CriteriaService {
     @Override
     public CriteriaDto createCriteria(CriteriaDto criteriaDto) {
         Criteria criteria = criteriaDtoMapper.toCriteria(criteriaDto);
+        if (criteria.getRequiredOccurrences() == null) {
+            criteria.setRequiredOccurrences(1);
+        }
         if (criteria.getParentId() != null) {
             Criteria parent = criteriaRepository.findById(criteria.getParentId())
                     .orElseThrow(() -> new ResourceNotFoundException("Parent criteria not found with id: " + criteria.getParentId()));
@@ -101,7 +104,23 @@ public class CriteriaServiceImpl implements CriteriaService {
     @Override
     @Transactional(readOnly = true)
     public List<CriteriaTreeNodeDto> getCriteriaTree() {
-        List<Criteria> activeCriteria = criteriaRepository.findAllByIsActive(true);
+        return getCriteriaTree(null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CriteriaTreeNodeDto> getCriteriaTree(CriteriaScopeEnum scope) {
+        return getCriteriaHierarchy(scope).stream().flatMap(root ->
+                Integer.valueOf(0).equals(root.level()) && !root.children().isEmpty()
+                        ? root.children().stream() : java.util.stream.Stream.of(root)).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CriteriaTreeNodeDto> getCriteriaHierarchy(CriteriaScopeEnum scope) {
+        List<Criteria> activeCriteria = criteriaRepository.findAllByIsActive(true).stream()
+                .filter(c -> scope == null || scope.name().equalsIgnoreCase(c.getScope()))
+                .toList();
         Map<Long, List<Criteria>> childrenByParent = activeCriteria.stream()
                 .filter(c -> c.getParentId() != null)
                 .collect(Collectors.groupingBy(Criteria::getParentId));
@@ -111,14 +130,7 @@ public class CriteriaServiceImpl implements CriteriaService {
                 .sorted(CRITERIA_COMPARATOR)
                 .toList();
 
-        // If a single container root exists, resolve its direct children as the top-level main criteria
-        List<Criteria> topLevelCriteria = (roots.size() == 1
-                && childrenByParent.containsKey(roots.get(0).getId())
-                && !childrenByParent.get(roots.get(0).getId()).isEmpty())
-                ? childrenByParent.get(roots.get(0).getId()).stream().sorted(CRITERIA_COMPARATOR).toList()
-                : roots;
-
-        return topLevelCriteria.stream()
+        return roots.stream()
                 .map(node -> buildTreeNodeTopDown(node, childrenByParent))
                 .toList();
     }
@@ -139,6 +151,7 @@ public class CriteriaServiceImpl implements CriteriaService {
                 current.getLevel(),
                 current.getChildrenOrder(),
                 current.getRequiredChildren(),
+                current.getRequiredOccurrences() != null ? current.getRequiredOccurrences() : 1,
                 children
         );
     }

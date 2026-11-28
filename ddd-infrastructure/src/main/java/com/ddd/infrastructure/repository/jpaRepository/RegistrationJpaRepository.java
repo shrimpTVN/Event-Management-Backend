@@ -16,6 +16,8 @@ import java.util.List;
 
 @Repository
 public interface RegistrationJpaRepository extends JpaRepository<RegistrationJpaEntity, RegistrationId> {
+    long countByUserIdAndEventSemesterIdAndStatusIn(Long userId, Long semesterId, Collection<com.ddd.domain.enums.RegistrationStatusEnum> statuses);
+
 
     @Query("SELECT r.id.eventId, COUNT(r) FROM RegistrationJpaEntity r " +
             "WHERE r.id.eventId IN :eventIds AND r.status <> com.ddd.domain.enums.RegistrationStatusEnum.CANCELLED " +

@@ -11,6 +11,9 @@ import java.util.List;
 
 @Repository
 public interface StudentSemesterPointJpaRepository extends JpaRepository<StudentSemesterPointJpaEntity, Long> {
+    @Query(value = "SELECT user_id, semester_id FROM student_semester_points UNION SELECT user_id, semester_id FROM point_transactions", nativeQuery = true)
+    List<Object[]> findAllScopes();
+
     StudentSemesterPointJpaEntity findByUserIdAndSemesterIdAndPointCategoryId(Long userId, Long semesterId, Long pointCategoryId);
 
 

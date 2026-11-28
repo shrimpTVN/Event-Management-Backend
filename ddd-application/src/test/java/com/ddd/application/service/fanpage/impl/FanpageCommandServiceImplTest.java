@@ -5,6 +5,7 @@ import com.ddd.application.mapper.FanpageDtoMapper;
 import com.ddd.application.service.fanpage.FanpageRegistrationEligibilityService;
 import com.ddd.domain.enums.FanpageRoleEnum;
 import com.ddd.domain.enums.FanpageStatusEnum;
+import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.FanpageAdminProfileRequiredException;
 import com.ddd.domain.model.Fanpage;
 import com.ddd.domain.model.FanpageMember;
@@ -122,11 +123,44 @@ class FanpageCommandServiceImplTest {
         fanpage.setName("Club");
         when(fanpageRepository.findById(5L)).thenReturn(Optional.of(fanpage));
 
-        fanpageCommandService.rejectFanpage(5L, "Missing proof");
+        fanpageCommandService.rejectFanpage(5L, "  Missing proof  ");
 
         org.junit.jupiter.api.Assertions.assertEquals("REJECTED", fanpage.getStatus());
         org.junit.jupiter.api.Assertions.assertEquals("Missing proof", fanpage.getRejectionReason());
+        org.junit.jupiter.api.Assertions.assertFalse(fanpage.isActive());
         verify(fanpageRepository).save(fanpage);
         verify(applicationEventPublisher).publishEvent(any(com.ddd.domain.event.FanpageRejectedEvent.class));
+    }
+
+    @Test
+    @DisplayName("rejectFanpage_shouldThrowBusinessException_whenReasonBlank")
+    void rejectFanpage_shouldThrowBusinessException_whenReasonBlank() {
+        Fanpage fanpage = new Fanpage();
+        fanpage.setId(5L);
+        when(fanpageRepository.findById(5L)).thenReturn(Optional.of(fanpage));
+
+        assertThrows(BusinessException.class, () -> fanpageCommandService.rejectFanpage(5L, "   "));
+        verify(fanpageRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("unbanFanpage_and_acceptFanpage_shouldActivateAndClearRejectionReason")
+    void unbanAndAcceptFanpage_shouldActivateAndClearRejectionReason() {
+        Fanpage rejected = new Fanpage();
+        rejected.setId(7L);
+        rejected.setName("Club 7");
+        rejected.reject("Old reason");
+        when(fanpageRepository.findById(7L)).thenReturn(Optional.of(rejected));
+
+        fanpageCommandService.unbanFanpage(7L);
+        org.junit.jupiter.api.Assertions.assertEquals("ACTIVE", rejected.getStatus());
+        org.junit.jupiter.api.Assertions.assertTrue(rejected.isActive());
+        org.junit.jupiter.api.Assertions.assertNull(rejected.getRejectionReason());
+
+        rejected.reject("Another reason");
+        fanpageCommandService.acceptFanpage(7L);
+        org.junit.jupiter.api.Assertions.assertEquals("ACTIVE", rejected.getStatus());
+        org.junit.jupiter.api.Assertions.assertTrue(rejected.isActive());
+        org.junit.jupiter.api.Assertions.assertNull(rejected.getRejectionReason());
     }
 }

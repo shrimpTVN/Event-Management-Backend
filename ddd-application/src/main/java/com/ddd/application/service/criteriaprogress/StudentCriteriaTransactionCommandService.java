@@ -13,5 +13,7 @@ public interface StudentCriteriaTransactionCommandService {
 
     void createTransactionFromEvent(List<Long> studentUserIds, Long eventId);
 
+    void updateTransactionNote(Long criteriaTransactionId, String note);
+
     void deleteTransaction(Long criteriaTransactionId);
 }

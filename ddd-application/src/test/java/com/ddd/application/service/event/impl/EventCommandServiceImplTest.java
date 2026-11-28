@@ -62,7 +62,7 @@ class EventCommandServiceImplTest {
     private SchoolRepository schoolRepository;
 
     @Mock
-    private PointCategoryRepository pointCategoryRepository;
+    private com.ddd.application.service.semesterpoint.impl.SemesterPointCategoryPolicy semesterPointCategoryPolicy;
 
     @Mock
     private SecurityContextPort securityContextPort;
@@ -72,6 +72,9 @@ class EventCommandServiceImplTest {
 
     @Mock
     private FollowingRepository followingRepository;
+
+    @Mock
+    private RegistrationRepository registrationRepository;
 
     @InjectMocks
     private EventCommandServiceImpl eventCommandService;
@@ -317,12 +320,328 @@ class EventCommandServiceImplTest {
     }
 
     @Test
-    @DisplayName("Should throw UnauthorizedException when non-admin calls updateEventVisibilityByAdmin")
-    void updateEventVisibilityByAdmin_shouldThrowUnauthorized_whenNotAdmin() {
+    @DisplayName("Should throw ForbiddenException when non-admin calls updateEventVisibilityByAdmin")
+    void updateEventVisibilityByAdmin_shouldThrowForbidden_whenNotAdmin() {
         when(securityContextPort.hasRole("ADMIN")).thenReturn(false);
 
-        assertThrows(com.ddd.domain.exception.UnauthorizedException.class,
+        assertThrows(com.ddd.domain.exception.ForbiddenException.class,
                 () -> eventCommandService.updateEventVisibilityByAdmin(55L, true, "Spam"));
         verify(eventRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("Should throw BusinessException when admin hides event with blank reason")
+    void updateEventVisibilityByAdmin_shouldThrowBusinessException_whenHideReasonBlank() {
+        when(securityContextPort.hasRole("ADMIN")).thenReturn(true);
+
+        assertThrows(BusinessException.class,
+                () -> eventCommandService.updateEventVisibilityByAdmin(55L, true, "   "));
+        verify(eventRepository, never()).save(any());
+    }
+    @Test
+    void createEventRejectsInvalidAwardCategoryBeforePersistingEvent() {
+        when(fanpageRepository.findById(10L)).thenReturn(Optional.of(testFanpage));
+        var dto = buildCreateDto(null);
+        dto = new EventCreateDto(dto.name(), dto.description(), dto.location(), dto.dateOpen(), dto.dateClose(),
+                dto.dateHappen(), dto.capacity(), dto.maleQuantity(), dto.femaleQuantity(), dto.bannerUrl(),
+                dto.eventTypeId(), dto.criteriaId(), dto.fanpageId(), 9L, null, dto.allowSelfCheck(),
+                java.util.List.of(new com.ddd.application.dto.event.EventPointCreateDto(2L,5)));
+        when(securityContextPort.getCurrentUserId()).thenReturn(99L);
+        when(fanpageMemberRepository.findById(10L,99L)).thenReturn(Optional.of(testMember));
+        when(eventTypeRepository.findById(5L)).thenReturn(testEventType);
+        when(semesterRepository.findById(9L)).thenReturn(Optional.of(new com.ddd.domain.model.Semester()));
+        doThrow(new BusinessException("parent or non-effective category")).when(semesterPointCategoryPolicy).requireLeaves(9L,java.util.List.of(2L));
+        EventCreateDto invalid=dto;
+        assertThrows(BusinessException.class,()->eventCommandService.createEvent(invalid));
+        verify(eventRepository,never()).save(any());
+    }
+
+    @Test
+    void updateEventValidatesMappedAwardsAgainstResultingSemester() {
+        var testUser = new User(); testUser.setId(99L);
+        var event=new Event();event.setId(1L);event.setFanpageId(10L);event.setSemesterId(9L);
+        var point=new com.ddd.domain.model.EventPoint();point.setPointCategoryId(2L);point.setPoint(5);
+        event.setEventPoints(java.util.List.of(point));
+        when(eventRepository.findByIdForUpdate(1L)).thenReturn(event);
+        when(userRepository.findByEmail("student@example.com")).thenReturn(testUser);
+        when(fanpageMemberRepository.findById(10L,testUser.getId())).thenReturn(Optional.of(testMember));
+        when(eventTypeRepository.findById(5L)).thenReturn(testEventType);
+        doThrow(new BusinessException("non-effective award")).when(semesterPointCategoryPolicy).requireLeaves(9L,java.util.List.of(2L));
+        assertThrows(BusinessException.class,()->eventCommandService.updateEvent(1L,buildUpdateDto(null),"student@example.com"));
+        verify(eventRepository,never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should allow updateEvent when dateOpen is in the past and unchanged")
+    void updateEvent_allowsUnchangedPastDateOpen() {
+        Instant pastOpen = Instant.now().minus(2, ChronoUnit.DAYS);
+        Instant futureClose = Instant.now().plus(1, ChronoUnit.DAYS);
+        Instant futureHappen = Instant.now().plus(2, ChronoUnit.DAYS);
+        String email = "organizer@example.com";
+
+        Event existing = new Event();
+        existing.setId(60L);
+        existing.setFanpageId(10L);
+        existing.setStatus("PUBLISHED");
+        existing.setActive(true);
+        existing.setDateOpen(pastOpen);
+        existing.setDateClose(futureClose);
+        existing.setDateHappen(futureHappen);
+        existing.setCapacity(100);
+        existing.setMaleQuantity(50);
+        existing.setFemaleQuantity(50);
+
+        EventUpdateDto dto = new EventUpdateDto(
+                "Updated Name", "Updated Desc", "Hall B",
+                pastOpen.truncatedTo(ChronoUnit.MINUTES), futureClose, futureHappen,
+                100, 50, 50, false, "https://banner.url",
+                5L, null, 9L, null, true, Collections.emptyList()
+        );
+
+        User user = new User();
+        user.setId(99L);
+        user.setEmail(email);
+
+        when(eventRepository.findByIdForUpdate(60L)).thenReturn(existing);
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(fanpageMemberRepository.findById(10L, 99L)).thenReturn(Optional.of(testMember));
+        when(eventTypeRepository.findById(5L)).thenReturn(testEventType);
+        when(semesterRepository.findById(9L)).thenReturn(Optional.of(new com.ddd.domain.model.Semester()));
+        doAnswer(inv -> {
+            existing.setName(dto.name());
+            existing.setDateOpen(dto.dateOpen());
+            existing.setDateClose(dto.dateClose());
+            existing.setDateHappen(dto.dateHappen());
+            return null;
+        }).when(eventDtoMapper).updateEventFromDto(existing, dto);
+        when(registrationRepository.countActiveRegistrationsByEventId(60L)).thenReturn(10L);
+        when(eventRepository.save(existing)).thenReturn(existing);
+
+        assertDoesNotThrow(() -> eventCommandService.updateEvent(60L, dto, email));
+        verify(eventRepository).save(existing);
+    }
+
+    @Test
+    @DisplayName("Should throw BusinessException with dateOpen fieldError when dateOpen is moved to a new past time")
+    void updateEvent_rejectsChangingDateOpenToPast_withFieldError() {
+        Instant originalOpen = Instant.now().plus(1, ChronoUnit.DAYS);
+        Instant newPastOpen = Instant.now().minus(1, ChronoUnit.DAYS);
+        Instant futureClose = Instant.now().plus(2, ChronoUnit.DAYS);
+        Instant futureHappen = Instant.now().plus(3, ChronoUnit.DAYS);
+        String email = "organizer@example.com";
+
+        Event existing = new Event();
+        existing.setId(61L);
+        existing.setFanpageId(10L);
+        existing.setStatus("DRAFT");
+        existing.setActive(true);
+        existing.setDateOpen(originalOpen);
+
+        EventUpdateDto dto = new EventUpdateDto(
+                "Name", "Desc", "Hall A",
+                newPastOpen, futureClose, futureHappen,
+                100, 50, 50, false, "https://banner.url",
+                5L, null, null, null, true, Collections.emptyList()
+        );
+
+        User user = new User();
+        user.setId(99L);
+        user.setEmail(email);
+
+        when(eventRepository.findByIdForUpdate(61L)).thenReturn(existing);
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(fanpageMemberRepository.findById(10L, 99L)).thenReturn(Optional.of(testMember));
+        when(eventTypeRepository.findById(5L)).thenReturn(testEventType);
+        doAnswer(inv -> {
+            existing.setDateOpen(dto.dateOpen());
+            existing.setDateClose(dto.dateClose());
+            existing.setDateHappen(dto.dateHappen());
+            existing.setCapacity(dto.capacity());
+            existing.setMaleQuantity(dto.maleQuantity());
+            existing.setFemaleQuantity(dto.femaleQuantity());
+            return null;
+        }).when(eventDtoMapper).updateEventFromDto(existing, dto);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> eventCommandService.updateEvent(61L, dto, email));
+        assertEquals("Registration open date cannot be in the past", ex.getFieldErrors().get("dateOpen"));
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should reject updateEvent when event is COMPLETED")
+    void updateEvent_rejectsCompletedEvent() {
+        Event existing = new Event();
+        existing.setId(62L);
+        existing.setFanpageId(10L);
+        existing.setStatus("COMPLETED");
+        existing.setActive(true);
+
+        User user = new User();
+        user.setId(99L);
+
+        when(eventRepository.findByIdForUpdate(62L)).thenReturn(existing);
+        when(userRepository.findByEmail("org@example.com")).thenReturn(user);
+        when(fanpageMemberRepository.findById(10L, 99L)).thenReturn(Optional.of(testMember));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> eventCommandService.updateEvent(62L, buildUpdateDto(null), "org@example.com"));
+        assertTrue(ex.getMessage().contains("completed event"));
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should reject updateEvent when event is inactive")
+    void updateEvent_rejectsInactiveEvent() {
+        Event existing = new Event();
+        existing.setId(63L);
+        existing.setFanpageId(10L);
+        existing.setStatus("DRAFT");
+        existing.setActive(false);
+
+        User user = new User();
+        user.setId(99L);
+
+        when(eventRepository.findByIdForUpdate(63L)).thenReturn(existing);
+        when(userRepository.findByEmail("org@example.com")).thenReturn(user);
+        when(fanpageMemberRepository.findById(10L, 99L)).thenReturn(Optional.of(testMember));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> eventCommandService.updateEvent(63L, buildUpdateDto(null), "org@example.com"));
+        assertTrue(ex.getMessage().contains("inactive event"));
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should throw BusinessException with dateOpen fieldError when dateOpen > dateClose")
+    void updateEvent_rejectsDateOpenAfterDateClose_withFieldError() {
+        Instant open = Instant.now().plus(3, ChronoUnit.DAYS);
+        Instant close = Instant.now().plus(2, ChronoUnit.DAYS);
+        Instant happen = Instant.now().plus(4, ChronoUnit.DAYS);
+        String email = "org@example.com";
+
+        Event existing = new Event();
+        existing.setId(64L);
+        existing.setFanpageId(10L);
+        existing.setStatus("DRAFT");
+        existing.setActive(true);
+        existing.setDateOpen(open);
+
+        EventUpdateDto dto = new EventUpdateDto(
+                "Name", "Desc", "Hall A",
+                open, close, happen,
+                100, 50, 50, false, "https://banner.url",
+                5L, null, null, null, true, Collections.emptyList()
+        );
+
+        User user = new User();
+        user.setId(99L);
+
+        when(eventRepository.findByIdForUpdate(64L)).thenReturn(existing);
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(fanpageMemberRepository.findById(10L, 99L)).thenReturn(Optional.of(testMember));
+        when(eventTypeRepository.findById(5L)).thenReturn(testEventType);
+        doAnswer(inv -> {
+            existing.setDateOpen(dto.dateOpen());
+            existing.setDateClose(dto.dateClose());
+            existing.setDateHappen(dto.dateHappen());
+            return null;
+        }).when(eventDtoMapper).updateEventFromDto(existing, dto);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> eventCommandService.updateEvent(64L, dto, email));
+        assertNotNull(ex.getFieldErrors().get("dateOpen"));
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should throw BusinessException with dateClose fieldError when dateClose > dateHappen")
+    void updateEvent_rejectsDateCloseAfterDateHappen_withFieldError() {
+        Instant open = Instant.now().plus(1, ChronoUnit.DAYS);
+        Instant close = Instant.now().plus(4, ChronoUnit.DAYS);
+        Instant happen = Instant.now().plus(3, ChronoUnit.DAYS);
+        String email = "org@example.com";
+
+        Event existing = new Event();
+        existing.setId(65L);
+        existing.setFanpageId(10L);
+        existing.setStatus("DRAFT");
+        existing.setActive(true);
+        existing.setDateOpen(open);
+
+        EventUpdateDto dto = new EventUpdateDto(
+                "Name", "Desc", "Hall A",
+                open, close, happen,
+                100, 50, 50, false, "https://banner.url",
+                5L, null, null, null, true, Collections.emptyList()
+        );
+
+        User user = new User();
+        user.setId(99L);
+
+        when(eventRepository.findByIdForUpdate(65L)).thenReturn(existing);
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(fanpageMemberRepository.findById(10L, 99L)).thenReturn(Optional.of(testMember));
+        when(eventTypeRepository.findById(5L)).thenReturn(testEventType);
+        doAnswer(inv -> {
+            existing.setDateOpen(dto.dateOpen());
+            existing.setDateClose(dto.dateClose());
+            existing.setDateHappen(dto.dateHappen());
+            return null;
+        }).when(eventDtoMapper).updateEventFromDto(existing, dto);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> eventCommandService.updateEvent(65L, dto, email));
+        assertNotNull(ex.getFieldErrors().get("dateClose"));
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should throw BusinessException with maleQuantity/femaleQuantity fieldErrors when sum exceeds capacity")
+    void updateEvent_rejectsMalePlusFemaleExceedingCapacity_withFieldErrors() {
+        Instant open = Instant.now().plus(1, ChronoUnit.DAYS);
+        Instant close = Instant.now().plus(2, ChronoUnit.DAYS);
+        Instant happen = Instant.now().plus(3, ChronoUnit.DAYS);
+        String email = "org@example.com";
+
+        Event existing = new Event();
+        existing.setId(66L);
+        existing.setFanpageId(10L);
+        existing.setStatus("DRAFT");
+        existing.setActive(true);
+        existing.setDateOpen(open);
+
+        EventUpdateDto dto = new EventUpdateDto(
+                "Name", "Desc", "Hall A",
+                open, close, happen,
+                50, 30, 30, true, "https://banner.url",
+                5L, null, null, null, true, Collections.emptyList()
+        );
+
+        User user = new User();
+        user.setId(99L);
+
+        when(eventRepository.findByIdForUpdate(66L)).thenReturn(existing);
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(fanpageMemberRepository.findById(10L, 99L)).thenReturn(Optional.of(testMember));
+        when(eventTypeRepository.findById(5L)).thenReturn(testEventType);
+        doAnswer(inv -> {
+            existing.setDateOpen(dto.dateOpen());
+            existing.setDateClose(dto.dateClose());
+            existing.setDateHappen(dto.dateHappen());
+            existing.setCapacity(dto.capacity());
+            existing.setMaleQuantity(dto.maleQuantity());
+            existing.setFemaleQuantity(dto.femaleQuantity());
+            existing.setGenderConstraint(dto.genderConstraint());
+            return null;
+        }).when(eventDtoMapper).updateEventFromDto(existing, dto);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> eventCommandService.updateEvent(66L, dto, email));
+        assertEquals("Total male and female quantities (60) cannot exceed event capacity (50)", ex.getMessage());
+        assertEquals(ex.getMessage(), ex.getFieldErrors().get("maleQuantity"));
+        assertEquals(ex.getMessage(), ex.getFieldErrors().get("femaleQuantity"));
+        verify(eventRepository, never()).save(any());
+    }
+
 }

@@ -3,7 +3,7 @@ package com.ddd.application.service.userprofile.impl;
 import com.ddd.application.dto.user.FanpageAdminProfileDto;
 import com.ddd.application.mapper.FanpageAdminProfileDtoMapper;
 import com.ddd.application.service.userprofile.FanpageAdminProfileCommandService;
-import com.ddd.domain.exception.DuplicateResourceException;
+import com.ddd.domain.exception.StaffIdAlreadyExistsException;
 import com.ddd.domain.model.FanpageAdminProfile;
 import com.ddd.domain.repository.FanpageAdminProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ public class FanpageAdminProfileCommandServiceImpl implements FanpageAdminProfil
     @Override
     public void createFanpageAdminProfile(FanpageAdminProfileDto fanpageAdminProfileDto, Long userId) {
         if (fanpageAdminProfileRepository.existsByStaffId(fanpageAdminProfileDto.staffId())) {
-            throw new DuplicateResourceException("Staff ID already exists");
+            throw new StaffIdAlreadyExistsException("Staff ID already exists");
         }
 
         FanpageAdminProfile fanpageAdminProfile = fanpageAdminProfileDtoMapper.toEntity(fanpageAdminProfileDto);

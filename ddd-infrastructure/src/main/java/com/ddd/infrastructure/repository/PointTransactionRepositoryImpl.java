@@ -21,6 +21,13 @@ public class PointTransactionRepositoryImpl implements PointTransactionRepositor
     private final EntityManager entityManager;
 
     @Override
+    public List<PointTransaction> findAllByUserIdsAndSemesterId(List<Long> userIds, Long semesterId) {
+        if (userIds == null || userIds.isEmpty()) return List.of();
+        return pointTransactionJpaRepository.findByUserIdInAndSemesterId(userIds, semesterId).stream()
+                .map(pointTransactionMapper::toDomain).toList();
+    }
+
+    @Override
     public Optional<PointTransaction> findById(Long id) {
         if (id == null) {
             return Optional.empty();

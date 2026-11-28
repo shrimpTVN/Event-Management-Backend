@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PointTransactionRepository {
+    List<PointTransaction> findAllByUserIdsAndSemesterId(List<Long> userIds, Long semesterId);
+
     void saveAll(List<PointTransaction> pointTransactions);
 
     void save(PointTransaction pointTransaction);

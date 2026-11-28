@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +57,7 @@ public class AuthServiceImpl implements AuthService {
     private final SecurityContextPort securityContextPort;
 
     private String createAndSaveRefreshToken(Long userId) {
+        refreshTokenRepository.deleteExpiredByUserId(userId);
         String rawToken = UUID.randomUUID().toString();
         // Hash the token before saving it to the database for security and use it as refresh token
         String hashed = tokenHashUtil.hash(rawToken);
@@ -121,6 +123,9 @@ public class AuthServiceImpl implements AuthService {
                     .orElseThrow(() -> new ResourceNotFoundException("User not found after creation: " + userId));
             log.info("Google user:{} auto-provisioned successfully with role:{} and ID:{}", googleUserInfo.email(), role.name(), userId);
         } else {
+            if (!user.isActive()) {
+                throw new DisabledException("User account is disabled");
+            }
             if (user.getProviderId() == null || user.getProviderId().isBlank()) {
                 user.setProviderId(googleUserInfo.googleId());
                 userRepository.update(user);
@@ -199,22 +204,32 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String hashed = tokenHashUtil.hash(rawRefreshToken);
-        RefreshToken stored = refreshTokenRepository.findByToken(hashed)
+        RefreshToken stored = refreshTokenRepository.findByTokenForUpdate(hashed)
                 .orElseThrow(() -> new AuthException("Invalid refresh token"));
 
-        if (!stored.isValid()) {
-            // Compromise detection: if an invalid or expired token is submitted, revoke all sessions
+        if (stored.isRevoked()) {
+            // Compromise detection: replaying an already-rotated or logged-out token revokes all sessions
             refreshTokenRepository.revokeAllByUserId(stored.getUserId());
             throw new AuthException("Expired or revoked refresh token");
         }
 
-        // Token Rotation: invalidate current token, issue fresh one
-        refreshTokenRepository.deleteByToken(hashed);
-        String newRawToken = createAndSaveRefreshToken(stored.getUserId());
+        if (stored.isExpired()) {
+            throw new AuthException("Expired or revoked refresh token");
+        }
 
-        // Reconstruct user to generate new access token
+        // Verify user status before rotating token so disabled users do not mint fresh tokens
         User user = userRepository.findById(stored.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + stored.getUserId()));
+
+        if (!user.isActive()) {
+            throw new DisabledException("User account is disabled");
+        }
+
+        // Atomic soft-revoke rotation: invalidate current token (preserving row for reuse detection)
+        if (!refreshTokenRepository.revokeTokenIfActive(hashed)) {
+            throw new AuthException("Refresh token has already been used");
+        }
+        String newRawToken = createAndSaveRefreshToken(stored.getUserId());
 
         String newAccessToken = jwtUtil.generateJwtTokenFromUser(user);
 
@@ -225,7 +240,7 @@ public class AuthServiceImpl implements AuthService {
     public void logout(String rawRefreshToken) {
         if (rawRefreshToken != null && !rawRefreshToken.isBlank()) {
             String hashed = tokenHashUtil.hash(rawRefreshToken);
-            refreshTokenRepository.deleteByToken(hashed);
+            refreshTokenRepository.revokeTokenIfActive(hashed);
         }
     }
 

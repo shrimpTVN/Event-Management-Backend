@@ -9,6 +9,7 @@ import com.ddd.application.dto.school.SchoolDetailDto;
 import com.ddd.application.service.school.SchoolService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,6 +35,14 @@ public class SchoolController {
         return BaseResponse.of(response);
     }
 
+    @GetMapping("/with-majors")
+    public BaseResponse<List<SchoolDetailResponseDto>> getSchoolsWithMajors() {
+        List<SchoolDetailResponseDto> response = schoolService.findAllWithMajors().stream()
+                .map(schoolApiMapper::toSchoolDetailResponseDto)
+                .toList();
+        return BaseResponse.of(response);
+    }
+
     @GetMapping("/{id}")
     public BaseResponse<SchoolDetailResponseDto> getSchoolById(@PathVariable Long id) {
         SchoolDetailDto schoolDetail = schoolService.findById(id);
@@ -41,6 +50,7 @@ public class SchoolController {
     }
 
     @PostMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<SchoolResponseDto> createSchool(@Valid @RequestBody CreateSchoolRequestDto req) {
         SchoolDto dto = schoolApiMapper.toSchoolDto(req);
         SchoolDto created = schoolService.createSchool(dto);
@@ -48,6 +58,7 @@ public class SchoolController {
     }
 
     @PutMapping("/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<SchoolResponseDto> updateSchool(@PathVariable Long id, @Valid @RequestBody UpdateSchoolRequestDto req) {
         SchoolDto dto = schoolApiMapper.toSchoolDto(req);
         SchoolDto updated = schoolService.updateSchool(id, dto);
@@ -55,6 +66,7 @@ public class SchoolController {
     }
 
     @DeleteMapping("/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteSchool(@PathVariable Long id) {
         schoolService.deleteSchool(id);
     }

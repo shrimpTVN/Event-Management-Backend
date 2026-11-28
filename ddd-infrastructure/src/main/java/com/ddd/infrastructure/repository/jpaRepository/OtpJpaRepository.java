@@ -1,8 +1,10 @@
 package com.ddd.infrastructure.repository.jpaRepository;
 
-import aj.org.objectweb.asm.commons.Remapper;
 import com.ddd.infrastructure.entity.OtpJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -13,4 +15,8 @@ public interface OtpJpaRepository extends JpaRepository<OtpJpaEntity, Long> {
     Optional<OtpJpaEntity> findTopByEmailAndIsUsedFalseOrderByCreatedAtDesc(String email);
 
     Optional<OtpJpaEntity> findTopByEmailOrderByCreatedAtDesc(String email);
+
+    @Modifying
+    @Query("UPDATE OtpJpaEntity o SET o.isUsed = true WHERE o.id = :id")
+    void markOtpUsed(@Param("id") Long id);
 }

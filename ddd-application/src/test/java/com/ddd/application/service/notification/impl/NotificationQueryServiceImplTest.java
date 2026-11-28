@@ -4,7 +4,7 @@ import com.ddd.application.dto.notification.NotificationInfoDto;
 import com.ddd.application.mapper.NotificationDtoMapper;
 import com.ddd.domain.enums.NotificationStatusEnum;
 import com.ddd.domain.enums.NotificationTypeEnum;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.Notification;
 import com.ddd.domain.model.port.security.SecurityContextPort;
@@ -148,7 +148,7 @@ class NotificationQueryServiceImplTest {
         when(securityContextPort.getCurrentUserId()).thenReturn(userId);
         when(fanpageMemberRepository.isAdminOfFanpage(fanpageId, userId)).thenReturn(false);
 
-        assertThrows(AuthException.class, () -> notificationQueryService.getFanpageNotifications(fanpageId, 0, 10, "createdAt", "desc", null));
+        assertThrows(ForbiddenException.class, () -> notificationQueryService.getFanpageNotifications(fanpageId, 0, 10, "createdAt", "desc", null));
         verify(notificationRepository, never()).findAllByFanpageId(any(), any());
     }
 

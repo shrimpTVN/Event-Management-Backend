@@ -26,20 +26,23 @@ public class PointCategoryController {
     private final PointCategoryApiMapper pointCategoryApiMapper;
 
     @GetMapping("/tree")
-    public BaseResponse<List<PointCategoryTreeNodeResponseDto>> getPointCategoryTree() {
-        List<PointCategoryTreeNodeDto> tree = pointCategoryService.getPointCategoryTree();
+    public BaseResponse<List<PointCategoryTreeNodeResponseDto>> getPointCategoryTree(
+            @RequestParam(required = false) Long semesterId) {
+        List<PointCategoryTreeNodeDto> tree = pointCategoryService.getPointCategoryTree(semesterId);
         return BaseResponse.of(pointCategoryApiMapper.toPointCategoryTreeNodeResponseDtoList(tree));
     }
 
     @GetMapping("/grouped-tree")
-    public BaseResponse<List<PointCategoryGroupedTreeResponseDto>> getGroupedPointCategoryTree() {
-        List<PointCategoryGroupedTreeDto> categories = pointCategoryService.getGroupedPointCategoryTree();
+    public BaseResponse<List<PointCategoryGroupedTreeResponseDto>> getGroupedPointCategoryTree(
+            @RequestParam(required = false) Long semesterId) {
+        List<PointCategoryGroupedTreeDto> categories = pointCategoryService.getGroupedPointCategoryTree(semesterId);
         return BaseResponse.of(pointCategoryApiMapper.toPointCategoryGroupedTreeResponseDtoList(categories));
     }
 
     @GetMapping("")
-    public BaseResponse<List<PointCategoryResponseDto>> getAllPointCategory() {
-        List<PointCategoryInfoDto> categories = pointCategoryService.getAllPointCategories();
+    public BaseResponse<List<PointCategoryResponseDto>> getAllPointCategory(
+            @RequestParam(required = false) Long semesterId) {
+        List<PointCategoryInfoDto> categories = pointCategoryService.getAllPointCategories(semesterId);
         return BaseResponse.of(pointCategoryApiMapper.toPointCategoryResponseDtoList(categories));
     }
 

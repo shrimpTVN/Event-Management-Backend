@@ -3,6 +3,9 @@ package com.ddd.infrastructure.repository.specification;
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.infrastructure.entity.EventJpaEntity;
 import com.ddd.infrastructure.entity.EventPointJpaEntity;
+import com.ddd.infrastructure.entity.FanpageJpaEntity;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
@@ -25,7 +28,7 @@ public final class EventSpecification {
             Instant dateHappenFrom,
             Instant dateHappenTo,
             Boolean isActive) {
-        return withFilter(keyword, status, null, eventTypeIds, semesterId, schoolId,
+        return withFilter(keyword, status, null, null, eventTypeIds, semesterId, schoolId,
                 criteriaIds, pointCategoryIds, dateHappenFrom, dateHappenTo, isActive);
     }
 
@@ -33,6 +36,23 @@ public final class EventSpecification {
             String keyword,
             String status,
             List<EventStatusEnum> statuses,
+            List<Long> eventTypeIds,
+            Long semesterId,
+            Long schoolId,
+            List<Long> criteriaIds,
+            List<Long> pointCategoryIds,
+            Instant dateHappenFrom,
+            Instant dateHappenTo,
+            Boolean isActive) {
+        return withFilter(keyword, status, statuses, null, eventTypeIds, semesterId, schoolId,
+                criteriaIds, pointCategoryIds, dateHappenFrom, dateHappenTo, isActive);
+    }
+
+    public static Specification<EventJpaEntity> withFilter(
+            String keyword,
+            String status,
+            List<EventStatusEnum> statuses,
+            String adminTab,
             List<Long> eventTypeIds,
             Long semesterId,
             Long schoolId,
@@ -52,9 +72,13 @@ public final class EventSpecification {
                         .replace("_", "\\_");
                 String pattern = "%" + escaped + "%";
 
-                Predicate nameMatch = cb.like(cb.lower(root.get("name")), pattern, '\\');
-                Predicate descMatch = cb.like(cb.lower(root.get("description")), pattern, '\\');
-                predicates.add(cb.or(nameMatch, descMatch));
+                Join<EventJpaEntity, FanpageJpaEntity> fanpageJoin = root.join("fanpage", JoinType.LEFT);
+                Predicate nameMatch = cb.like(cb.lower(cb.coalesce(root.get("name"), "")), pattern, '\\');
+                Predicate descMatch = cb.like(cb.lower(cb.coalesce(root.get("description"), "")), pattern, '\\');
+                Predicate locationMatch = cb.like(cb.lower(cb.coalesce(root.get("location"), "")), pattern, '\\');
+                Predicate fanpageNameMatch = cb.like(cb.lower(cb.coalesce(fanpageJoin.get("name"), "")), pattern, '\\');
+                Predicate fanpageOrgMatch = cb.like(cb.lower(cb.coalesce(fanpageJoin.get("orgName"), "")), pattern, '\\');
+                predicates.add(cb.or(nameMatch, descMatch, locationMatch, fanpageNameMatch, fanpageOrgMatch));
             }
 
             // Correlated EXISTS subquery for pointCategoryIds (safe for Pageable count queries)
@@ -85,11 +109,51 @@ public final class EventSpecification {
                 predicates.add(root.get("criteria").get("id").in(criteriaIds));
             }
 
-            if (statuses != null && !statuses.isEmpty()) {
+            if (adminTab != null && !adminTab.isBlank() && !"ALL".equalsIgnoreCase(adminTab.trim())) {
+                Instant now = Instant.now();
+                switch (adminTab.trim().toUpperCase()) {
+                    case "OPEN" -> predicates.add(cb.and(
+                            cb.equal(root.get("isActive"), true),
+                            cb.equal(root.get("status"), EventStatusEnum.PUBLISHED),
+                            cb.or(
+                                    cb.isNull(root.get("dateHappen")),
+                                    cb.greaterThan(root.get("dateHappen"), now)
+                            )
+                    ));
+                    case "HAPPENING" -> predicates.add(cb.and(
+                            cb.equal(root.get("isActive"), true),
+                            cb.equal(root.get("status"), EventStatusEnum.PUBLISHED),
+                            cb.lessThanOrEqualTo(root.get("dateHappen"), now),
+                            cb.or(
+                                    cb.isNull(root.get("dateClose")),
+                                    cb.greaterThan(root.get("dateClose"), now)
+                            )
+                    ));
+                    case "COMPLETED" -> predicates.add(cb.and(
+                            cb.equal(root.get("isActive"), true),
+                            cb.or(
+                                    root.get("status").in(List.of(EventStatusEnum.COMPLETED, EventStatusEnum.CLOSED)),
+                                    cb.and(
+                                            cb.equal(root.get("status"), EventStatusEnum.PUBLISHED),
+                                            cb.lessThanOrEqualTo(root.get("dateClose"), now)
+                                    )
+                            )
+                    ));
+                    case "DRAFT" -> predicates.add(cb.and(
+                            cb.equal(root.get("isActive"), true),
+                            cb.equal(root.get("status"), EventStatusEnum.DRAFT)
+                    ));
+                    case "CANCELLED" -> predicates.add(cb.and(
+                            cb.equal(root.get("isActive"), true),
+                            cb.equal(root.get("status"), EventStatusEnum.CANCELLED)
+                    ));
+                    case "VIOLATED", "HIDDEN" -> predicates.add(cb.equal(root.get("isActive"), false));
+                    default -> { }
+                }
+            } else if (statuses != null && !statuses.isEmpty()) {
                 predicates.add(root.get("status").in(statuses));
             } else if (status != null && !status.isBlank()) {
-                // Note: If 'status' on EventJpaEntity is an Enum, convert to Enum instead of using cb.upper()
-                predicates.add(cb.equal(cb.upper(root.get("status")), status.trim().toUpperCase()));
+                predicates.add(cb.equal(cb.upper(root.get("status").as(String.class)), status.trim().toUpperCase()));
             }
 
             if (dateHappenFrom != null) {
@@ -100,7 +164,7 @@ public final class EventSpecification {
                 predicates.add(cb.lessThanOrEqualTo(root.get("dateHappen"), dateHappenTo));
             }
 
-            if (isActive != null) {
+            if (isActive != null && (adminTab == null || adminTab.isBlank() || "ALL".equalsIgnoreCase(adminTab.trim()))) {
                 predicates.add(cb.equal(root.get("isActive"), isActive));
             }
 

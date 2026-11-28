@@ -2,6 +2,7 @@ package com.ddd.application.service.user.impl;
 
 import com.ddd.application.dto.user.StaffProfileSummaryDto;
 import com.ddd.application.dto.user.StudentProfileSummaryDto;
+import com.ddd.application.dto.user.UserInfoDto;
 import com.ddd.application.dto.user.UserSummaryDto;
 import com.ddd.application.mapper.StaffProfileDtoMapper;
 import com.ddd.application.mapper.StudentProfileDtoMapper;
@@ -51,6 +52,16 @@ public class UserQueryServiceImpl implements UserQueryService {
         return userJpaRepository.findAll(spec, pageable)
                 .map(userDtoMapper::toUserSummaryDto)
                 .getContent();
+    }
+
+    @Override
+    public UserInfoDto getCurrentUserProfileByEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new UnauthorizedException("User is not authenticated");
+        }
+        UserJpaEntity user = userJpaRepository.findDetailedByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+        return UserInfoAssembler.toUserInfoDto(user, user.getRoles(), staffProfileDtoMapper);
     }
 
     @Override

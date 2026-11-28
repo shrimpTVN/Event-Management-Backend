@@ -9,6 +9,7 @@ public record CriteriaRequestDto(
         String name,
         String note,
         @NotNull(message = "Criteria scope is required")
+        @jakarta.validation.constraints.Pattern(regexp = "UNIVERSITY|FACULTY", message = "Scope must be UNIVERSITY or FACULTY")
         String scope,
 
         @NotNull
@@ -16,6 +17,8 @@ public record CriteriaRequestDto(
         Integer childrenOrder,
         @Positive(message = "Required children must be positive")
         Integer requiredChildren,
+        @Positive(message = "Required occurrences must be positive")
+        Integer requiredOccurrences,
         Long parentId
 ) {
     // Deprecated alias for backwards-compatibility

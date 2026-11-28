@@ -9,6 +9,7 @@ public record EventSearchCriteriaDto(
         String keyword,
         String status,
         List<EventStatusEnum> statuses,
+        String adminTab,
         List<Long> eventTypeIds,
         Long semesterId,
         Long schoolId,
@@ -25,6 +26,7 @@ public record EventSearchCriteriaDto(
     public EventSearchCriteriaDto(
             String keyword,
             String status,
+            List<EventStatusEnum> statuses,
             List<Long> eventTypeIds,
             Long semesterId,
             Long schoolId,
@@ -38,7 +40,27 @@ public record EventSearchCriteriaDto(
             String sortBy,
             String sortDir
     ) {
-        this(keyword, status, null, eventTypeIds, semesterId, schoolId, criteriaIds, pointCategoryIds,
+        this(keyword, status, statuses, null, eventTypeIds, semesterId, schoolId, criteriaIds,
+                pointCategoryIds, dateHappenFrom, dateHappenTo, isActive, page, size, sortBy, sortDir);
+    }
+
+    public EventSearchCriteriaDto(
+            String keyword,
+            String status,
+            List<Long> eventTypeIds,
+            Long semesterId,
+            Long schoolId,
+            List<Long> criteriaIds,
+            List<Long> pointCategoryIds,
+            Instant dateHappenFrom,
+            Instant dateHappenTo,
+            Boolean isActive,
+            Integer page,
+            Integer size,
+            String sortBy,
+            String sortDir
+    ) {
+        this(keyword, status, null, null, eventTypeIds, semesterId, schoolId, criteriaIds, pointCategoryIds,
                 dateHappenFrom, dateHappenTo, isActive, page, size, sortBy, sortDir);
     }
 }

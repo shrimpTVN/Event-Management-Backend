@@ -9,13 +9,13 @@ import com.ddd.domain.enums.PointTransactionTypeEnum;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.PointTransaction;
 import com.ddd.domain.model.port.security.SecurityContextPort;
-import com.ddd.domain.repository.PointCategoryRepository;
 import com.ddd.domain.repository.PointTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,29 +23,36 @@ import java.util.Objects;
 public class PointTransactionCommandServiceImpl implements PointTransactionCommandService {
     private final PointTransactionDtoMapper pointTransactionDtoMapper;
     private final PointTransactionRepository pointTransactionRepository;
-    private final PointCategoryRepository pointCategoryRepository;
+    private final SemesterPointCategoryPolicy categoryPolicy;
     private final StudentSemesterPointCommandService studentSemesterPointCommandService;
     private final SecurityContextPort securityContextPort;
 
     @Override
     public void createPointTransactionForStudent(PointTransactionRequestInfoDto pointTransactionRequestInfoDto) {
         Long userId = securityContextPort.getCurrentUserId();
-        boolean isLeaf = !pointCategoryRepository.hasChildren(pointTransactionRequestInfoDto.pointCategoryId());
-        if (!isLeaf) {
-            throw new IllegalArgumentException("Only can create point transaction for leaf point category");
-        }
+        categoryPolicy.requireLeaves(pointTransactionRequestInfoDto.semesterId(), List.of(pointTransactionRequestInfoDto.pointCategoryId()));
 
         PointTransaction pointTransaction = createPointTransaction(pointTransactionRequestInfoDto, userId);
         pointTransactionRepository.save(pointTransaction);
 
-        // Record leaf point and propagate upward to all ancestors
-        studentSemesterPointCommandService.recordPointAndPropagate(
-                userId,
-                pointTransactionRequestInfoDto.semesterId(),
-                pointTransactionRequestInfoDto.pointCategoryId(),
-                pointTransactionRequestInfoDto.points(),
-                PointTransactionTypeEnum.MANUAL
-        );
+        studentSemesterPointCommandService.rebuildSemesterPoints(userId, pointTransactionRequestInfoDto.semesterId());
+    }
+
+    @Override
+    public void updatePointTransactionForStudent(Long id, Integer points, String description) {
+        if (points == null || points <= 0) throw new IllegalArgumentException("Points must be positive");
+        Long userId = securityContextPort.getCurrentUserId();
+        PointTransaction transaction = pointTransactionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Point transaction not found: " + id));
+        if (!Objects.equals(transaction.getUserId(), userId)
+                || !PointTransactionTypeEnum.MANUAL.name().equals(transaction.getType())) {
+            throw new IllegalArgumentException("Only your own manual point transactions can be edited");
+        }
+        categoryPolicy.requireLeaves(transaction.getSemesterId(), List.of(transaction.getPointCategoryId()));
+        transaction.setPoints(points);
+        transaction.setDescription(description);
+        pointTransactionRepository.save(transaction);
+        studentSemesterPointCommandService.rebuildSemesterPoints(userId, transaction.getSemesterId());
     }
 
     @Override
@@ -60,14 +67,7 @@ public class PointTransactionCommandServiceImpl implements PointTransactionComma
 
         pointTransactionRepository.delete(transaction);
 
-        // Deduct leaf points and propagate upward to all ancestors
-        studentSemesterPointCommandService.recordPointAndPropagate(
-                userId,
-                transaction.getSemesterId(),
-                transaction.getPointCategoryId(),
-                -transaction.getPoints(),
-                PointTransactionTypeEnum.MANUAL
-        );
+        studentSemesterPointCommandService.rebuildSemesterPoints(userId, transaction.getSemesterId());
     }
 
     private PointTransaction createPointTransaction(PointTransactionRequestInfoDto pointTransactionRequestInfoDto, Long userId) {

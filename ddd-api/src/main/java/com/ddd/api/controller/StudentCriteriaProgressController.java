@@ -9,6 +9,7 @@ import com.ddd.application.dto.criteria.CriteriaProgressItemDto;
 import com.ddd.application.dto.criteria.StudentCriteriaProgressDto;
 import com.ddd.application.service.criteriaprogress.StudentCriteriaProgressCommandService;
 import com.ddd.application.service.criteriaprogress.StudentCriteriaProgressQueryService;
+import com.ddd.domain.enums.CriteriaScopeEnum;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,8 +28,9 @@ public class StudentCriteriaProgressController {
     @GetMapping("/me/academic-years/{academicYearId}")
     public BaseResponse<StudentCriteriaProgressResponseDto> getProgress(
             Authentication authentication,
-            @PathVariable Long academicYearId) {
-        StudentCriteriaProgressDto progress = progressQueryService.getProgress(authentication.getName(), academicYearId);
+            @PathVariable Long academicYearId,
+            @RequestParam(defaultValue = "UNIVERSITY") CriteriaScopeEnum scope) {
+        StudentCriteriaProgressDto progress = progressQueryService.getProgress(authentication.getName(), academicYearId, scope);
         return BaseResponse.of(progressApiMapper.toResponseDto(progress));
     }
 
@@ -36,11 +38,13 @@ public class StudentCriteriaProgressController {
     public BaseResponse<CriteriaProgressItemResponseDto> getCriteriaProgress(
             Authentication authentication,
             @PathVariable Long criteriaId,
-            @PathVariable Long academicYearId) {
+            @PathVariable Long academicYearId,
+            @RequestParam(defaultValue = "UNIVERSITY") CriteriaScopeEnum scope) {
         CriteriaProgressItemDto progress = progressQueryService.getCriteriaProgress(
                 authentication.getName(),
                 criteriaId,
-                academicYearId
+                academicYearId,
+                scope
         );
         return BaseResponse.of(progressApiMapper.toResponseDto(progress));
     }

@@ -1,0 +1,125 @@
+{
+  "environment": "isolated local PostgreSQL fixture; not production data",
+  "preview": {
+    "applied": false,
+    "durationMillis": 144,
+    "scopes": [
+      {
+        "userId": 1,
+        "semesterId": 1,
+        "changes": [
+          {
+            "categoryId": 1,
+            "beforeTotal": 999,
+            "afterTotal": 10,
+            "beforeSystem": 0,
+            "afterSystem": 0,
+            "beforeManual": 15,
+            "afterManual": 15
+          },
+          {
+            "categoryId": 2,
+            "beforeTotal": 10,
+            "afterTotal": 15,
+            "beforeSystem": 0,
+            "afterSystem": 0,
+            "beforeManual": 15,
+            "afterManual": 15
+          }
+        ],
+        "issues": [],
+        "manualRecords": [
+          {
+            "id": 1,
+            "categoryId": 2,
+            "points": 8,
+            "description": "first"
+          },
+          {
+            "id": 2,
+            "categoryId": 2,
+            "points": 7,
+            "description": "second"
+          }
+        ],
+        "missingLedger": false,
+        "error": null
+      }
+    ]
+  },
+  "repair": {
+    "applied": true,
+    "durationMillis": 183,
+    "scopes": [
+      {
+        "userId": 1,
+        "semesterId": 1,
+        "changes": [
+          {
+            "categoryId": 1,
+            "beforeTotal": 999,
+            "afterTotal": 10,
+            "beforeSystem": 0,
+            "afterSystem": 0,
+            "beforeManual": 15,
+            "afterManual": 15
+          },
+          {
+            "categoryId": 2,
+            "beforeTotal": 10,
+            "afterTotal": 15,
+            "beforeSystem": 0,
+            "afterSystem": 0,
+            "beforeManual": 15,
+            "afterManual": 15
+          }
+        ],
+        "issues": [],
+        "manualRecords": [
+          {
+            "id": 1,
+            "categoryId": 2,
+            "points": 8,
+            "description": "first"
+          },
+          {
+            "id": 2,
+            "categoryId": 2,
+            "points": 7,
+            "description": "second"
+          }
+        ],
+        "missingLedger": false,
+        "error": null
+      }
+    ]
+  },
+  "after": {
+    "applied": false,
+    "durationMillis": 155,
+    "scopes": [
+      {
+        "userId": 1,
+        "semesterId": 1,
+        "changes": [],
+        "issues": [],
+        "manualRecords": [
+          {
+            "id": 1,
+            "categoryId": 2,
+            "points": 8,
+            "description": "first"
+          },
+          {
+            "id": 2,
+            "categoryId": 2,
+            "points": 7,
+            "description": "second"
+          }
+        ],
+        "missingLedger": false,
+        "error": null
+      }
+    ]
+  }
+}

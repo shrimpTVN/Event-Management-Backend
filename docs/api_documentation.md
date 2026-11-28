@@ -917,8 +917,8 @@ export interface PageResponse<T> {
 #### 2.5.2 Admin - Search Fanpages
 - **Endpoint**: `GET /fanpages/admin` or `GET /fanpages/admin/`
 - **Access**: `ROLE_ADMIN`
-- **Description**: Search all fanpages with unfiltered access to `PENDING`, `BANNED`, or inactive statuses.
-- **Query Parameters**: Same as `FanpageFilterRequestDto` with `status` and `isActive` configurable.
+- **Description**: Search all fanpages with unfiltered access to `PENDING`, `BANNED`, `REJECTED`, or inactive statuses. Includes batched `followerCount`, `eventsCount`, `representative*` fields, and `rejectionReason` (which is omitted/null on public endpoints).
+- **Query Parameters**: Same as `FanpageFilterRequestDto` with `status`, `statuses`, and `isActive` configurable.
 - **Response `200 OK`**: `BaseResponse<Page<FanpageResponseDto>>`
 
 ---
@@ -1496,6 +1496,7 @@ export interface PageResponse<T> {
 
 #### 2.11.1 Schools (`SchoolController` - `/schools`)
 - `GET /schools?isActive={boolean}`: List all schools.
+- `GET /schools/with-majors`: List all schools along with their nested majors (`List<SchoolDetailResponseDto>`), used by the Super Admin Schools & Majors management view.
 - `GET /schools/{id}`: Detailed school profile including list of linked majors (`SchoolDetailResponseDto`).
 - `POST /schools/admin`: Create school (`CreateSchoolRequestDto`: `{ "name": "...", "code": "..." }`).
 - `PUT /schools/admin/{id}`: Update school (`UpdateSchoolRequestDto`).
@@ -2074,8 +2075,16 @@ export interface FanpageResponseDto {
   helpContact?: string;
   helpPhone?: string;
   createdAt: string;
-  status: 'ACTIVE' | 'PENDING' | 'BANNED';
+  status: 'ACTIVE' | 'PENDING' | 'BANNED' | 'REJECTED';
   isActive: boolean;
+  followerCount?: number | null;
+  eventsCount?: number | null;
+  representativeUserId?: number | null;
+  representativeName?: string | null;
+  representativeEmail?: string | null;
+  representativeCode?: string | null;
+  representativePhone?: string | null;
+  rejectionReason?: string | null;
 }
 
 export interface FanpageFollowCountResponseDto {

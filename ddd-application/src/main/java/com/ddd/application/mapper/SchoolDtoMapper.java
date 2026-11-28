@@ -11,6 +11,7 @@ public interface SchoolDtoMapper {
 
     @Mapping(source = "active", target = "isActive")
     SchoolDto toSchoolDto(School school);
+    @Mapping(source = "active", target = "isActive")
     MajorDto toMajorDto(Major major);
 
     @Mapping(source = "school.id", target = "id")

@@ -25,6 +25,11 @@ public class StudentSemesterPointController {
     private final StudentSemesterPointQueryService studentSemesterPointQueryService;
     private final StudentSemesterPointApiMapper studentSemesterPointApiMapper;
 
+    @GetMapping("/me/semesters/{semesterId}/summary")
+    public BaseResponse<com.ddd.api.dto.semesterpoint.res.StudentSemesterPointSummaryResponseDto> getSummary(@PathVariable Long semesterId) {
+        return BaseResponse.of(studentSemesterPointApiMapper.toSummaryResponseDto(studentSemesterPointQueryService.getSummaryForCurrentStudent(semesterId)));
+    }
+
     @GetMapping("/grouped-tree/{semesterId}")
     public BaseResponse<List<StudentSemesterPointGroupedTreeResponseDto>> getSemesterPointTree(
             @PathVariable Long semesterId) {

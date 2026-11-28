@@ -17,6 +17,7 @@ public enum ErrorCodeEnum {
             "005", HttpStatus.CONFLICT, "Concurrent occurs when try to persist the entity"),
     DUPLICATE_RESOURCE("006", HttpStatus.CONFLICT, "Resource already exists"),
     RESOURCE_NOT_FOUND("007", HttpStatus.NOT_FOUND, "Resource not found"),
+    METHOD_NOT_ALLOWED("008", HttpStatus.METHOD_NOT_ALLOWED, "HTTP method not supported"),
 
     //BUSINESS
     BUSINESS_ERROR("100", HttpStatus.BAD_REQUEST, "Business error"),
@@ -40,12 +41,19 @@ public enum ErrorCodeEnum {
     EVENT_FULL("EVENT.004", HttpStatus.CONFLICT, "Event is full."),
     EVENT_GENDER_FULL("EVENT.005", HttpStatus.CONFLICT, "Event slots for your gender are full."),
     EVENT_ATTENDANCE_ERROR("EVENT.003", HttpStatus.BAD_REQUEST, "The event attendance is not open yet or has already closed!"),
+    EVENT_ALREADY_REGISTERED("EVENT.006", HttpStatus.CONFLICT, "You have already registered for this event."),
+    EVENT_CANCEL_DEADLINE_PASSED("EVENT.007", HttpStatus.BAD_REQUEST, "Cannot cancel registration after event close."),
+    EVENT_SELF_CHECK_DISABLED("EVENT.008", HttpStatus.BAD_REQUEST, "Self check-in/out is not allowed for this event."),
+    EVENT_ATTENDANCE_NOT_STARTED("EVENT.009", HttpStatus.BAD_REQUEST, "This event has not started yet."),
+    EVENT_ATTENDANCE_NOT_REGISTERED("EVENT.010", HttpStatus.BAD_REQUEST, "Student has not registered for this event."),
+    EVENT_ATTENDANCE_NOT_CHECKED_IN("EVENT.011", HttpStatus.BAD_REQUEST, "Student has not checked in yet."),
+    EVENT_ATTENDANCE_PENDING_OR_ALREADY_DONE("EVENT.012", HttpStatus.BAD_REQUEST, "Attendance is already submitted or completed."),
 
     // AUTH
     AUTH_LOGIN_FAILED("AUTH.001", HttpStatus.UNAUTHORIZED, "Login failed"),
     AUTH_EMAIL_EXISTS("AUTH.003", HttpStatus.BAD_REQUEST, "Email already exists"),
-    AUTH_INVALID_TOKEN("AUTH.004", HttpStatus.BAD_REQUEST, "Invalid token"),
-    AUTH_INVALID_CREDENTIALS("AUTH.005", HttpStatus.BAD_REQUEST, "Invalid username or password"),
+    AUTH_INVALID_TOKEN("AUTH.004", HttpStatus.UNAUTHORIZED, "Invalid token"),
+    AUTH_INVALID_CREDENTIALS("AUTH.005", HttpStatus.UNAUTHORIZED, "Invalid username or password"),
     AUTH_ACCOUNT_EXISTS_BY_USERNAME(
             "AUTH.006", HttpStatus.BAD_REQUEST, "Account already exists with the given username"),
     AUTH_EXPIRED_REVOKED_TOKEN(
@@ -67,6 +75,7 @@ public enum ErrorCodeEnum {
             "AUTH.014", HttpStatus.BAD_REQUEST, "Account already exists with the given mobile number"),
     AUTH_ACCOUNT_EXISTS_BY_EMAIL(
             "AUTH.015", HttpStatus.BAD_REQUEST, "Account already exists with the given email address"),
+    AUTH_OTP_INVALID("AUTH.016", HttpStatus.BAD_REQUEST, "Invalid or expired OTP code"),
 
     // MEDIA
     FILE_EMPTY("MEDIA.001", HttpStatus.BAD_REQUEST, "File must not be empty"),

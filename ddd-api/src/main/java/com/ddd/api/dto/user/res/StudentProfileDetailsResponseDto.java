@@ -6,6 +6,18 @@ public record StudentProfileDetailsResponseDto(
         String schoolName,
         String majorName,
         String majorCode,
-        String associationName
+        String associationName,
+        Long schoolId,
+        Long majorId
 ) {
+    public StudentProfileDetailsResponseDto(
+            String studentId,
+            Integer kNumber,
+            String schoolName,
+            String majorName,
+            String majorCode,
+            String associationName
+    ) {
+        this(studentId, kNumber, schoolName, majorName, majorCode, associationName, null, null);
+    }
 }
