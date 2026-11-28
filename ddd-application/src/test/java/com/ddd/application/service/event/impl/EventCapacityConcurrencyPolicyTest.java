@@ -72,6 +72,7 @@ class EventCapacityConcurrencyPolicyTest {
         when(registrations.countActiveRegistrationsByEventIdAndGender(1L, "MALE")).thenReturn(3L);
         var failure = assertThrows(BusinessException.class, () -> service.updateEvent(1L, dto, EMAIL));
         assertEquals("Male quantity cannot be lower than current male registrations.", failure.getMessage());
+        assertEquals(failure.getMessage(), failure.getFieldErrors().get("maleQuantity"));
         verify(eventRepository, never()).save(any());
     }
 
@@ -83,6 +84,7 @@ class EventCapacityConcurrencyPolicyTest {
         when(registrations.countActiveRegistrationsByEventIdAndGender(1L, "FEMALE")).thenReturn(3L);
         var failure = assertThrows(BusinessException.class, () -> service.updateEvent(1L, dto, EMAIL));
         assertEquals("Female quantity cannot be lower than current female registrations.", failure.getMessage());
+        assertEquals(failure.getMessage(), failure.getFieldErrors().get("femaleQuantity"));
         verify(eventRepository, never()).save(any());
     }
 
@@ -93,6 +95,7 @@ class EventCapacityConcurrencyPolicyTest {
         when(registrations.countActiveRegistrationsByEventIdAndGender(1L, "MALE")).thenReturn(4L);
         var failure = assertThrows(BusinessException.class, () -> service.updateEvent(1L, dto, EMAIL));
         assertEquals("Male quantity cannot be lower than current male registrations.", failure.getMessage());
+        assertEquals(failure.getMessage(), failure.getFieldErrors().get("maleQuantity"));
         verify(eventRepository, never()).save(any());
     }
 
@@ -116,6 +119,7 @@ class EventCapacityConcurrencyPolicyTest {
         var dto = capacityUpdate(4);
         var failure = assertThrows(BusinessException.class, () -> service.updateEvent(1L, dto, EMAIL));
         assertEquals("Event capacity cannot be lower than current registrations.", failure.getMessage());
+        assertEquals(failure.getMessage(), failure.getFieldErrors().get("capacity"));
         verify(eventRepository, never()).save(any());
     }
 

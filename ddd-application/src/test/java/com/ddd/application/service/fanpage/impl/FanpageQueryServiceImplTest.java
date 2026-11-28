@@ -11,7 +11,7 @@ import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.FanpageRoleEnum;
 import com.ddd.domain.enums.FollowingStatusEnum;
 import com.ddd.domain.enums.RegistrationStatusEnum;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.Fanpage;
 import com.ddd.domain.model.port.security.SecurityContextPort;
@@ -141,7 +141,7 @@ class FanpageQueryServiceImplTest {
     }
 
     @Test
-    void getUpcomingReminder_whenNotMemberAndNotAdmin_throwsAuthException() {
+    void getUpcomingReminder_whenNotMemberAndNotAdmin_throwsForbiddenException() {
         when(securityContextPort.getCurrentUserId()).thenReturn(10L);
         when(securityContextPort.hasRole("ADMIN")).thenReturn(false);
 
@@ -150,7 +150,7 @@ class FanpageQueryServiceImplTest {
         when(fanpageRepository.findByIdAndIsActive(5L, true)).thenReturn(Optional.of(fanpage));
         when(fanpageMemberRepository.isActiveMember(5L, 10L)).thenReturn(false);
 
-        assertThrows(AuthException.class, () -> fanpageQueryService.getUpcomingReminder(5L));
+        assertThrows(ForbiddenException.class, () -> fanpageQueryService.getUpcomingReminder(5L));
     }
 
     @Test

@@ -3,7 +3,7 @@ package com.ddd.application.service.admin.impl;
 import com.ddd.application.dto.statistic.admin.*;
 import com.ddd.application.mapper.AdminStatisticDtoMapper;
 import com.ddd.application.service.admin.AdminStatisticQueryService;
-import com.ddd.domain.exception.UnauthorizedException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.infrastructure.dto.row.admin.AdminEventTypeDistributionRow;
 import com.ddd.infrastructure.repository.AdminStatisticRepositoryImpl;
@@ -101,7 +101,7 @@ public class AdminStatisticQueryServiceImpl implements AdminStatisticQueryServic
 
     private void assertSuperAdmin() {
         if (!securityContextPort.hasRole("ADMIN")) {
-            throw new UnauthorizedException("Access denied. Only Super Admin can access admin statistics.");
+            throw new ForbiddenException("Access denied. Only Super Admin can access admin statistics.");
         }
     }
 }

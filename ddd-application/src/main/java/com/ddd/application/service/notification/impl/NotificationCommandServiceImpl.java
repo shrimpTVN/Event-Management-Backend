@@ -6,7 +6,7 @@ import com.ddd.application.mapper.NotificationDtoMapper;
 import com.ddd.application.service.notification.NotificationDispatchAfterCommit;
 import com.ddd.application.service.notification.NotificationCommandService;
 import com.ddd.domain.enums.NotificationStatusEnum;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.Notification;
@@ -150,7 +150,7 @@ public class NotificationCommandServiceImpl implements NotificationCommandServic
         }
 
         if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, currentUserId)) {
-            throw new AuthException("You are not admin of the fanpage");
+            throw new ForbiddenException("You are not admin of the fanpage");
         }
     }
 }

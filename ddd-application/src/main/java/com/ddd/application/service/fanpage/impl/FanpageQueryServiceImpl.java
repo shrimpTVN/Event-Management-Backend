@@ -10,7 +10,7 @@ import com.ddd.domain.enums.FanpageRoleEnum;
 import com.ddd.domain.enums.FanpageStatusEnum;
 import com.ddd.domain.enums.FollowingStatusEnum;
 import com.ddd.domain.enums.RegistrationStatusEnum;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.Fanpage;
@@ -355,7 +355,7 @@ public class FanpageQueryServiceImpl implements FanpageQueryService {
         }
 
         if (!isAdmin && !fanpageMemberRepository.isActiveMember(fanpageId, currentUserId)) {
-            throw new AuthException("User is not an active member of this fanpage");
+            throw new ForbiddenException("User is not an active member of this fanpage");
         }
 
         return eventJpaRepository

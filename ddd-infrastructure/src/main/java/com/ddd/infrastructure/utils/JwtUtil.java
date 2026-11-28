@@ -146,7 +146,7 @@ public class JwtUtil {
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("Strict")
-                .path("/auth")
+                .path("/api/auth")
                 .maxAge(0)
                 .build();
     }

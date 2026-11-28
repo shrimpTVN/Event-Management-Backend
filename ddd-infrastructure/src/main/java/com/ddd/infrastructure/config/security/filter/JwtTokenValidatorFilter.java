@@ -25,7 +25,44 @@ import java.util.Arrays;
 
 @RequiredArgsConstructor
 public class JwtTokenValidatorFilter extends OncePerRequestFilter {
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+    private static final String[] AUTH_BYPASS_PATHS = {
+            "/auth/refresh-token",
+            "/api/auth/refresh-token",
+            "/auth/login",
+            "/api/auth/login",
+            "/auth/login/google",
+            "/api/auth/login/google",
+            "/auth/register",
+            "/api/auth/register",
+            "/auth/register/fanpage-admin",
+            "/api/auth/register/fanpage-admin",
+            "/auth/logout",
+            "/api/auth/logout",
+            "/auth/send-otp",
+            "/api/auth/send-otp",
+            "/auth/verify-otp",
+            "/api/auth/verify-otp",
+            "/swagger-ui/**",
+            "/v3/api-docs/**"
+    };
+
     private final JwtUtil jwtUtil;
+
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String servletPath = request.getServletPath();
+        String path = (servletPath != null && !servletPath.isEmpty()) ? servletPath : request.getRequestURI();
+        if (path == null) {
+            return false;
+        }
+        for (String pattern : AUTH_BYPASS_PATHS) {
+            if (PATH_MATCHER.match(pattern, path)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,

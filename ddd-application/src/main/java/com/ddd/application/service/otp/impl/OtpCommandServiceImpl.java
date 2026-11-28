@@ -46,18 +46,18 @@ public class OtpCommandServiceImpl implements OtpCommandService {
         log.info("Verifying OTP for email: {}", email);
 
         Otp otp = otpRepository.findLatestValidOtp(email)
-                .orElseThrow(() -> new BusinessException("OTP not found or already used."));
+                .orElseThrow(() -> BusinessException.withCode("AUTH.016", "OTP not found or already used."));
 
         if (otp.getIsUsed()) {
-            throw new BusinessException("OTP has already been used.");
+            throw BusinessException.withCode("AUTH.016", "OTP has already been used.");
         }
 
         if (otp.getExpiredAt().isBefore(Instant.now())) {
-            throw new BusinessException("OTP has expired. Please resend a new OTP.");
+            throw BusinessException.withCode("AUTH.016", "OTP has expired. Please resend a new OTP.");
         }
 
         if (!otp.getOtpCode().equals(otpCode)) {
-            throw new BusinessException("Invalid OTP code.");
+            throw BusinessException.withCode("AUTH.016", "Invalid OTP code.");
         }
 
         otp.setIsUsed(true);

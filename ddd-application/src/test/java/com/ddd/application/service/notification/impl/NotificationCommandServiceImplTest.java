@@ -6,7 +6,7 @@ import com.ddd.application.mapper.NotificationDtoMapper;
 import com.ddd.application.service.notification.NotificationDispatchAfterCommit;
 import com.ddd.domain.enums.NotificationStatusEnum;
 import com.ddd.domain.enums.NotificationTypeEnum;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.Notification;
@@ -238,7 +238,7 @@ class NotificationCommandServiceImplTest {
         when(securityContextPort.getCurrentUserId()).thenReturn(userId);
         when(fanpageMemberRepository.isAdminOfFanpage(fanpageId, userId)).thenReturn(false);
 
-        assertThrows(AuthException.class, () -> notificationCommandService.markAsReadByFanpage(notificationId, fanpageId));
+        assertThrows(ForbiddenException.class, () -> notificationCommandService.markAsReadByFanpage(notificationId, fanpageId));
         verify(notificationRepository, never()).markAsReadByFanpage(any(), any());
     }
 

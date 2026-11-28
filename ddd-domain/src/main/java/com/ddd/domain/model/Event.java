@@ -79,15 +79,19 @@ public class Event extends BaseModel {
     }
 
     public void validateCapacityAndQuantities() {
-        if (maleQuantity < 0) {
+        if (capacity == null || capacity <= 0) {
+            throw BusinessException.withField("capacity", "Event capacity must be greater than 0");
+        }
+        if (maleQuantity == null || maleQuantity < 0) {
             throw BusinessException.withField("maleQuantity", "Male and female quantities must be non-negative");
         }
-        if (femaleQuantity < 0) {
+        if (femaleQuantity == null || femaleQuantity < 0) {
             throw BusinessException.withField("femaleQuantity", "Male and female quantities must be non-negative");
         }
         if (maleQuantity + femaleQuantity > capacity) {
             String message = String.format(
                     "Total male and female quantities (%d) cannot exceed event capacity (%d)",
+                    maleQuantity + femaleQuantity,
                     capacity
             );
             throw new BusinessException(message, java.util.Map.of(

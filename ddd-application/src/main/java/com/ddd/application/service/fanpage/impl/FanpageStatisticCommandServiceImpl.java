@@ -5,7 +5,7 @@ import com.ddd.application.dto.statistic.AlertAbsentStudentsDto;
 import com.ddd.application.service.fanpage.FanpageStatisticCommandService;
 import com.ddd.application.service.notification.NotificationCommandService;
 import com.ddd.domain.enums.NotificationTypeEnum;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.Fanpage;
@@ -68,7 +68,7 @@ public class FanpageStatisticCommandServiceImpl implements FanpageStatisticComma
             throw new UnauthorizedException("User is not authenticated");
         }
         if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, currentUserId)) {
-            throw new AuthException("You do not have permission to send alerts for this fanpage. Only the fanpage admin can access this action.");
+            throw new ForbiddenException("You do not have permission to send alerts for this fanpage. Only the fanpage admin can access this action.");
         }
     }
 }

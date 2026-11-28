@@ -3,7 +3,7 @@ package com.ddd.application.service.semesterpoint.impl;
 import com.ddd.application.dto.semesterpoint.*;
 import com.ddd.application.service.semesterpoint.StudentSemesterPointQueryService;
 import com.ddd.domain.enums.RegistrationStatusEnum;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.model.*;
 import com.ddd.domain.model.port.security.SecurityContextPort;
@@ -40,7 +40,7 @@ public class StudentSemesterPointQueryServiceImpl implements StudentSemesterPoin
 
     private Long currentUser() {
         Long id=security.getCurrentUserId();
-        if (id==null) throw new AuthException("User is not authenticated");
+        if (id==null) throw new UnauthorizedException("User is not authenticated");
         return id;
     }
 

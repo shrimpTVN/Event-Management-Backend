@@ -2,7 +2,7 @@ package com.ddd.application.service.event.impl;
 
 import com.ddd.application.dto.statistic.*;
 import com.ddd.application.service.event.EventStatisticQueryService;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.port.security.SecurityContextPort;
@@ -121,7 +121,7 @@ public class EventStatisticQueryServiceImpl implements EventStatisticQueryServic
             return;
         }
         if (!fanpageMemberRepository.isActiveMember(fanpageId, currentUserId)) {
-            throw new AuthException("You do not have permission to view statistics for this event");
+            throw new ForbiddenException("You do not have permission to view statistics for this event");
         }
     }
 

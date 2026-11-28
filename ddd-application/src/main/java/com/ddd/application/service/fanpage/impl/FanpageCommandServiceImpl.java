@@ -13,7 +13,7 @@ import com.ddd.domain.event.FanpageApprovedEvent;
 import com.ddd.domain.event.FanpageMemberAppointedEvent;
 import com.ddd.domain.event.FanpageMemberInvitedEvent;
 import com.ddd.domain.event.FanpageRejectedEvent;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.DuplicateResourceException;
 import com.ddd.domain.exception.FanpageAdminProfileRequiredException;
@@ -121,7 +121,7 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
         User fanpageAdmin = userRepository.findById(fanpageAdminId)
                 .orElseThrow(() -> new ResourceNotFoundException("Fanpage admin not found"));
         if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, fanpageAdminId)) {
-            throw new AuthException("You are not admin of the fanpage");
+            throw new ForbiddenException("You are not admin of the fanpage");
         }
 
         Fanpage fanpage = fanpageRepository.findById(fanpageId)
@@ -152,7 +152,7 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
         Long fanpageAdminId = securityContextPort.getCurrentUserId();
 
         if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, fanpageAdminId)) {
-            throw new AuthException("You are not admin of the fanpage");
+            throw new ForbiddenException("You are not admin of the fanpage");
         }
 
         fanpageMemberRepository.removeFanpageMember(fanpageId, member.getId());
@@ -174,7 +174,7 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
             throw new ResourceNotFoundException("User not found");
         }
         if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, user.getId())) {
-            throw new AuthException("You are not admin of the fanpage");
+            throw new ForbiddenException("You are not admin of the fanpage");
         }
 
         Fanpage fanpage = fanpageRepository.findByIdAndIsActive(fanpageId, true)
@@ -274,7 +274,7 @@ public class FanpageCommandServiceImpl implements FanpageCommandService {
     public void appointFanpageAdmin(Long fanpageId, String memberEmail) {
         Long userId = securityContextPort.getCurrentUserId();
         if (!fanpageMemberRepository.isAdminOfFanpage(fanpageId, userId)){
-            throw new AuthException("You are not allowed to appoint fanpage admin. Only admins can appoint fanpage admin");
+            throw new ForbiddenException("You are not allowed to appoint fanpage admin. Only admins can appoint fanpage admin");
         }
 
         User member = userRepository.findByEmail(memberEmail);

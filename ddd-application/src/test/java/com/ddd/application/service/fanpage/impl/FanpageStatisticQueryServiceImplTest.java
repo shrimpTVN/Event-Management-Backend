@@ -3,7 +3,7 @@ package com.ddd.application.service.fanpage.impl;
 import com.ddd.application.dto.statistic.*;
 import com.ddd.application.mapper.FanpageStatisticDtoMapper;
 import com.ddd.domain.enums.FollowingStatusEnum;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.Fanpage;
@@ -105,7 +105,7 @@ public class FanpageStatisticQueryServiceImplTest {
             when(securityContextPort.hasRole("ADMIN")).thenReturn(false);
             when(fanpageMemberRepository.isActiveMember(fanpageId, userId)).thenReturn(false);
 
-            assertThrows(AuthException.class, () -> service.getOverview(fanpageId));
+            assertThrows(ForbiddenException.class, () -> service.getOverview(fanpageId));
         }
 
         @Test

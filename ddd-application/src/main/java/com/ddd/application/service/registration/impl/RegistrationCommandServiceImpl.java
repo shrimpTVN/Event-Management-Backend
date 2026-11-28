@@ -62,7 +62,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
             if (registration.getStatus() == RegistrationStatusEnum.CANCELLED) {
                 return registration;
             }
-            throw new DuplicateResourceException("You had registered");
+            throw DuplicateResourceException.withCode("EVENT.006", "You had registered");
         } else {
             return new Registration();
         }
@@ -147,7 +147,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
 
         if (event.getDateClose() != null &&
                 Instant.now().isAfter(event.getDateClose())) {
-            throw new EventRegistrationException("You can not CANCEL registration after event close");
+            throw EventRegistrationException.withCode("EVENT.007", "You can not CANCEL registration after event close");
         }
 
         if (reg.getStatus() != RegistrationStatusEnum.REGISTERED) {
@@ -169,7 +169,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
             throw new BusinessException("Event date has not been set");
         }
         if (Instant.now().isBefore(event.getDateHappen())) {
-            throw new EventAttendanceException("This event has not started yet");
+            throw EventAttendanceException.withCode("EVENT.009", "This event has not started yet");
         }
     }
 
@@ -180,18 +180,18 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         validateEventAttendanceReadiness(event);
 
         if (!event.isAllowSelfCheck()) {
-            throw new EventAttendanceException("Self check-in is not allowed for this event");
+            throw EventAttendanceException.withCode("EVENT.008", "Self check-in is not allowed for this event");
         }
 
         Registration registration = registrationRepository.findByUserAndEvent(userId, eventId);
 
         if (registration.getStatus() == RegistrationStatusEnum.CHECKED_IN
                 || registration.getStatus() == RegistrationStatusEnum.SELF_CHECKED_IN) {
-            throw new EventAttendanceException("You are already checked in");
+            throw EventAttendanceException.withCode("EVENT.011", "You are already checked in");
         }
         if (registration.getStatus() == RegistrationStatusEnum.COMPLETED
                 || registration.getStatus() == RegistrationStatusEnum.SPENDING_CONFIRM) {
-            throw new EventAttendanceException("You have already completed attendance for this event");
+            throw EventAttendanceException.withCode("EVENT.012", "You have already completed attendance for this event");
         }
         if (registration.getStatus() == RegistrationStatusEnum.CANCELLED) {
             throw new EventAttendanceException("Your registration for this event was cancelled");
@@ -215,12 +215,12 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         validateEventAttendanceReadiness(event);
 
         if (!event.isAllowSelfCheck()) {
-            throw new EventAttendanceException("Self check-out is not allowed for this event");
+            throw EventAttendanceException.withCode("EVENT.008", "Self check-out is not allowed for this event");
         }
 
         Registration registration = registrationRepository.findByUserAndEvent(userId, eventId);
         if (registration.getStatus() == RegistrationStatusEnum.SPENDING_CONFIRM) {
-            throw new EventAttendanceException("You have already checkout and are pending confirmation for this event");
+            throw EventAttendanceException.withCode("EVENT.012", "You have already checkout and are pending confirmation for this event");
         }
 
         Instant now = Instant.now();
@@ -406,10 +406,10 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
     private void validateAndCompleteRegistration(Registration registration, Long studentUserId, Long checkedOutById,
                                                  String proofUrl, Instant now, RegistrationStatusEnum status) {
         if (registration == null) {
-            throw new EventAttendanceException("Student ID " + studentUserId + " has not registered for the event!");
+            throw EventAttendanceException.withCode("EVENT.010", "Student ID " + studentUserId + " has not registered for the event!");
         }
         if (registration.getStatus() == RegistrationStatusEnum.COMPLETED) {
-            throw new EventAttendanceException("Student ID " + studentUserId + " has already completed check-out!");
+            throw EventAttendanceException.withCode("EVENT.012", "Student ID " + studentUserId + " has already completed check-out!");
         }
         // If confirming attendance -> Student MUST be pending confirmation
         if (RegistrationStatusEnum.CONFIRMED.equals(status)) {
@@ -421,7 +421,7 @@ public class RegistrationCommandServiceImpl implements RegistrationCommandServic
         else {
             if (!RegistrationStatusEnum.CHECKED_IN.equals(registration.getStatus())
                     && !RegistrationStatusEnum.SELF_CHECKED_IN.equals(registration.getStatus())) {
-                throw new EventAttendanceException("Student ID " + studentUserId + " has not checked in!");
+                throw EventAttendanceException.withCode("EVENT.011", "Student ID " + studentUserId + " has not checked in!");
             }
         }
 

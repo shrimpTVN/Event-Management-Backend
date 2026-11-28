@@ -4,7 +4,7 @@ import com.ddd.application.dto.statistic.*;
 import com.ddd.application.mapper.FanpageStatisticDtoMapper;
 import com.ddd.application.service.fanpage.FanpageStatisticQueryService;
 import com.ddd.domain.enums.FollowingStatusEnum;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.ResourceNotFoundException;
 import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.port.security.SecurityContextPort;
@@ -147,7 +147,7 @@ public class FanpageStatisticQueryServiceImpl implements FanpageStatisticQuerySe
         }
         if (securityContextPort.hasRole("ADMIN")) return;
         if (!fanpageMemberRepository.isActiveMember(fanpageId, currentUserId)) {
-            throw new AuthException("You do not have permission to view statistics for this fanpage. Only the fanpage members can access this information.");
+            throw new ForbiddenException("You do not have permission to view statistics for this fanpage. Only the fanpage members can access this information.");
         }
     }
 }

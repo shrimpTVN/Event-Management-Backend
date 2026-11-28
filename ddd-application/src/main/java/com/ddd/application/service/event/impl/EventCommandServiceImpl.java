@@ -10,10 +10,9 @@ import com.ddd.application.service.semesterpoint.impl.SemesterPointCategoryPolic
 import com.ddd.domain.enums.EventStatusEnum;
 import com.ddd.domain.enums.FollowingStatusEnum;
 import com.ddd.domain.event.EventCreatedEvent;
-import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.BusinessException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.exception.ResourceNotFoundException;
-import com.ddd.domain.exception.UnauthorizedException;
 import com.ddd.domain.model.*;
 import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.domain.repository.*;
@@ -169,7 +168,7 @@ public class EventCommandServiceImpl implements EventCommandService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void updateEventVisibilityByAdmin(Long id, boolean hidden, String reason) {
         if (!securityContextPort.hasRole("ADMIN")) {
-            throw new UnauthorizedException("Only Super Admin can change event visibility");
+            throw new ForbiddenException("Only Super Admin can change event visibility");
         }
         String normalizedReason = null;
         if (hidden) {
@@ -187,9 +186,9 @@ public class EventCommandServiceImpl implements EventCommandService {
 
     private void verifyUserFanpageMembership(Long fanpageId, Long userId) {
         FanpageMember fanpageMember = fanpageMemberRepository.findById(fanpageId, userId)
-                .orElseThrow(() -> new AuthException("User is not a member of this fanpage"));
+                .orElseThrow(() -> new ForbiddenException("User is not a member of this fanpage"));
         if (!fanpageMember.isActive()) {
-            throw new AuthException("User no longer has active membership in this fanpage");
+            throw new ForbiddenException("User no longer has active membership in this fanpage");
         }
     }
 

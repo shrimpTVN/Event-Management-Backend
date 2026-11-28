@@ -2,7 +2,7 @@ package com.ddd.application.service.admin.impl;
 
 import com.ddd.application.dto.statistic.admin.*;
 import com.ddd.application.mapper.AdminStatisticDtoMapper;
-import com.ddd.domain.exception.UnauthorizedException;
+import com.ddd.domain.exception.ForbiddenException;
 import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.infrastructure.dto.row.admin.*;
 import com.ddd.infrastructure.dto.row.fanpage.DemographicItemRow;
@@ -42,17 +42,17 @@ public class AdminStatisticQueryServiceImplTest {
     }
 
     @Test
-    @DisplayName("Should throw UnauthorizedException when caller is not an ADMIN")
-    void shouldThrowUnauthorizedException_whenNotAdmin() {
+    @DisplayName("Should throw ForbiddenException when caller is not an ADMIN")
+    void shouldThrowForbiddenException_whenNotAdmin() {
         when(securityContextPort.hasRole("ADMIN")).thenReturn(false);
 
-        assertThrows(UnauthorizedException.class, () -> service.getOverview(2026, 1L, null));
-        assertThrows(UnauthorizedException.class, () -> service.getMonthlyTrends(2026, 1L, null));
-        assertThrows(UnauthorizedException.class, () -> service.getEventDistribution(2026, 1L, null));
-        assertThrows(UnauthorizedException.class, () -> service.getTopFanpages(2026, 1L, 10, null));
-        assertThrows(UnauthorizedException.class, () -> service.getDemographics(2026, 1L, null));
-        assertThrows(UnauthorizedException.class, () -> service.getMonthlyAbsentRate(2026, 1L, null));
-        assertThrows(UnauthorizedException.class, () -> service.getDashboard(2026, 1L, null));
+        assertThrows(ForbiddenException.class, () -> service.getOverview(2026, 1L, null));
+        assertThrows(ForbiddenException.class, () -> service.getMonthlyTrends(2026, 1L, null));
+        assertThrows(ForbiddenException.class, () -> service.getEventDistribution(2026, 1L, null));
+        assertThrows(ForbiddenException.class, () -> service.getTopFanpages(2026, 1L, 10, null));
+        assertThrows(ForbiddenException.class, () -> service.getDemographics(2026, 1L, null));
+        assertThrows(ForbiddenException.class, () -> service.getMonthlyAbsentRate(2026, 1L, null));
+        assertThrows(ForbiddenException.class, () -> service.getDashboard(2026, 1L, null));
     }
 
     @Test

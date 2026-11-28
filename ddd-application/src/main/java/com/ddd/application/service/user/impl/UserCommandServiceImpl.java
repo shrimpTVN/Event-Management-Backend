@@ -12,9 +12,9 @@ import com.ddd.application.mapper.StudentProfileDtoMapper;
 import com.ddd.application.mapper.UserDtoMapper;
 import com.ddd.application.service.user.UserCommandService;
 import com.ddd.domain.enums.FanpageRoleEnum;
-import com.ddd.domain.exception.AuthException;
 import com.ddd.domain.exception.BusinessException;
 import com.ddd.domain.exception.DuplicateResourceException;
+import com.ddd.domain.exception.InvalidOldPasswordException;
 import com.ddd.domain.exception.PasswordAlreadySetException;
 import com.ddd.domain.exception.PasswordNotSetException;
 import com.ddd.domain.exception.ResourceNotFoundException;
@@ -65,7 +65,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     @Override
     public Long createUser(UserDto userDto, Set<String> roleNames) {
         if (userRepository.existsByEmail(userDto.email())) {
-            throw new DuplicateResourceException("User with email " + userDto.email() + " already exists.");
+            throw DuplicateResourceException.withCode("AUTH.003", "User with email " + userDto.email() + " already exists.");
         }
 
         var user = userDtoMapper.toUser(userDto);
@@ -95,7 +95,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         }
 
         if (!passwordEncoder.matches(oldpPassword, user.getPassword())) {
-            throw new AuthException("Old password is incorrect.");
+            throw new InvalidOldPasswordException("Old password is incorrect.");
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));

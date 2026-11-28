@@ -5,7 +5,7 @@ import com.ddd.domain.repository.*;
 import com.ddd.domain.model.port.security.SecurityContextPort;
 import com.ddd.infrastructure.entity.UserJpaEntity;
 import com.ddd.infrastructure.repository.jpaRepository.*;
-import com.ddd.domain.exception.AuthException;
+import com.ddd.domain.exception.UnauthorizedException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -70,7 +70,7 @@ class StudentSemesterPointQueryServiceImplTest {
     }
     @Test void rejectsUnauthenticatedRead() {
         when(security.getCurrentUserId()).thenReturn(null);
-        assertThrows(AuthException.class,()->service.getSemesterPointTreeForCurrentStudent(9L));
+        assertThrows(UnauthorizedException.class,()->service.getSemesterPointTreeForCurrentStudent(9L));
     }
     @Test void summaryCountUsesSelectedSemesterAndExactActivityStatuses() {
         service.getSummaryForCurrentStudent(9L);

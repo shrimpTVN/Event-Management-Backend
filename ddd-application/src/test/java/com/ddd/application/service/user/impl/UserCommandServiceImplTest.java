@@ -320,7 +320,7 @@ class UserCommandServiceImplTest {
     }
 
     @Test
-    void changePassword_shouldThrowAuthException_whenOldPasswordDoesNotMatch() {
+    void changePassword_shouldThrowInvalidOldPasswordException_whenOldPasswordDoesNotMatch() {
         String email = "user@example.com";
         com.ddd.domain.model.User user = new com.ddd.domain.model.User();
         user.setEmail(email);
@@ -329,7 +329,7 @@ class UserCommandServiceImplTest {
         when(userRepository.findByEmail(email)).thenReturn(user);
         when(passwordEncoder.matches("wrongOldPass", "hashedOldPassword")).thenReturn(false);
 
-        assertThrows(com.ddd.domain.exception.AuthException.class,
+        assertThrows(com.ddd.domain.exception.InvalidOldPasswordException.class,
                 () -> userCommandService.changePassword("wrongOldPass", "newPass", email));
         verify(userRepository, never()).save(any());
     }
